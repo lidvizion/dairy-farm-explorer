@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Sunny Meadows: 3D Dairy Farm Explorer</title>
+<style>
+  :root{
+    --green:#2e7d32; --green-dk:#1b5e20; --cream:#fff8ec; --brown:#6b4a2f;
+    --blue:#4fc3f7; --gold:#ffc107; --ink:#23301f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#87ceeb;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;}
+  canvas{display:block;}
+  .hidden{display:none !important;}
+
+  /* ---------- HUD chips ---------- */
+  #hud{position:fixed;top:12px;left:12px;display:flex;gap:8px;z-index:20;flex-wrap:wrap;max-width:60vw;}
+  .chip{background:rgba(20,32,16,.78);color:#fff;border-radius:999px;padding:8px 14px;
+    font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);backdrop-filter:blur(4px);}
+  .chip .big{color:var(--gold);}
+  #badgebar{position:fixed;top:12px;right:12px;z-index:20;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  #progressChip{background:rgba(20,32,16,.78);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700;font-size:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  #badges{display:flex;gap:4px;background:rgba(20,32,16,.55);padding:6px 10px;border-radius:999px;}
+  .badge{font-size:20px;filter:grayscale(1);opacity:.3;transition:all .4s;}
+  .badge.earned{filter:none;opacity:1;transform:scale(1.15);}
+  #checklistBtn{background:rgba(20,32,16,.78);color:#fff;border:none;border-radius:999px;padding:8px 14px;
+    font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);font-family:inherit;}
+  #checklistBtn:hover{background:rgba(46,125,50,.9);}
+
+  /* ---------- hint bar ---------- */
+  #hint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:20;
+    background:rgba(20,32,16,.8);color:#fff;padding:10px 22px;border-radius:999px;
+    font-size:15px;font-weight:600;max-width:88vw;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.3);
+    transition:background .3s;}
+  #hint.action{background:rgba(46,125,50,.95);box-shadow:0 0 18px rgba(76,255,80,.45);}
+
+  /* ---------- toast ---------- */
+  #toasts{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:40;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .toast{background:rgba(255,255,255,.95);color:var(--ink);font-weight:800;font-size:20px;
+    padding:10px 22px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);
+    animation:toastUp 1.6s ease-out forwards;}
+  @keyframes toastUp{0%{opacity:0;transform:translateY(14px) scale(.8);}
+    15%{opacity:1;transform:translateY(0) scale(1.05);}80%{opacity:1;transform:translateY(-8px) scale(1);}
+    100%{opacity:0;transform:translateY(-26px);}}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,rgba(135,206,235,.96),rgba(111,174,78,.96));padding:18px;}
+  .card{background:var(--cream);border-radius:22px;max-width:560px;width:100%;max-height:88vh;overflow:auto;
+    box-shadow:0 18px 60px rgba(0,0,0,.35);border:4px solid #fff;}
+  .card-head{background:linear-gradient(135deg,var(--green),var(--green-dk));color:#fff;
+    padding:18px 24px;border-radius:17px 17px 0 0;}
+  .card-head h1{margin:0;font-size:26px;letter-spacing:.5px;}
+  .card-head h2{margin:0;font-size:21px;display:flex;align-items:center;gap:10px;}
+  .card-head .sub{margin:6px 0 0;font-size:14px;opacity:.9;font-weight:600;}
+  .card-body{padding:18px 24px 22px;color:var(--ink);}
+  .card-body ul{padding-left:20px;margin:10px 0;}
+  .card-body li{margin:9px 0;font-size:15px;line-height:1.45;}
+  .btn{display:inline-block;border:none;border-radius:999px;padding:13px 28px;font-size:17px;font-weight:800;
+    cursor:pointer;font-family:inherit;transition:transform .12s, box-shadow .12s;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:linear-gradient(135deg,#43a047,#2e7d32);color:#fff;box-shadow:0 4px 0 #1b5e20;}
+  .btn-blue{background:linear-gradient(135deg,#42a5f5,#1976d2);color:#fff;box-shadow:0 4px 0 #0d47a1;}
+  .btn-ghost{background:#e7e2d4;color:var(--ink);box-shadow:0 4px 0 #c9c2ae;}
+  .btnrow{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+
+  /* intro */
+  #intro .card{text-align:left;}
+  #intro h1{font-size:28px;}
+  .controls-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px;margin:12px 0;}
+  .controls-grid b{background:#e7e2d4;border-radius:8px;padding:2px 10px;text-align:center;font-size:13px;white-space:nowrap;}
+  .goalbox{background:#eef7e9;border:2px dashed #9ccc8f;border-radius:14px;padding:12px 16px;margin:12px 0;font-size:14.5px;line-height:1.5;}
+
+  /* quiz */
+  .quiz-q{font-size:17px;font-weight:800;margin:4px 0 14px;line-height:1.4;}
+  .quiz-opt{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 16px;border-radius:12px;
+    border:2px solid #d8d2c0;background:#fff;font-size:15.5px;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:all .15s;color:var(--ink);}
+  .quiz-opt:hover{border-color:var(--green);background:#f1f8ee;}
+  .quiz-opt.right{background:#c8e6c9;border-color:#2e7d32;animation:pulseOk .5s;}
+  .quiz-opt.wrong{background:#ffcdd2;border-color:#c62828;animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
+  @keyframes pulseOk{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
+  .quiz-feedback{font-weight:800;font-size:16px;margin-top:12px;min-height:24px;}
+
+  /* checklist */
+  .check-item{display:flex;align-items:center;gap:10px;padding:8px 4px;font-size:15.5px;font-weight:700;
+    border-bottom:1px dashed #ddd6c4;color:var(--ink);}
+  .check-item .st{width:26px;text-align:center;font-size:18px;}
+  .check-item.done{opacity:.55;text-decoration:line-through;}
+
+  /* certificate */
+  #cert .card{text-align:center;border:6px double var(--gold);}
+  #cert .trophy{font-size:64px;margin:8px 0 0;}
+  #cert h1{color:var(--green-dk);margin:6px 0;}
+  .cert-stats{display:flex;justify-content:center;gap:18px;margin:14px 0;flex-wrap:wrap;}
+  .cert-stat{background:#fff;border-radius:14px;padding:10px 18px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  .cert-stat .v{font-size:24px;font-weight:900;color:var(--green-dk);}
+  .cert-stat .l{font-size:12px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.5px;}
+  .cert-rank{font-size:20px;font-weight:900;color:#b8860b;margin:6px 0 2px;}
+
+  /* joystick (touch) */
+  #joy{position:fixed;left:26px;bottom:70px;width:120px;height:120px;border-radius:50%;z-index:25;
+    background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.45);touch-action:none;}
+  #joyKnob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;
+    background:rgba(255,255,255,.75);transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+
+  #loadfail{position:fixed;inset:0;z-index:99;background:#fff;display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:30px;font-size:17px;color:#444;}
+
+  @media (max-width:640px){
+    .chip,#progressChip,#checklistBtn{font-size:12.5px;padding:6px 10px;}
+    .badge{font-size:15px;}
+    #hint{font-size:13px;bottom:12px;}
+    #intro h1{font-size:22px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div class="chip">⭐ <span class="big" id="score">0</span></div>
+  <div class="chip">🥛 <span id="bottleCount">0</span>/<span id="bottleTotal">10</span></div>
+</div>
+
+<div id="badgebar">
+  <div id="progressChip">📍 Stations: <span id="visited">0</span>/<span id="stationTotal">10</span></div>
+  <div id="badges"></div>
+  <button id="checklistBtn">📋 Tour Checklist</button>
+</div>
+
+<div id="hint">Loading the farm…</div>
+<div id="toasts"></div>
+
+<!-- intro -->
+<div id="intro" class="overlay">
+  <div class="card">
+    <div class="card-head">
+      <h1>🐄 Sunny Meadows Dairy</h1>
+      <p class="sub">A 3D Farm Explorer — an udderly amazing educational adventure!</p>
+    </div>
+    <div class="card-body">
+      <div class="goalbox">
+        <b>🎯 Your mission:</b> Walk the whole farm and visit all <b>10 learning stations</b>
+        (look for the glowing beams of light). Read the facts, <b>ace each quiz</b> to earn a badge,
+        and snag the <b>10 hidden milk bottles</b> for bonus points. Finish the tour to earn your
+        <b>Dairy Expert Certificate</b> 🏆
+      </div>
+      <div class="controls-grid">
+        <b>W A S D / Arrows</b><span>Walk around the farm</span>
+        <b>Drag mouse / finger</b><span>Look around</span>
+        <b>Click / Tap</b><span>Interact with glowing stations, bottles… and cows 🐮</span>
+        <b>E</b><span>Open the station you're standing near</span>
+        <b>Shift</b><span>Run</span>
+      </div>
+      <p style="font-size:13.5px;color:#666;margin:8px 0 0;">Tip: on phones, use the joystick (bottom-left) to walk and drag the right side of the screen to look.</p>
+      <div class="btnrow" style="justify-content:center;">
+        <button class="btn btn-primary" id="startBtn" style="font-size:20px;padding:15px 40px;">🚜 Start the Tour!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- station / quiz panel -->
+<div id="panel" class="overlay hidden" style="background:rgba(10,20,8,.55);">
+  <div class="card">
+    <div class="card-head"><h2 id="panelTitle"></h2><p class="sub" id="panelTag"></p></div>
+    <div class="card-body" id="panelBody"></div>
+  </div>
+</div>
+
+<!-- checklist -->
+<div id="checklist" class="overlay hidden" style="background:rgba(10,20,8,.55);">
+  <div class="card">
+    <div class="card-head"><h2>📋 Farm Tour Checklist</h2><p class="sub">Find the glowing light beams!</p></div>
+    <div class="card-body">
+      <div id="checkItems"></div>
+      <div class="btnrow"><button class="btn btn-ghost" id="checklistClose">Back to the farm</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- certificate -->
+<div id="cert" class="overlay hidden">
+  <div class="card">
+    <div class="card-body">
+      <div class="trophy">🏆</div>
+      <h1>Farm Tour Complete!</h1>
+      <p style="font-weight:700;color:#555;margin:2px 0 0;">Official Certificate of</p>
+      <div class="cert-rank" id="certRank">Dairy Expert</div>
+      <p style="font-size:14.5px;line-height:1.5;color:#555;max-width:420px;margin:10px auto;">
+        You followed milk's whole journey — from happy, well-fed cows to the milking parlor,
+        the chilled bulk tank, and the tanker truck headed for your fridge. You also saw how farms
+        recycle nutrients, make renewable energy, and power their communities. 🌱
+      </p>
+      <div class="cert-stats">
+        <div class="cert-stat"><div class="v" id="certScore">0</div><div class="l">Milk Points</div></div>
+        <div class="cert-stat"><div class="v" id="certFirst">0/10</div><div class="l">First-try quizzes</div></div>
+        <div class="cert-stat"><div class="v" id="certBottles">0/10</div><div class="l">Bottles found</div></div>
+      </div>
+      <div class="btnrow" style="justify-content:center;">
+        <button class="btn btn-ghost" id="certClose">Keep exploring 🐮</button>
+        <button class="btn btn-primary" id="certReplay">Play again 🔄</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="joy" class="hidden"><div id="joyKnob"></div></div>
+
+<div id="loadfail" class="hidden">
+  <div>😢 The 3D engine couldn't load.<br>Please check your internet connection and refresh the page.</div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+let THREE;
+try {
+  THREE = await import('three');
+} catch (e) {
+  document.getElementById('loadfail').classList.remove('hidden');
+  throw e;
+}
+
+/* ============================================================
+   GAME DATA — learning stations
+============================================================ */
+const STATIONS = [
+  {
+    id:'parlor', name:'Milking Parlor', emoji:'🥛', color:0x4fc3f7, pos:[-6,0,6],
+    tagline:'Where the milk magic happens — twice a day, every day!',
+    facts:[
+      'Milking machines use a <b>gentle pulsing vacuum</b> that feels like a calf nursing. Milking one cow takes only about <b>5–8 minutes</b>.',
+      'Cows are milked <b>2–3 times a day</b> — and most walk to the parlor on their own. They know the routine!',
+      'Parlors come in cool layouts: <b>herringbone</b>, <b>parallel</b>, and <b>rotary</b> — a slow merry-go-round for cows!',
+      'Many modern farms use <b>robotic milkers</b>: the cow chooses when she wants to be milked, and a robot gently does the rest.'
+    ],
+    quiz:{ q:'About how long does it take to milk one cow with a milking machine?',
+      a:['45 minutes','5–8 minutes','2 hours'], correct:1 }
+  },
+  {
+    id:'tank', name:'Bulk Milk Tank', emoji:'🧊', color:0x90caf9, pos:[2,0,-10],
+    tagline:'A giant stainless-steel fridge for fresh milk.',
+    facts:[
+      'Milk leaves the cow at about <b>101°F (38°C)</b> — body temperature — and must be chilled fast to stay fresh.',
+      'The bulk tank cools milk to below <b>40°F (4°C)</b> within a couple of hours and keeps it there.',
+      'A paddle called an <b>agitator</b> slowly stirs the milk so it cools evenly and the cream doesn\'t separate.',
+      'From cow to tank to truck, the milk travels through sealed pipes — it\'s <b>never touched by human hands</b>.'
+    ],
+    quiz:{ q:'The bulk tank chills fresh milk down to about…',
+      a:['40°F (4°C) — fridge cold','75°F — room temperature','101°F — cow temperature'], correct:0 }
+  },
+  {
+    id:'silo', name:'Feed Silos', emoji:'🌾', color:0xffd54f, pos:[-25,0,-8],
+    tagline:'Skyscrapers full of cow food!',
+    facts:[
+      'Silos store <b>silage</b> — chopped corn or grass that\'s fermented to stay tasty all winter. Think of it as <b>pickles for cows</b>!',
+      'A milking cow eats about <b>100 pounds of feed every day</b>, plus minerals and vitamins.',
+      'Farms feed a <b>TMR (Total Mixed Ration)</b> — a recipe designed by a professional <b>cow nutritionist</b>. Yes, that\'s a real job!',
+      'Cows can digest things we can\'t — like almond hulls and cottonseed — turning <b>food waste into milk</b>.'
+    ],
+    quiz:{ q:'How much food does one dairy cow munch through each day?',
+      a:['About 5 pounds','About 1,000 pounds','About 100 pounds'], correct:2 }
+  },
+  {
+    id:'tractor', name:'Tractor & Machinery', emoji:'🚜', color:0x81c784, pos:[12,0,6],
+    tagline:'The hardest-working machine on the farm.',
+    facts:[
+      'Tractors plant and harvest crops, haul feed, spread natural fertilizer, and tow almost everything on the farm.',
+      'Modern tractors can <b>steer themselves with GPS</b>, accurate to about an inch — that saves fuel and seeds.',
+      'A <b>mixer wagon</b> behind a tractor blends the cows\' daily feed recipe like a giant kitchen mixer.',
+      'Safety first: roll bars and seatbelts protect farmers, and kids should always stay clear of moving machinery.'
+    ],
+    quiz:{ q:'How do many modern tractors drive in perfectly straight lines?',
+      a:['GPS auto-steering','Invisible train tracks','Very focused squirrels'], correct:0 }
+  },
+  {
+    id:'hay', name:'Hay Barn', emoji:'🌿', color:0xdce775, pos:[17,0,-4],
+    tagline:'Sunshine, saved for winter.',
+    facts:[
+      'Hay is <b>grass or alfalfa dried in the sun</b>, then baled so cows have forage all year round.',
+      'One big round bale can weigh <b>1,000+ pounds</b> — about as much as a grown horse!',
+      'Hay must be stored <b>dry under a roof</b>: wet hay can grow mold and even heat up enough to catch fire.',
+      'Fiber from hay keeps a cow\'s amazing stomach healthy and happy.'
+    ],
+    quiz:{ q:'A big round hay bale weighs about as much as…',
+      a:['A house cat','A grown horse (1,000+ lbs)','A loaf of bread'], correct:1 }
+  },
+  {
+    id:'pasture', name:'The Herd & Pasture', emoji:'🐄', color:0xa1887f, pos:[24,0,4],
+    tagline:'Meet the moo crew!',
+    facts:[
+      'A cow\'s stomach has <b>four compartments</b> (rumen, reticulum, omasum, abomasum) to digest tough grass.',
+      'Cows chew their <b>cud</b> — re-chewing food — for up to <b>8 hours a day</b>. It helps digestion!',
+      'One cow drinks <b>30–50 gallons of water a day</b> — a whole bathtub — and gives about <b>6–8 gallons of milk</b>.',
+      'Every Holstein\'s black-and-white spots are <b>unique, like a fingerprint</b>. No two cows match!'
+    ],
+    quiz:{ q:'How many compartments does a cow\'s stomach have?',
+      a:['One, like ours','Seven','Four'], correct:2 }
+  },
+  {
+    id:'calves', name:'Calf Care Corner', emoji:'🍼', color:0xf8bbd0, pos:[-16,0,19],
+    tagline:'The farm\'s adorable nursery.',
+    facts:[
+      'A newborn calf\'s first milk is <b>colostrum</b> — a golden superfood packed with antibodies that protect it from sickness.',
+      'Calves live in cozy <b>individual hutches</b> at first, like private nurseries, so they stay healthy while their immune systems grow.',
+      'Calves drink milk for about <b>8 weeks</b>, then gradually switch to solid feed (that\'s called weaning).',
+      'Farmers track every calf\'s health, growth, and even its family tree on computers and ear tags.'
+    ],
+    quiz:{ q:'What is a calf\'s super-important first milk called?',
+      a:['Colostrum','A milkshake','Buttermilk'], correct:0 }
+  },
+  {
+    id:'green', name:'Sustainability Station', emoji:'♻️', color:0x66bb6a, pos:[-2,0,-25],
+    tagline:'Where cow power becomes green power!',
+    facts:[
+      'Manure isn\'t waste — it\'s recycled as <b>natural fertilizer</b> that grows the crops that feed the cows. A perfect circle! 🔄',
+      'Machines called <b>anaerobic digesters</b> capture gas from manure and turn it into <b>renewable electricity and fuel</b>.',
+      'Farms <b>reuse water up to 4 times</b>: first to chill milk, then to wash the barn, then to water crops.',
+      'Thanks to smart farming, producing a gallon of milk today uses <b>far less land and water</b> than it did 80 years ago.'
+    ],
+    quiz:{ q:'What can a dairy farm turn cow manure into?',
+      a:['Absolutely nothing','Renewable energy & fertilizer','Glitter'], correct:1 }
+  },
+  {
+    id:'truck', name:'Milk Tanker Truck', emoji:'🚛', color:0xb0bec5, pos:[7,0,22],
+    tagline:'Fresh milk\'s ride to your fridge.',
+    facts:[
+      'The tanker is a giant <b>insulated thermos</b>: stainless steel walls keep milk icy cold the whole trip.',
+      'Before every pickup, the driver <b>samples and tests the milk</b> — milk is one of the most-tested foods anywhere.',
+      'If a test ever finds a problem, the <b>whole tank is rejected</b> — only safe, pure milk leaves the farm.',
+      'Milk usually goes from <b>farm to store in about 2 days</b>. That\'s farm-fresh!'
+    ],
+    quiz:{ q:'About how long does milk take to get from the farm to the store?',
+      a:['2 months','About 2 days','1 year'], correct:1 }
+  },
+  {
+    id:'office', name:'Farmhouse & Community', emoji:'🏠', color:0xffab91, pos:[-27,0,16],
+    tagline:'Why dairy farms matter to everyone.',
+    facts:[
+      'About <b>97% of U.S. dairy farms are family-owned</b> — many for three, four, even five generations.',
+      'The dairy community supports <b>millions of jobs</b>: farmers, vets, nutritionists, drivers, cheesemakers and more.',
+      'Milk delivers <b>13 essential nutrients</b>, including calcium, protein, and vitamin B12, to help bodies grow strong.',
+      'Dairy becomes your favorites: <b>cheese, yogurt, butter, and ice cream</b> — all starting right here on the farm.'
+    ],
+    quiz:{ q:'How many U.S. dairy farms are family-owned?',
+      a:['About 10%','Exactly half','About 97%'], correct:2 }
+  }
+];
+
+const TIPS = [
+  '💡 A cow drinks a whole bathtub of water every day — find the trough in the pasture!',
+  '🥛 Hidden milk bottles are worth +10 points each. Keep your eyes peeled!',
+  '🐮 Click on a cow to say hello. Go on, she won\'t mind.',
+  '✨ Glowing light beams mark learning stations you haven\'t visited yet.',
+  '🏆 Ace a quiz on the first try for +50 points (second try still earns +20).',
+  '♻️ Behind the barn, cow power literally becomes green power. Go see how!',
+  '⌨️ Standing near a station? Just press E to open it.',
+  '🚜 Hold Shift to run — those cows aren\'t going to greet themselves.'
+];
+
+/* ============================================================
+   STATE
+============================================================ */
+const state = {
+  started:false, uiOpen:false,
+  score:0, bottles:0, visited:0, firstTry:0,
+  done:{}, certShown:false
+};
+
+/* ============================================================
+   RENDERER / SCENE / CAMERA
+============================================================ */
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8ecae6);
+scene.fog = new THREE.Fog(0xa8d8e8, 70, 170);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 400);
+camera.rotation.order = 'YXZ';
+
+const player = { x:0, z:46, yaw:Math.PI, pitch:0, eye:1.7, bob:0 };
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ---------- lights ---------- */
+const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x7aa85c, 1.15);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff3d6, 2.6);
+sun.position.set(45, 70, 25);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -70; sun.shadow.camera.right = 70;
+sun.shadow.camera.top = 70; sun.shadow.camera.bottom = -70;
+sun.shadow.camera.far = 200;
+sun.shadow.bias = -0.0006;
+scene.add(sun);
+
+/* ============================================================
+   TEXTURE HELPERS
+============================================================ */
+function noiseTexture(base, fleck, count, size=128){
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d');
+  x.fillStyle = base; x.fillRect(0,0,size,size);
+  for (let i=0;i<count;i++){
+    x.fillStyle = fleck[Math.floor(Math.random()*fleck.length)];
+    x.globalAlpha = 0.25 + Math.random()*0.4;
+    const s = 1 + Math.random()*3;
+    x.fillRect(Math.random()*size, Math.random()*size, s, s);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+function cowTexture(spotted){
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  if (spotted){
+    x.fillStyle = '#ffffff'; x.fillRect(0,0,256,256);
+    x.fillStyle = '#222222';
+    for (let i=0;i<9;i++){
+      x.beginPath();
+      x.ellipse(Math.random()*256, Math.random()*256, 18+Math.random()*38, 14+Math.random()*30,
+        Math.random()*Math.PI, 0, Math.PI*2);
+      x.fill();
+    }
+  } else {
+    x.fillStyle = '#c89968'; x.fillRect(0,0,256,256);
+    x.fillStyle = '#b78753';
+    for (let i=0;i<5;i++){
+      x.beginPath();
+      x.ellipse(Math.random()*256, Math.random()*256, 30, 24, 0, 0, Math.PI*2);
+      x.fill();
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function textCanvas(lines, opts={}){
+  const W = opts.w || 512, H = opts.h || 160;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = opts.bg || '#6b4a2f'; x.fillRect(0,0,W,H);
+  x.strokeStyle = opts.border || '#3f2c1a'; x.lineWidth = 14; x.strokeRect(7,7,W-14,H-14);
+  x.fillStyle = opts.fg || '#fff8ec';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  const fs = opts.fontSize || 54;
+  x.font = `900 ${fs}px Trebuchet MS, sans-serif`;
+  const arr = Array.isArray(lines) ? lines : [lines];
+  arr.forEach((ln,i) => x.fillText(ln, W/2, H/2 + (i-(arr.length-1)/2)*(fs+10)));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function emojiSprite(emoji, scale=1.7){
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.font = '92px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(emoji, 64, 70);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, transparent:true }));
+  s.scale.set(scale, scale, 1);
+  return s;
+}
+
+/* ============================================================
+   BUILD HELPERS
+============================================================ */
+const lamb = (color, extra={}) => new THREE.MeshLambertMaterial({ color, ...extra });
+
+function box(w,h,d, mat, x=0,y=0,z=0, shadow=true){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.set(x,y,z);
+  if (shadow){ m.castShadow = true; m.receiveShadow = true; }
+  return m;
+}
+function cyl(rt,rb,h, mat, x=0,y=0,z=0, seg=14, shadow=true){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat);
+  m.position.set(x,y,z);
+  if (shadow){ m.castShadow = true; m.receiveShadow = true; }
+  return m;
+}
+function ball(r, mat, x=0,y=0,z=0, shadow=true){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 12), mat);
+  m.position.set(x,y,z);
+  if (shadow){ m.castShadow = true; m.receiveShadow = true; }
+  return m;
+}
+
+/* collision world */
+const OBST = [];          // {x,z,r} circles
+const SEGS = [];          // {ax,az,bx,bz} fence segments
+const addObst = (x,z,r) => OBST.push({x,z,r});
+
+/* ============================================================
+   GROUND, PATHS, SKY DRESSING
+============================================================ */
+{
+  const grassTex = noiseTexture('#6fae4e', ['#5e9a40','#7fbd5c','#65a447','#86c163'], 900);
+  grassTex.repeat.set(50,50);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(260,260), lamb(0xffffff, { map:grassTex }));
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const dirtTex = noiseTexture('#c9ad7c', ['#b89a68','#d6bc8d','#bfa271'], 500);
+  dirtTex.repeat.set(3,16);
+  function path(w, l, x, z, rotY=0){
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, l), lamb(0xffffff, { map:dirtTex }));
+    p.rotation.x = -Math.PI/2; p.rotation.z = rotY;
+    p.position.set(x, 0.02, z);
+    p.receiveShadow = true;
+    scene.add(p);
+  }
+  path(6, 50, 0, 28);            // main driveway
+  path(40, 5, -8, 4);            // east-west lane to barn / tractor
+  path(5, 22, -2, -14);          // lane to tank & sustainability
+  path(5, 18, -18, 12, 0.5);     // to calf corner / farmhouse
+  path(5, 16, 16, 0);            // to hay barn
+}
+
+/* clouds */
+const clouds = [];
+{
+  const cm = new THREE.MeshLambertMaterial({ color:0xffffff });
+  for (let i=0;i<7;i++){
+    const g = new THREE.Group();
+    const n = 3 + Math.floor(Math.random()*3);
+    for (let j=0;j<n;j++){
+      const s = ball(2+Math.random()*2.4, cm, j*2.6-(n*1.2), Math.random()*0.8, Math.random()*2-1, false);
+      s.scale.y = 0.55; g.add(s);
+    }
+    g.position.set(Math.random()*220-110, 26+Math.random()*12, Math.random()*220-110);
+    scene.add(g); clouds.push(g);
+  }
+}
+
+/* sun glow sprite */
+{
+  const glow = emojiSprite('☀️', 10);
+  glow.position.set(85, 80, 40);
+  scene.add(glow);
+}
+
+/* ============================================================
+   FENCES & TREES
+============================================================ */
+const woodMat = lamb(0x8a6a44);
+function fenceLine(ax,az,bx,bz, collide=true, postEvery=4, height=1.1){
+  const g = new THREE.Group();
+  const dx = bx-ax, dz = bz-az;
+  const len = Math.hypot(dx,dz);
+  const n = Math.max(2, Math.round(len/postEvery)+1);
+  for (let i=0;i<n;i++){
+    const t = i/(n-1);
+    g.add(cyl(0.09,0.11,height+0.2, woodMat, ax+dx*t, (height+0.2)/2, az+dz*t, 6));
+  }
+  const ang = Math.atan2(dx, dz);
+  for (const ry of [height*0.55, height*0.95]){
+    const rail = box(0.08, 0.1, len, woodMat, ax+dx/2, ry, az+dz/2);
+    rail.rotation.y = ang;
+    g.add(rail);
+  }
+  scene.add(g);
+  if (collide) SEGS.push({ax,az,bx,bz});
+  return g;
+}
+
+/* perimeter (visual only — movement clamped separately) */
+fenceLine(-56,-56, 56,-56, false, 5);
+fenceLine(-56, 56, -4, 56, false, 5);
+fenceLine( 4, 56,  56, 56, false, 5);
+fenceLine(-56,-56,-56, 56, false, 5);
+fenceLine( 56,-56, 56, 56, false, 5);
+
+/* pasture fence with gate gap on west side */
+fenceLine(22,-16, 22,-3);
+fenceLine(22,  3, 22, 16);
+fenceLine(22,-16, 46,-16);
+fenceLine(46,-16, 46, 16);
+fenceLine(22, 16, 46, 16);
+
+function tree(x,z, s=1){
+  const g = new THREE.Group();
+  g.add(cyl(0.28*s, 0.4*s, 2.4*s, lamb(0x7a5230), 0, 1.2*s, 0, 8));
+  const leaf = lamb(0x3e8a3e);
+  g.add(ball(1.7*s, leaf, 0, 3.2*s, 0));
+  g.add(ball(1.2*s, leaf, 0.9*s, 2.6*s, 0.3*s));
+  g.add(ball(1.1*s, leaf, -0.8*s, 2.7*s, -0.4*s));
+  g.position.set(x,0,z);
+  scene.add(g);
+  addObst(x,z, 0.9*s);
+}
+[[-40,-30,1.3],[-46,2,1.1],[-38,32,1.2],[-12,40,1],[14,40,1.1],[30,34,1.3],[48,24,1.1],
+ [50,-6,1.2],[44,-32,1.4],[20,-34,1],[-14,-38,1.2],[-30,-40,1.3],[-50,-18,1],[36,22,0.9]]
+ .forEach(([x,z,s]) => tree(x,z,s));
+
+/* flowers near farmhouse */
+{
+  const cols = [0xff7043, 0xffee58, 0xec407a, 0xab47bc, 0xffffff];
+  for (let i=0;i<26;i++){
+    const f = ball(0.12, lamb(cols[i%cols.length]),
+      -32+Math.random()*12, 0.16, 8+Math.random()*8, false);
+    scene.add(f);
+  }
+}
+
+/* welcome arch at entrance */
+{
+  const g = new THREE.Group();
+  g.add(cyl(0.25,0.3,6.5, woodMat, -3.6, 3.25, 0, 8));
+  g.add(cyl(0.25,0.3,6.5, woodMat,  3.6, 3.25, 0, 8));
+  const bannerTex = textCanvas(['SUNNY MEADOWS','DAIRY FARM'], { w:1024, h:256, fontSize:78, bg:'#8a2f1d', border:'#5c1d10' });
+  const banner = box(8.4, 1.9, 0.2, lamb(0xffffff, { map:bannerTex }), 0, 6.4, 0);
+  g.add(banner);
+  g.position.set(0, 0, 51);
+  scene.add(g);
+  addObst(-3.6, 51, 0.5); addObst(3.6, 51, 0.5);
+}
+
+/* small named sign for each station */
+function stationSign(text, x, z, rotY=0){
+  const g = new THREE.Group();
+  g.add(cyl(0.07,0.09,1.5, woodMat, 0, 0.75, 0, 6));
+  const tex = textCanvas(text, { w:512, h:128, fontSize:58 });
+  g.add(box(2.6, 0.7, 0.1, lamb(0xffffff, { map:tex }), 0, 1.6, 0));
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY;
+  scene.add(g);
+}
+
+/* ============================================================
+   THE BIG RED BARN  (with gambrel roof)
+============================================================ */
+{
+  const g = new THREE.Group();
+  const red = lamb(0xa83226), white = lamb(0xf5f0e6), roofM = lamb(0x6e4632);
+
+  // side walls
+  g.add(box(0.3, 5.5, 15, red, -6, 2.75, 0));
+  g.add(box(0.3, 5.5, 15, red,  6, 2.75, 0));
+
+  // gable end walls (pentagon profile)
+  const shape = new THREE.Shape();
+  shape.moveTo(-6,0); shape.lineTo(6,0); shape.lineTo(6,5.5);
+  shape.lineTo(3,8); shape.lineTo(0,9.5); shape.lineTo(-3,8); shape.lineTo(-6,5.5);
+  shape.closePath();
+  const gableGeo = new THREE.ExtrudeGeometry(shape, { depth:0.3, bevelEnabled:false });
+  for (const zz of [7.35, -7.65]){
+    const wall = new THREE.Mesh(gableGeo, red);
+    wall.position.set(0, 0, zz);
+    wall.castShadow = wall.receiveShadow = true;
+    g.add(wall);
+  }
+
+  // gambrel roof panels (lower steep + upper shallow, both sides)
+  const lowLen = Math.hypot(3, 2.5), lowAng = Math.atan2(2.5, 3);
+  const upLen  = Math.hypot(3, 1.5), upAng  = Math.atan2(1.5, 3);
+  function roofPanel(len, ang, cx, cy, side){
+    const p = box(len+0.3, 0.25, 16.6, roofM, cx*side, cy, 0);
+    p.rotation.z = -ang*side;
+    g.add(p);
+  }
+  roofPanel(lowLen, lowAng, 4.5, 6.75,  1);
+  roofPanel(lowLen, lowAng, 4.5, 6.75, -1);
+  roofPanel(upLen,  upAng,  1.5, 8.75,  1);
+  roofPanel(upLen,  upAng,  1.5, 8.75, -1);
+  g.add(box(0.7, 0.3, 16.7, roofM, 0, 9.6, 0));
+
+  // cupola
+  g.add(box(1.2, 1.1, 1.2, white, 0, 10.3, 0));
+  const cup = new THREE.Mesh(new THREE.ConeGeometry(1.05, 0.9, 4), roofM);
+  cup.position.set(0, 11.3, 0); cup.rotation.y = Math.PI/4; cup.castShadow = true;
+  g.add(cup);
+
+  // big barn door (front, +z side) with white X trim
+  g.add(box(3.6, 4.2, 0.18, lamb(0x5c3a28), 0, 2.1, 7.6));
+  g.add(box(3.8, 0.25, 0.2, white, 0, 4.25, 7.65));
+  g.add(box(3.8, 0.25, 0.2, white, 0, 0.15, 7.65));
+  for (const s of [1,-1]){
+    const cross = box(0.25, 5.4, 0.2, white, 0, 2.1, 7.66);
+    cross.rotation.z = s*0.7;
+    g.add(cross);
+  }
+  // hayloft window
+  g.add(box(1.3, 1.3, 0.2, lamb(0x3a2a1c), 0, 7.4, 7.6));
+  g.add(box(1.6, 0.18, 0.22, white, 0, 8.1, 7.62));
+
+  g.position.set(-18, 0, -2);
+  scene.add(g);
+  addObst(-18, -6, 6.4); addObst(-18, 2, 6.4);
+}
+
+/* ============================================================
+   FEED SILOS (x2)
+============================================================ */
+{
+  const silver = lamb(0xc4cdd4), domeM = lamb(0x9aa7b0);
+  function silo(x, z, h, r){
+    const g = new THREE.Group();
+    g.add(cyl(r, r, h, silver, 0, h/2, 0, 20));
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 10, 0, Math.PI*2, 0, Math.PI/2), domeM);
+    dome.position.y = h; dome.castShadow = true;
+    g.add(dome);
+    for (let i=1; i<5; i++) g.add(cyl(r+0.04, r+0.04, 0.12, domeM, 0, h*i/5, 0, 20, false));
+    g.add(box(0.5, h*0.9, 0.12, lamb(0x7f8a92), 0, h*0.45, r+0.02));
+    g.position.set(x,0,z);
+    scene.add(g);
+    addObst(x, z, r+0.4);
+  }
+  silo(-26, -13, 12, 2.1);
+  silo(-21.5, -15, 9.5, 1.7);
+  stationSign('FEED SILOS', -24.5, -7.5, 0.3);
+}
+
+/* ============================================================
+   MILKING PARLOR (open-front building w/ stalls & pipes)
+============================================================ */
+{
+  const g = new THREE.Group();
+  const wallM = lamb(0xe8e4da), pipeM = lamb(0xb7c2cc), steel = lamb(0x9fb4c4);
+
+  g.add(box(10, 0.3, 8, lamb(0xb9b2a4), 0, 0.15, 0));      // floor slab
+  g.add(box(10, 3.6, 0.3, wallM, 0, 1.8, -4));              // back wall
+  g.add(box(0.3, 3.6, 8, wallM, -5, 1.8, 0));               // side walls
+  g.add(box(0.3, 3.6, 8, wallM,  5, 1.8, 0));
+  g.add(box(10, 1.0, 0.3, wallM, 0, 3.3, 4));               // front lintel (open below)
+  const roof = box(10.8, 0.25, 9.2, lamb(0x77858f), 0, 4.0, 0);
+  roof.rotation.x = 0.06;
+  g.add(roof);
+
+  // raised platform + stall dividers
+  g.add(box(9, 0.5, 3, lamb(0xa8a092), 0, 0.55, -2.2));
+  for (let i=0;i<5;i++){
+    const px = -3.6 + i*1.8;
+    g.add(cyl(0.06,0.06,1.6, pipeM, px, 1.6, -1.0, 8));
+    const rail = box(0.1, 0.08, 2.4, pipeM, px, 2.3, -2.0);
+    g.add(rail);
+  }
+  g.add(box(8.8, 0.12, 0.12, pipeM, 0, 2.6, -3.6));         // milk pipeline along back
+
+  // milking cluster: jar + tubes
+  g.add(cyl(0.22, 0.26, 0.5, steel, -0.9, 1.05, -0.6, 10));
+  g.add(cyl(0.03, 0.03, 1.3, pipeM, -0.9, 1.8, -1.1, 6));
+
+  g.position.set(-6, 0, -1);
+  scene.add(g);
+  addObst(-6, -1, 5.6);
+  stationSign('MILKING PARLOR', -10.5, 4.5, 0.4);
+}
+
+/* two cows "being milked" in the parlor (built later once makeCow exists) */
+
+/* ============================================================
+   MILK HOUSE + BULK TANK
+============================================================ */
+{
+  const g = new THREE.Group();
+  const wallM = lamb(0xdfe5e8);
+  g.add(box(8, 0.25, 6, lamb(0xb9b2a4), 0, 0.12, 0));
+  g.add(box(8, 3.2, 0.3, wallM, 0, 1.6, -3));
+  g.add(box(0.3, 3.2, 6, wallM, -4, 1.6, 0));
+  g.add(box(0.3, 3.2, 6, wallM,  4, 1.6, 0));
+  g.add(box(8, 0.9, 0.3, wallM, 0, 3.0, 3));
+  g.add(box(8.8, 0.25, 7, lamb(0x8d9aa5), 0, 3.6, 0));
+
+  // tank: horizontal cylinder + sphere caps on legs
+  const steel = lamb(0xd9e2e8);
+  const tank = new THREE.Group();
+  const body = cyl(1.15, 1.15, 4, steel, 0, 0, 0, 20);
+  body.rotation.z = Math.PI/2;
+  tank.add(body);
+  tank.add(ball(1.15, steel,  2, 0, 0));
+  tank.add(ball(1.15, steel, -2, 0, 0));
+  tank.add(cyl(0.3, 0.3, 0.4, lamb(0xaab7c0), 0, 1.25, 0, 10));   // hatch
+  for (const lx of [-1.5, 1.5]) for (const lz of [-0.7, 0.7])
+    tank.add(cyl(0.09, 0.09, 1.1, lamb(0x8d9aa5), lx, -1.2, lz, 8));
+  tank.position.set(0, 1.85, -0.4);
+  g.add(tank);
+
+  g.position.set(2, 0, -13);
+  scene.add(g);
+  addObst(2, -13, 4.8);
+  stationSign('MILK HOUSE', 6.5, -8.5, -0.4);
+}
+
+/* ============================================================
+   TRACTOR
+============================================================ */
+{
+  const g = new THREE.Group();
+  const greenM = lamb(0x2f7d32), yellowM = lamb(0xf9c440), darkM = lamb(0x2b2b2b);
+
+  g.add(box(2.6, 1.1, 1.4, greenM, 0.2, 1.25, 0));                 // hood/body
+  g.add(box(1.3, 1.4, 1.3, greenM, -1.1, 1.9, 0));                 // cab base
+  g.add(box(1.5, 0.15, 1.5, greenM, -1.1, 2.75, 0));               // cab roof
+  for (const [cx,cz] of [[-0.5,0.6],[-0.5,-0.6],[-1.7,0.6],[-1.7,-0.6]])
+    g.add(cyl(0.06,0.06,1.1, darkM, cx, 2.2, cz, 6));              // cab pillars
+  g.add(box(0.5, 0.45, 0.5, darkM, -1.1, 1.45, 0));                // seat
+  g.add(cyl(0.06,0.06,0.8, darkM, 1.45, 2.1, 0.35, 6));            // exhaust
+  // big rear wheels
+  for (const s of [1,-1]){
+    const w = cyl(1.05, 1.05, 0.5, darkM, -1.2, 1.05, s*1.05, 18);
+    w.rotation.x = Math.PI/2; g.add(w);
+    const hub = cyl(0.55, 0.55, 0.52, yellowM, -1.2, 1.05, s*1.06, 14);
+    hub.rotation.x = Math.PI/2; g.add(hub);
+  }
+  // small front wheels
+  for (const s of [1,-1]){
+    const w = cyl(0.55, 0.55, 0.4, darkM, 1.3, 0.55, s*0.85, 16);
+    w.rotation.x = Math.PI/2; g.add(w);
+    const hub = cyl(0.28, 0.28, 0.42, yellowM, 1.3, 0.55, s*0.86, 12);
+    hub.rotation.x = Math.PI/2; g.add(hub);
+  }
+  g.position.set(13, 0, 7);
+  g.rotation.y = -0.6;
+  scene.add(g);
+  addObst(13, 7, 2.6);
+  stationSign('TRACTOR SHED', 9.5, 9.5, 0.5);
+}
+
+/* ============================================================
+   HAY BARN (open-sided) + BALES
+============================================================ */
+{
+  const g = new THREE.Group();
+  const strawM = lamb(0xd9b85c), roofM = lamb(0x8a4a32);
+  for (const [px,pz] of [[-4,-3],[4,-3],[-4,3],[4,3]])
+    g.add(cyl(0.18,0.2,4.2, woodMat, px, 2.1, pz, 8));
+  const roof = box(10, 0.25, 8, roofM, 0, 4.4, 0);
+  roof.rotation.z = 0.08;
+  g.add(roof);
+  // round bales
+  for (let i=0;i<3;i++){
+    const b = cyl(0.9, 0.9, 1.3, strawM, -2.5+i*2.5, 0.9, -1.4, 16);
+    b.rotation.x = Math.PI/2;
+    g.add(b);
+  }
+  const b2 = cyl(0.9, 0.9, 1.3, strawM, -1.2, 2.7, -1.4, 16);
+  b2.rotation.x = Math.PI/2; g.add(b2);
+  // square bale stack
+  for (let r=0;r<3;r++) for (let i=0;i<3-r;i++)
+    g.add(box(1.4, 0.75, 0.9, strawM, 1.4+i*1.5 - r*0.0 + r*0.75, 0.4+r*0.78, 1.8));
+  g.position.set(17, 0, -10);
+  scene.add(g);
+  addObst(17, -10, 5.2);
+  stationSign('HAY BARN', 13, -5, 0.3);
+}
+
+/* ============================================================
+   CALF HUTCHES
+============================================================ */
+{
+  const white = lamb(0xf2f0ea);
+  for (let i=0;i<3;i++){
+    const x = -14 - i*4, z = 23;
+    const g = new THREE.Group();
+    const dome = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.2, 16, 1, false, 0, Math.PI), white);
+    dome.rotation.z = Math.PI/2;
+    dome.rotation.y = Math.PI/2;
+    dome.position.y = 0.02;
+    dome.castShadow = true;
+    g.add(dome);
+    const back = new THREE.Mesh(new THREE.CircleGeometry(1.1, 16, 0, Math.PI), white);
+    back.position.set(0, 0.02, -1.1);
+    g.add(back);
+    g.position.set(x, 0, z);
+    scene.add(g);
+    addObst(x, z, 1.4);
+    // tiny pen fence in front of each hutch
+    fenceLine(x-1.2, z+1.2, x-1.2, z+3.4, true, 2, 0.7);
+    fenceLine(x+1.2, z+1.2, x+1.2, z+3.4, true, 2, 0.7);
+    fenceLine(x-1.2, z+3.4, x+1.2, z+3.4, true, 2, 0.7);
+  }
+  stationSign('CALF CORNER', -10.5, 20, -0.4);
+}
+
+/* ============================================================
+   SUSTAINABILITY STATION (digester dome + generator + compost)
+============================================================ */
+{
+  const g = new THREE.Group();
+  const domeM = lamb(0x2e5e3e);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(2.8, 18, 12, 0, Math.PI*2, 0, Math.PI/2), domeM);
+  dome.castShadow = true;
+  g.add(dome);
+  g.add(cyl(0.12, 0.12, 2.4, lamb(0x9aa7b0), 2.2, 1.2, 0, 8));     // pipe up
+  const pipeH = box(2.6, 0.22, 0.22, lamb(0x9aa7b0), 3.4, 2.3, 0); // pipe across
+  g.add(pipeH);
+  const gen = box(1.8, 1.4, 1.2, lamb(0xf9c440), 4.8, 0.7, 0);     // generator
+  g.add(gen);
+  const bolt = emojiSprite('⚡', 1.3);
+  bolt.position.set(4.8, 2.1, 0);
+  g.add(bolt);
+  // compost pile
+  const pile = new THREE.Mesh(new THREE.ConeGeometry(1.8, 1.5, 12), lamb(0x5d4630));
+  pile.position.set(-4.4, 0.75, 1); pile.castShadow = true;
+  g.add(pile);
+  g.position.set(-2, 0, -29);
+  scene.add(g);
+  addObst(-2, -29, 3.2); addObst(2.8, -29, 1.6); addObst(-6.4, -28, 2);
+  stationSign('GREEN ENERGY', -6, -23.5, 0.3);
+}
+
+/* ============================================================
+   MILK TANKER TRUCK
+============================================================ */
+{
+  const g = new THREE.Group();
+  const steel = lamb(0xe3eaee), darkM = lamb(0x2b2b2b);
+  // cab
+  g.add(box(2, 1.9, 2.2, lamb(0x1f6fb2), 0, 1.45, 3.4));
+  g.add(box(2.02, 0.8, 0.1, lamb(0xbfe3f5), 0, 1.95, 2.32));
+  // tank
+  const tk = cyl(1.25, 1.25, 5.6, steel, 0, 2.0, -0.6, 20);
+  tk.rotation.x = Math.PI/2;
+  g.add(tk);
+  g.add(ball(1.25, steel, 0, 2.0, 2.2));
+  g.add(ball(1.25, steel, 0, 2.0, -3.4));
+  g.add(box(2.6, 0.5, 6.4, darkM, 0, 0.75, -0.4));   // chassis
+  for (const zz of [2.9, -1.2, -2.6]) for (const s of [1,-1]){
+    const w = cyl(0.55, 0.55, 0.4, darkM, s*1.15, 0.55, zz, 14);
+    w.rotation.z = Math.PI/2;
+    g.add(w);
+  }
+  g.position.set(7, 0, 26);
+  g.rotation.y = 0.12;
+  scene.add(g);
+  addObst(7, 26, 2.4); addObst(7.4, 23, 2.2); addObst(6.6, 29, 2.2);
+  stationSign('MILK PICKUP', 11, 21, -0.5);
+}
+
+/* ============================================================
+   FARMHOUSE
+============================================================ */
+{
+  const g = new THREE.Group();
+  const wallM = lamb(0xf5ead2), roofM = lamb(0x7c5240);
+  g.add(box(8, 4, 7, wallM, 0, 2, 0));
+  // pitched roof
+  for (const s of [1,-1]){
+    const panel = box(4.9, 0.25, 8, roofM, s*2.05, 5.1, 0);
+    panel.rotation.z = -s*0.55;
+    g.add(panel);
+  }
+  g.add(box(0.4, 1.6, 0.4, lamb(0xa8552f), 2.6, 6.2, -2));   // chimney
+  g.add(box(1.2, 2.2, 0.15, lamb(0x59442e), 0, 1.1, 3.55));  // door
+  for (const wx of [-2.4, 2.4])
+    g.add(box(1.2, 1.2, 0.15, lamb(0x9fd2e8), wx, 2.3, 3.55)); // windows
+  // porch
+  g.add(box(8.6, 0.25, 2, lamb(0xc9b288), 0, 0.3, 4.6));
+  for (const px of [-3.9, 3.9]) g.add(cyl(0.12, 0.12, 2.2, wallM, px, 1.4, 5.4, 8));
+  g.add(box(8.8, 0.2, 2.4, roofM, 0, 2.7, 4.7));
+  g.position.set(-30, 0, 13);
+  g.rotation.y = 0.5;
+  scene.add(g);
+  addObst(-30, 13, 5.4); addObst(-27, 16, 3);
+  stationSign('FARM OFFICE', -24, 18.5, 0.6);
+}
+
+/* ============================================================
+   PASTURE EXTRAS: trough + windmill
+============================================================ */
+{
+  // water trough
+  const g = new THREE.Group();
+  g.add(box(3, 0.7, 1.2, lamb(0x8d9aa5), 0, 0.35, 0));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 0.95), lamb(0x4aa3d8));
+  water.rotation.x = -Math.PI/2;
+  water.position.y = 0.62;
+  g.add(water);
+  g.position.set(31, 0, 3);
+  scene.add(g);
+  addObst(31, 3, 1.9);
+}
+let windRotor;
+{
+  const g = new THREE.Group();
+  const steel = lamb(0xb7c2cc);
+  for (const [sx,sz] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
+    const leg = cyl(0.08, 0.1, 9.2, steel, sx*0.9, 4.6, sz*0.9, 6);
+    leg.rotation.x = sz*0.085; leg.rotation.z = -sx*0.085;
+    g.add(leg);
+  }
+  g.add(box(0.9, 0.5, 0.9, steel, 0, 9.2, 0));
+  windRotor = new THREE.Group();
+  for (let i=0;i<8;i++){
+    const blade = box(0.12, 1.7, 0.04, lamb(0xdde6ea), 0, 1.0, 0);
+    const holder = new THREE.Group();
+    holder.rotation.z = i*Math.PI/4;
+    blade.rotation.y = 0.5;
+    holder.add(blade);
+    windRotor.add(holder);
+  }
+  windRotor.position.set(0, 9.6, 0.7);
+  g.add(windRotor);
+  const fin = box(0.06, 0.9, 1.4, lamb(0xdde6ea), 0, 9.6, -1.4);
+  g.add(fin);
+  g.position.set(40, 0, -20);
+  scene.add(g);
+  addObst(40, -20, 1.5);
+}
+
+/* ============================================================
+   COWS, CALVES & CHICKENS
+============================================================ */
+const cows = [];
+function makeCow(scale=1, spotted=true){
+  const g = new THREE.Group();
+  const hide = new THREE.MeshLambertMaterial({ map: cowTexture(spotted) });
+  const darkM = lamb(0x2b2420), pinkM = lamb(0xe8a8a8);
+
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.62, 1.5, 4, 10), hide);
+  body.rotation.z = Math.PI/2;
+  body.position.y = 1.25;
+  body.castShadow = true;
+  g.add(body);
+
+  const head = new THREE.Group();
+  head.position.set(1.25, 1.65, 0);
+  const skull = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.62, 0.55), hide);
+  skull.castShadow = true;
+  head.add(skull);
+  head.add(box(0.34, 0.3, 0.42, pinkM, 0.4, -0.14, 0));           // snout
+  for (const s of [1,-1]){
+    head.add(ball(0.06, darkM, 0.26, 0.14, s*0.2, false));        // eyes
+    const ear = box(0.1, 0.3, 0.16, hide.clone ? new THREE.Mesh().material||hide : hide, 0, 0.18, s*0.36);
+    ear.material = hide;
+    ear.rotation.x = s*0.6;
+    head.add(ear);
+  }
+  g.add(head);
+
+  for (const [lx,lz] of [[0.75,0.32],[0.75,-0.32],[-0.75,0.32],[-0.75,-0.32]]){
+    const leg = cyl(0.11, 0.13, 0.95, darkM, lx, 0.48, lz, 8);
+    g.add(leg);
+  }
+  const udder = ball(0.34, pinkM, -0.55, 0.78, 0);
+  udder.scale.y = 0.8;
+  g.add(udder);
+
+  const tail = new THREE.Group();
+  tail.position.set(-1.35, 1.7, 0);
+  const tc = cyl(0.04, 0.05, 0.9, hide.color ? lamb(0xf0ede6) : lamb(0xf0ede6), 0, -0.42, 0, 6);
+  tail.add(tc);
+  tail.add(ball(0.09, darkM, 0, -0.9, 0, false));
+  g.add(tail);
+
+  g.scale.setScalar(scale);
+  g.userData = { type:'cow', head, tail, phase: Math.random()*9 };
+  return g;
+}
+
+/* pasture herd (wandering) */
+const PASTURE = { x0:24, x1:44, z0:-14, z1:14 };
+for (let i=0;i<6;i++){
+  const c = makeCow(1, i!==4);     // one Jersey in the herd
+  c.position.set(
+    PASTURE.x0 + Math.random()*(PASTURE.x1-PASTURE.x0),
+    0,
+    PASTURE.z0 + Math.random()*(PASTURE.z1-PASTURE.z0));
+  c.rotation.y = Math.random()*Math.PI*2;
+  c.userData.wander = { state:'idle', t: Math.random()*4, tx:c.position.x, tz:c.position.z };
+  scene.add(c);
+  cows.push(c);
+}
+/* parlor cows (stationary) */
+for (let i=0;i<2;i++){
+  const c = makeCow(0.95, true);
+  c.position.set(-7.8 + i*2.6, 0.5, -3.2);
+  c.rotation.y = Math.PI/2 - 0.15 + i*0.2;
+  scene.add(c);
+  cows.push(c);
+}
+/* calves */
+for (let i=0;i<2;i++){
+  const c = makeCow(0.5, i===0);
+  c.position.set(-14 - i*8, 0, 25.4);
+  c.rotation.y = Math.PI - 0.4 + i*0.7;
+  scene.add(c);
+  cows.push(c);
+}
+
+/* chickens */
+const chickens = [];
+for (let i=0;i<3;i++){
+  const g = new THREE.Group();
+  const white = lamb(0xfafafa);
+  g.add(ball(0.22, white, 0, 0.28, 0));
+  g.add(ball(0.13, white, 0.16, 0.5, 0));
+  g.add(new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 6), lamb(0xf9a825)));
+  g.children[2].position.set(0.3, 0.5, 0);
+  g.children[2].rotation.z = -Math.PI/2;
+  g.add(box(0.05, 0.08, 0.05, lamb(0xd84315), 0.14, 0.62, 0, false));
+  g.position.set(-12 + i*2.2, 0, 6 + (i%2)*1.8);
+  g.rotation.y = Math.random()*Math.PI*2;
+  g.userData = { type:'chicken', t: Math.random()*5 };
+  scene.add(g);
+  chickens.push(g);
+}
+
+/* ============================================================
+   BEACONS (station markers) & BOTTLES (collectibles)
+============================================================ */
+const clickables = [];
+const beacons = {};
+
+STATIONS.forEach((st, idx) => {
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.5, 28),
+    new THREE.MeshBasicMaterial({ color: st.color, transparent:true, opacity:0.85, side:THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI/2;
+  ring.position.y = 0.06;
+  g.add(ring);
+
+  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.62, 7, 12, 1, true),
+    new THREE.MeshBasicMaterial({ color: st.color, transparent:true, opacity:0.3, depthWrite:false, side:THREE.DoubleSide }));
+  pillar.position.y = 3.5;
+  g.add(pillar);
+
+  const icon = emojiSprite(st.emoji, 1.9);
+  icon.position.y = 3.4;
+  g.add(icon);
+
+  g.position.set(st.pos[0], 0, st.pos[2]);
+  g.userData = { type:'station', station: st, ring, pillar, icon, idx };
+  scene.add(g);
+  clickables.push(g);
+  beacons[st.id] = g;
+});
+
+const BOTTLE_POS = [
+  [8,34],[-12,28],[-26,6],[-30,-12],[-10,-21],[8,-22],[20,-20],[34,8],[40,-8],[14,14]
+];
+const bottles = [];
+BOTTLE_POS.forEach(([x,z]) => {
+  const g = new THREE.Group();
+  const white = lamb(0xffffff);
+  g.add(cyl(0.2, 0.24, 0.55, white, 0, 0.28, 0, 10));
+  g.add(cyl(0.1, 0.16, 0.18, white, 0, 0.62, 0, 10));
+  g.add(cyl(0.11, 0.11, 0.08, lamb(0x1976d2), 0, 0.74, 0, 10));
+  const glowRing = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 20),
+    new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.5, side:THREE.DoubleSide }));
+  glowRing.rotation.x = -Math.PI/2;
+  glowRing.position.y = 0.04;
+  g.add(glowRing);
+  g.position.set(x, 0.45, z);
+  g.userData = { type:'bottle', collected:false, baseY:0.45 };
+  scene.add(g);
+  clickables.push(g);
+  bottles.push(g);
+});
+
+cows.forEach(c => clickables.push(c));
+chickens.forEach(c => clickables.push(c));
+
+/* ============================================================
+   AUDIO (tiny synthesized sounds — no assets)
+============================================================ */
+let actx = null;
+function initAudio(){
+  if (!actx){
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+function tone(freq, dur, type='sine', vol=0.18, slideTo=null, when=0){
+  if (!actx) return;
+  const t0 = actx.currentTime + when;
+  const o = actx.createOscillator(), gn = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  if (slideTo) o.frequency.linearRampToValueAtTime(slideTo, t0+dur);
+  gn.gain.setValueAtTime(vol, t0);
+  gn.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  o.connect(gn).connect(actx.destination);
+  o.start(t0); o.stop(t0+dur+0.05);
+}
+const sfx = {
+  click(){ tone(600, 0.07, 'square', 0.08, 800); },
+  pop(){ tone(320, 0.1, 'sine', 0.2, 900); tone(1200, 0.08, 'sine', 0.1, 1500, 0.05); },
+  ding(){ tone(660, 0.12, 'sine', 0.2); tone(880, 0.25, 'sine', 0.2, null, 0.1); },
+  buzz(){ tone(160, 0.2, 'sawtooth', 0.12, 120); },
+  moo(){
+    if (!actx) return;
+    const t0 = actx.currentTime;
+    const o = actx.createOscillator(), o2 = actx.createOscillator();
+    const gn = actx.createGain(), f = actx.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = 420;
+    o.type = 'sawtooth'; o2.type = 'sawtooth';
+    o.frequency.setValueAtTime(196, t0);
+    o.frequency.linearRampToValueAtTime(110, t0+0.45);
+    o.frequency.linearRampToValueAtTime(130, t0+0.7);
+    o2.frequency.setValueAtTime(98, t0);
+    o2.frequency.linearRampToValueAtTime(55, t0+0.6);
+    gn.gain.setValueAtTime(0.0001, t0);
+    gn.gain.exponentialRampToValueAtTime(0.3, t0+0.08);
+    gn.gain.exponentialRampToValueAtTime(0.001, t0+0.75);
+    o.connect(f); o2.connect(f); f.connect(gn).connect(actx.destination);
+    o.start(t0); o2.start(t0); o.stop(t0+0.8); o2.stop(t0+0.8);
+  },
+  cluck(){ tone(900, 0.06, 'square', 0.1, 500); tone(700, 0.06, 'square', 0.08, 400, 0.09); },
+  fanfare(){ [523, 659, 784, 1047].forEach((f,i) => tone(f, 0.25, 'triangle', 0.18, null, i*0.13)); }
+};
+
+/* ============================================================
+   UI
+============================================================ */
+const $ = id => document.getElementById(id);
+const hintEl = $('hint'), panelEl = $('panel');
+
+const badgeEls = {};
+STATIONS.forEach(st => {
+  const b = document.createElement('span');
+  b.className = 'badge'; b.textContent = st.emoji; b.title = st.name;
+  $('badges').appendChild(b);
+  badgeEls[st.id] = b;
+});
+
+function toast(txt){
+  const d = document.createElement('div');
+  d.className = 'toast'; d.textContent = txt;
+  $('toasts').appendChild(d);
+  setTimeout(() => d.remove(), 1700);
+}
+function setScore(n){ state.score = n; $('score').textContent = n; }
+
+function openStation(st){
+  state.uiOpen = true;
+  keys.clear();
+  sfx.click();
+  $('panelTitle').innerHTML = `${st.emoji} ${st.name}`;
+  $('panelTag').textContent = st.tagline;
+  const done = !!state.done[st.id];
+  $('panelBody').innerHTML = `
+    <ul>${st.facts.map(f => `<li>${f}</li>`).join('')}</ul>
+    <div class="btnrow">
+      <button class="btn btn-ghost" id="pClose">Close</button>
+      ${done
+        ? `<span class="btn btn-ghost" style="cursor:default;">✅ Badge earned!</span>`
+        : `<button class="btn btn-blue" id="pQuiz">Take the Quiz! 🧠 (+50)</button>`}
+    </div>`;
+  panelEl.classList.remove('hidden');
+  $('pClose').onclick = closePanel;
+  const qb = $('pQuiz');
+  if (qb) qb.onclick = () => showQuiz(st);
+}
+
+function showQuiz(st){
+  sfx.click();
+  let attempts = 0;
+  $('panelBody').innerHTML = `
+    <div class="quiz-q">🧠 ${st.quiz.q}</div>
+    <div id="quizOpts"></div>
+    <div class="quiz-feedback" id="quizFb"></div>
+    <div class="btnrow"><button class="btn btn-ghost" id="pClose">Close</button></div>`;
+  $('pClose').onclick = closePanel;
+  st.quiz.a.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'quiz-opt'; b.textContent = opt;
+    b.onclick = () => {
+      if (state.done[st.id]) return;
+      if (i === st.quiz.correct){
+        b.classList.add('right');
+        const pts = attempts === 0 ? 50 : 20;
+        if (attempts === 0) state.firstTry++;
+        completeStation(st, pts);
+        $('quizFb').innerHTML = `🎉 Correct! <b>+${pts} Milk Points</b> — badge earned: ${st.emoji}`;
+        $('quizFb').style.color = '#2e7d32';
+        document.querySelectorAll('.quiz-opt').forEach(o => o.disabled = true);
+        setTimeout(closePanel, 1900);
+      } else {
+        attempts++;
+        b.classList.add('wrong');
+        b.disabled = true;
+        sfx.buzz();
+        $('quizFb').textContent = 'Not quite — try again! (+20 if you get it now)';
+        $('quizFb').style.color = '#c62828';
+      }
+    };
+    $('quizOpts').appendChild(b);
+  });
+}
+
+function completeStation(st, pts){
+  state.done[st.id] = true;
+  state.visited++;
+  setScore(state.score + pts);
+  $('visited').textContent = state.visited;
+  badgeEls[st.id].classList.add('earned');
+  sfx.ding();
+  toast(`+${pts} ⭐  ${st.emoji} ${st.name} badge!`);
+  const b = beacons[st.id];
+  b.userData.pillar.visible = false;
+  b.userData.ring.material.color.set(0x9e9e9e);
+  b.userData.ring.material.opacity = 0.35;
+  if (state.visited === STATIONS.length && !state.certShown){
+    state.certShown = true;
+    setTimeout(showCert, 1600);
+  }
+}
+
+function closePanel(){
+  panelEl.classList.add('hidden');
+  $('checklist').classList.add('hidden');
+  state.uiOpen = false;
+}
+
+function showChecklist(){
+  state.uiOpen = true;
+  keys.clear();
+  sfx.click();
+  $('checkItems').innerHTML = STATIONS.map(st => `
+    <div class="check-item ${state.done[st.id] ? 'done' : ''}">
+      <span class="st">${state.done[st.id] ? '✅' : '⭕'}</span>
+      <span>${st.emoji} ${st.name}</span>
+    </div>`).join('');
+  $('checklist').classList.remove('hidden');
+}
+$('checklistBtn').onclick = showChecklist;
+$('checklistClose').onclick = closePanel;
+
+function showCert(){
+  state.uiOpen = true;
+  keys.clear();
+  sfx.fanfare();
+  const s = state.score;
+  $('certScore').textContent = s;
+  $('certFirst').textContent = `${state.firstTry}/${STATIONS.length}`;
+  $('certBottles').textContent = `${state.bottles}/${bottles.length}`;
+  $('certRank').textContent =
+    s >= 550 ? '🏆 Master Dairy Farmer' :
+    s >= 420 ? '🐄 Herd Hero' :
+    s >= 280 ? '🌾 Barn Buddy' : '🍼 Curious Calf';
+  $('cert').classList.remove('hidden');
+}
+$('certClose').onclick = () => { $('cert').classList.add('hidden'); state.uiOpen = false; };
+$('certReplay').onclick = () => location.reload();
+
+$('stationTotal').textContent = STATIONS.length;
+$('bottleTotal').textContent = BOTTLE_POS.length;
+
+$('startBtn').onclick = () => {
+  initAudio();
+  sfx.click();
+  $('intro').classList.add('hidden');
+  state.started = true;
+  if ('ontouchstart' in window) $('joy').classList.remove('hidden');
+};
+
+/* ============================================================
+   CONTROLS — keyboard, mouse-drag look, touch joystick
+============================================================ */
+const keys = new Set();
+addEventListener('keydown', e => {
+  if (state.uiOpen){
+    if (e.code === 'Escape') closePanel();
+    return;
+  }
+  keys.add(e.code);
+  if (e.code === 'KeyE') interactNearest();
+});
+addEventListener('keyup', e => keys.delete(e.code));
+
+const joyVec = { x:0, y:0 };
+let lookId = null, joyId = null;
+let downX = 0, downY = 0, downT = 0, lastX = 0, lastY = 0, movedFar = false;
+
+const joyEl = $('joy'), knobEl = $('joyKnob');
+joyEl.addEventListener('pointerdown', e => {
+  joyId = e.pointerId;
+  joyEl.setPointerCapture(e.pointerId);
+  updateJoy(e);
+});
+joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) updateJoy(e); });
+function endJoy(e){
+  if (e.pointerId === joyId){
+    joyId = null; joyVec.x = 0; joyVec.y = 0;
+    knobEl.style.left = '50%'; knobEl.style.top = '50%';
+  }
+}
+joyEl.addEventListener('pointerup', endJoy);
+joyEl.addEventListener('pointercancel', endJoy);
+function updateJoy(e){
+  const r = joyEl.getBoundingClientRect();
+  let dx = (e.clientX - (r.left + r.width/2)) / (r.width/2);
+  let dy = (e.clientY - (r.top + r.height/2)) / (r.height/2);
+  const m = Math.hypot(dx, dy);
+  if (m > 1){ dx /= m; dy /= m; }
+  joyVec.x = dx; joyVec.y = dy;
+  knobEl.style.left = `${50 + dx*34}%`;
+  knobEl.style.top = `${50 + dy*34}%`;
+}
+
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => {
+  if (state.uiOpen) return;
+  lookId = e.pointerId;
+  downX = lastX = e.clientX; downY = lastY = e.clientY;
+  downT = performance.now(); movedFar = false;
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (e.pointerId !== lookId || state.uiOpen) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  if (Math.hypot(e.clientX - downX, e.clientY - downY) > 7) movedFar = true;
+  player.yaw -= dx * 0.0045;
+  player.pitch = Math.max(-1.25, Math.min(1.25, player.pitch - dy * 0.0045));
+});
+cv.addEventListener('pointerup', e => {
+  if (e.pointerId !== lookId) return;
+  lookId = null;
+  if (!state.uiOpen && !movedFar && performance.now() - downT < 450)
+    tryInteract(e.clientX, e.clientY);
+});
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ============================================================
+   INTERACTION
+============================================================ */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+
+function resolveTarget(obj){
+  let o = obj;
+  while (o && !(o.userData && o.userData.type)) o = o.parent;
+  return o;
+}
+
+function tryInteract(cx, cy){
+  if (!state.started) return;
+  const r = cv.getBoundingClientRect();
+  ndc.x = ((cx - r.left) / r.width) * 2 - 1;
+  ndc.y = -(((cy - r.top) / r.height) * 2 - 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(clickables, true);
+  for (const h of hits){
+    const o = resolveTarget(h.object);
+    if (!o) continue;
+    const ud = o.userData;
+    if (ud.type === 'station'){
+      const d = Math.hypot(o.position.x - player.x, o.position.z - player.z);
+      if (d < 11) openStation(ud.station);
+      else toast('🚶 Walk a little closer!');
+      return;
+    }
+    if (ud.type === 'bottle' && !ud.collected && h.distance < 16){ collectBottle(o); return; }
+    if (ud.type === 'cow' && h.distance < 30){ sfx.moo(); return; }
+    if (ud.type === 'chicken' && h.distance < 22){ sfx.cluck(); return; }
+  }
+}
+
+function interactNearest(){
+  let best = null, bd = 9;
+  for (const st of STATIONS){
+    if (state.done[st.id]) continue;
+    const d = Math.hypot(st.pos[0] - player.x, st.pos[2] - player.z);
+    if (d < bd){ bd = d; best = st; }
+  }
+  if (!best){
+    for (const st of STATIONS){
+      const d = Math.hypot(st.pos[0] - player.x, st.pos[2] - player.z);
+      if (d < bd){ bd = d; best = st; }
+    }
+  }
+  if (best) openStation(best);
+}
+
+function collectBottle(b){
+  b.userData.collected = true;
+  b.visible = false;
+  state.bottles++;
+  $('bottleCount').textContent = state.bottles;
+  setScore(state.score + 10);
+  sfx.pop();
+  toast('+10 🥛 Milk bottle!');
+}
+
+/* ============================================================
+   MOVEMENT & COLLISION
+============================================================ */
+function updatePlayer(dt){
+  let fx = 0, fz = 0;
+  if (keys.has('KeyW') || keys.has('ArrowUp')) fz -= 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) fz += 1;
+  if (keys.has('KeyA') || keys.has('ArrowLeft')) fx -= 1;
+  if (keys.has('KeyD') || keys.has('ArrowRight')) fx += 1;
+  fx += joyVec.x; fz += joyVec.y;
+  const m = Math.hypot(fx, fz);
+  if (m > 1){ fx /= m; fz /= m; }
+
+  const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? 11 : 6.5;
+  const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+  const vx = (fx * cos - fz * sin) * speed;
+  const vz = (fx * -sin - fz * cos) * speed * -1;
+
+  player.x += vx * dt;
+  player.z += vz * dt;
+
+  // circle obstacles (static + cows)
+  const R = 0.55;
+  function pushCircle(ox, oz, or){
+    const dx = player.x - ox, dz = player.z - oz;
+    const rr = or + R, d2 = dx*dx + dz*dz;
+    if (d2 < rr*rr && d2 > 0.0001){
+      const d = Math.sqrt(d2), p = (rr - d) / d;
+      player.x += dx * p; player.z += dz * p;
+    }
+  }
+  for (const o of OBST) pushCircle(o.x, o.z, o.r);
+  for (const c of cows) if (c.userData.wander) pushCircle(c.position.x, c.position.z, 1.1);
+
+  // fence segments
+  for (const s of SEGS){
+    const abx = s.bx - s.ax, abz = s.bz - s.az;
+    const t = Math.max(0, Math.min(1,
+      ((player.x - s.ax) * abx + (player.z - s.az) * abz) / (abx*abx + abz*abz)));
+    const cx = s.ax + abx*t, cz = s.az + abz*t;
+    const dx = player.x - cx, dz = player.z - cz;
+    const d2 = dx*dx + dz*dz, rr = R + 0.15;
+    if (d2 < rr*rr && d2 > 0.0001){
+      const d = Math.sqrt(d2), p = (rr - d) / d;
+      player.x += dx * p; player.z += dz * p;
+    }
+  }
+
+  // world bounds
+  player.x = Math.max(-54, Math.min(54, player.x));
+  player.z = Math.max(-54, Math.min(54, player.z));
+
+  // head bob
+  const moving = m > 0.1;
+  player.bob += dt * (moving ? speed * 1.4 : 0);
+  const bobY = moving ? Math.sin(player.bob) * 0.05 : 0;
+
+  camera.position.set(player.x, player.eye + bobY, player.z);
+  camera.rotation.y = player.yaw;
+  camera.rotation.x = player.pitch;
+}
+camera.position.set(player.x, player.eye, player.z);
+camera.rotation.y = player.yaw;
+
+/* ============================================================
+   AMBIENT TICKS — hints, proximity, animations
+============================================================ */
+let tipIdx = 0, lastTipSwap = 0;
+function updateHint(t){
+  if (state.uiOpen) return;
+  let near = null, nd = 8;
+  for (const st of STATIONS){
+    const d = Math.hypot(st.pos[0] - player.x, st.pos[2] - player.z);
+    if (d < nd){ nd = d; near = st; }
+  }
+  if (near && !state.done[near.id]){
+    hintEl.classList.add('action');
+    hintEl.innerHTML = `👉 Press <b>E</b> (or tap the beam) — <b>${near.emoji} ${near.name}</b>`;
+  } else if (near && state.done[near.id]){
+    hintEl.classList.add('action');
+    hintEl.innerHTML = `✅ ${near.emoji} ${near.name} — badge earned! Click the beam to re-read the facts.`;
+  } else {
+    hintEl.classList.remove('action');
+    if (t - lastTipSwap > 9){
+      lastTipSwap = t;
+      tipIdx = (tipIdx + 1) % TIPS.length;
+    }
+    hintEl.textContent = TIPS[tipIdx];
+  }
+}
+
+function updateCows(dt, t){
+  for (const c of cows){
+    const ud = c.userData;
+    const tt = t + ud.phase;
+    ud.head.rotation.x = Math.sin(tt * 0.7) * 0.18 + 0.08;
+    ud.tail.rotation.x = Math.sin(tt * 2.1) * 0.35;
+    if (!ud.wander) continue;
+    const w = ud.wander;
+    w.t -= dt;
+    if (w.state === 'idle' && w.t <= 0){
+      w.state = 'walk';
+      w.tx = PASTURE.x0 + 1.5 + Math.random() * (PASTURE.x1 - PASTURE.x0 - 3);
+      w.tz = PASTURE.z0 + 1.5 + Math.random() * (PASTURE.z1 - PASTURE.z0 - 3);
+      w.t = 20;
+    } else if (w.state === 'walk'){
+      const dx = w.tx - c.position.x, dz = w.tz - c.position.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 0.4 || w.t <= 0){
+        w.state = 'idle';
+        w.t = 2 + Math.random() * 6;
+      } else {
+        const sp = 0.8;
+        c.position.x += (dx / d) * sp * dt;
+        c.position.z += (dz / d) * sp * dt;
+        const targetYaw = Math.atan2(dx, dz);
+        let dy = targetYaw - c.rotation.y;
+        while (dy > Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        c.rotation.y += dy * Math.min(1, dt * 3);
+        c.position.y = Math.abs(Math.sin(tt * 6)) * 0.04;
+      }
+    }
+  }
+  for (const ch of chickens){
+    const tt = t + ch.userData.t;
+    ch.rotation.x = Math.max(0, Math.sin(tt * 3)) * 0.5;   // peck
+  }
+}
+
+function updateWorld(dt, t){
+  for (const id in beacons){
+    const b = beacons[id];
+    const ud = b.userData;
+    ud.icon.position.y = 3.4 + Math.sin(t * 2 + ud.idx) * 0.25;
+    if (ud.pillar.visible){
+      const s = 1 + Math.sin(t * 3 + ud.idx) * 0.12;
+      ud.ring.scale.setScalar(s);
+      ud.pillar.material.opacity = 0.22 + Math.sin(t * 3 + ud.idx) * 0.1;
+    }
+  }
+  for (const b of bottles){
+    if (b.userData.collected) continue;
+    b.position.y = b.userData.baseY + Math.sin(t * 2.5 + b.position.x) * 0.12;
+    b.rotation.y += dt * 1.5;
+    // walk-over pickup
+    if (Math.hypot(b.position.x - player.x, b.position.z - player.z) < 1.3) collectBottle(b);
+  }
+  for (const cl of clouds){
+    cl.position.x += dt * 0.7;
+    if (cl.position.x > 130) cl.position.x = -130;
+  }
+  if (windRotor) windRotor.rotation.z += dt * 2.2;
+}
+
+/* ============================================================
+   MAIN LOOP
+============================================================ */
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+  if (state.started && !state.uiOpen) updatePlayer(dt);
+  updateCows(dt, t);
+  updateWorld(dt, t);
+  if (state.started) updateHint(t);
+  renderer.render(scene, camera);
+});
+hintEl.textContent = 'Welcome to Sunny Meadows! 🌻';
+
+/* debug hooks for automated testing */
+window.__game = { state, openStation, STATIONS, player, collectBottle, bottles };
+</script>
+</body>
+</html>
