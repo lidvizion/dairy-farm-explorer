@@ -1,0 +1,33 @@
+assets/real-california-milk-logo.svg
+  s_f0578549641260::t_3ca3f1c9f9b738 1-14
+assets/real-california-milk-seal.svg
+  s_f0578549641260::t_43def44de9b740 1-21
+README.md
+  s_42e72294d874f1::t_18848aa796633a 1-187
+index.html
+  s_42e72294d874f1::t_b01fce68da9d1b 1-2486
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "e47f183d8c18432ed1cdfcb7d69dab767e1cfd4b",
+  "prompts": {},
+  "sessions": {
+    "s_42e72294d874f1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b9ca7d32-b67e-4309-9340-ee9f7c0f86e8",
+        "model": "unknown"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    },
+    "s_f0578549641260": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8568a534-cc5c-44f8-a25b-610b71dc5f6a",
+        "model": "default"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
