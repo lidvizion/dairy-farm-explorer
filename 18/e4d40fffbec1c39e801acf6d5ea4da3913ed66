@@ -1,0 +1,21 @@
+.gitignore
+  s_a280954ea4f03d::t_2e6a0acddee11a 1-29
+.env.example
+  s_a280954ea4f03d::t_5a59455c2a3e0e 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "18e4d40fffbec1c39e801acf6d5ea4da3913ed66",
+  "prompts": {},
+  "sessions": {
+    "s_a280954ea4f03d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c69aeee6-cfde-4ffd-9ede-19545c994ece",
+        "model": "claude-haiku-4-5-20251001"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
