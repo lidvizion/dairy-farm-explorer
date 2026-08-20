@@ -365,8 +365,7 @@ body.touch-controls-active #caption{bottom:356px;}
 <div id="title" class="overlay">
   <div class="card">
     <div class="card-body">
-      <!-- CLIENT: replace assets/real-california-milk-logo.svg with approved logo -->
-      <img class="logo" id="titleLogo" src="assets/real-california-milk-logo.svg" alt="Real California Milk (logo placeholder)">
+      <img class="logo" id="titleLogo" src="assets/real-california-milk-logo-official.webp" alt="Real California Milk">
       <h1>THE FARM-TO-FLAVOR JOURNEY</h1>
       <p class="subtitle">Follow California dairy from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.</p>
       <div class="settings-row" role="group" aria-label="Graphics quality">
@@ -505,7 +504,7 @@ const GAME_STATES = {
 
 // CLIENT: drop approved files at these paths (same names) to replace placeholders.
 const BRAND_ASSETS = {
-  logo: 'assets/real-california-milk-logo.svg',
+  logo: 'assets/real-california-milk-logo-official.webp',
   seal: 'assets/real-california-milk-seal.svg'
 };
 
@@ -2420,7 +2419,7 @@ function renderFallback(){
   root.innerHTML='';
   const wrap=el('div','fb-wrap');
   const head=el('div','fb-head');
-  head.innerHTML=`<img src="${BRAND_ASSETS.logo}" alt="Real California Milk (logo placeholder)">
+  head.innerHTML=`<img src="${BRAND_ASSETS.logo}" alt="Real California Milk">
     <h1>The Farm-to-Flavor Journey</h1>
     <p>${COPY.title.split(':')[1]||''}</p>
     <p style="font-size:12.5px;color:#789;">Text-friendly version — the same lessons, quizzes, and certificate, without 3D.</p>`;
