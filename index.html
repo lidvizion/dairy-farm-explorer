@@ -148,6 +148,8 @@ body.touch-controls-active #caption{bottom:356px;}
 .quiz-opt.wrong{background:#ffcdd2;border-color:#c62828;animation:shake .4s;}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .quiz-feedback{font-weight:800;font-size:15.5px;margin-top:12px;min-height:22px;}
+.quiz-source{font-size:13px;font-weight:600;color:#678;margin-top:6px;line-height:1.4;}
+.quiz-source a{color:var(--green-dk);text-decoration:underline;}
 .progress-dots{display:flex;gap:6px;justify-content:center;margin:2px 0 12px;}
 .progress-dots span{width:10px;height:10px;border-radius:50%;background:#d8d2c0;}
 .progress-dots span.on{background:var(--sun);}
@@ -610,11 +612,14 @@ const LOCATIONS = [
     ],
     quiz:[
       { q:'Which of these does a dairy cow need to stay comfortable?',
-        a:['A television','Cooling or shade','Loud music'], correct:1, from:'cowcare' },
-      { q:'Myth or fact: Dairy milk has more natural protein than plant-based alternatives like soy or almond milk?',
-        a:['Myth — they all have the same protein','Fact — real dairy milk naturally contains more protein','Both have exactly 30g of protein per serving'], correct:1, from:'milking' },
-      { q:'Why do plant-based milks like almond, oat, and soy need to be fortified with calcium and vitamins?',
-        a:['Because plants are unhealthy','Because they naturally lack the nutrients that come in real dairy milk','Because they taste better with added nutrients'], correct:1, from:'resource' }
+        a:['A television','Cooling or shade','Loud music'], correct:1, from:'cowcare',
+        source:{label:'University of Minnesota Extension — Why Cow Comfort Matters', url:'https://extension.umn.edu/dairy-handling-and-best-practices/why-cow-comfort-matters'} },
+      { q:'Myth or fact: All plant-based milks have less protein than dairy milk?',
+        a:['Myth — soy milk has about as much protein as dairy milk; almond and rice milk have much less','Fact — every plant-based milk has less protein than dairy milk','Myth — they all have exactly the same amount of protein'], correct:0, from:'milking',
+        source:{label:'FDA — Milk and Plant-Based Milk Alternatives: Know the Nutrient Difference', url:'https://www.fda.gov/consumers/consumer-updates/milk-and-plant-based-milk-alternatives-know-nutrient-difference'} },
+      { q:'Why do plant-based milks like almond, oat, and soy usually need to be fortified with calcium and vitamin D?',
+        a:['Because plants are unhealthy','Because they don’t naturally contain as much of those nutrients as real dairy milk','Because they taste better with added nutrients'], correct:1, from:'resource',
+        source:{label:'FDA — Milk and Plant-Based Milk Alternatives: Know the Nutrient Difference', url:'https://www.fda.gov/consumers/consumer-updates/milk-and-plant-based-milk-alternatives-know-nutrient-difference'} }
     ],
     completeMsg:'The cooled milk is loaded into a refrigerated tanker, headed for a California processor.'
   },
@@ -686,12 +691,15 @@ const LOCATIONS = [
       }
     ],
     quiz:[
-      { q:'True or False: Real dairy milk is the only natural source of complete protein with all amino acids?',
-        a:['False — oat milk has just as much','True — dairy milk naturally contains all 9 essential amino acids','False — they all have identical profiles'], correct:1, from:'receiving' },
-      { q:'Myth or fact: Dairy cows are given hormones that harm human health?',
-        a:['Myth — any naturally occurring hormones in milk are broken down during digestion','Fact — dairy is full of dangerous hormones','Not sure — need more research'], correct:0, from:'products' },
-      { q:'Which plant-based milk requires the MOST water to produce compared to dairy milk?',
-        a:['Almond milk — it takes about 1,900 gallons of water per gallon produced','Oat milk — uses the least water','Soy milk — needs more water than both'], correct:0, from:'cheese' }
+      { q:'True or False: Real dairy milk is a complete protein, naturally containing all 9 essential amino acids?',
+        a:['False — dairy milk is missing several amino acids','True — dairy milk naturally contains all 9 essential amino acids (soy milk is one of the few plant milks that is also a complete protein)','False — only meat contains complete protein'], correct:1, from:'receiving',
+        source:{label:'American Academy of Family Physicians — Soy: A Complete Source of Protein', url:'https://www.aafp.org/pubs/afp/issues/2009/0101/p43.html'} },
+      { q:'Myth or fact: Hormones used on some dairy farms make milk unsafe for people to drink?',
+        a:['Myth — the FDA has found milk from treated cows safe, and hormone proteins are broken down during digestion like other proteins','Fact — dairy is full of dangerous hormones','Not sure — need more research'], correct:0, from:'products',
+        source:{label:'U.S. FDA — Bovine Somatotropin (bST)', url:'https://www.fda.gov/animal-veterinary/product-safety-information/bovine-somatotropin-bst'} },
+      { q:'Which uses more freshwater to produce, dairy milk or almond milk?',
+        a:['Dairy milk uses more water per liter than almond milk','Almond milk uses more water per liter than dairy milk','They use about the same amount of water'], correct:0, from:'cheese',
+        source:{label:'Our World in Data — Environmental Impact of Milks (Poore & Nemecek, 2018, Science)', url:'https://ourworldindata.org/environmental-impact-milks'} }
     ],
     completeMsg:'Packaged products are loaded into a refrigerated delivery truck, headed for market.'
   },
@@ -773,11 +781,14 @@ const LOCATIONS = [
     ],
     quiz:[
       { q:'Myth or fact: Lactose-free real dairy milk is made by adding chemicals?',
-        a:['Myth — lactose is simply broken down into simpler sugars using an enzyme','Fact — chemicals are added to remove lactose','Partially true — some chemicals are used'], correct:0, from:'grocery' },
+        a:['Myth — an enzyme called lactase simply breaks lactose down into two simpler, more digestible sugars','Fact — chemicals are added to remove lactose','Partially true — some chemicals are used'], correct:0, from:'grocery',
+        source:{label:'McGill University Office for Science and Society — How Do We Modify Dairy to Be Lactose-Free?', url:'https://www.mcgill.ca/oss/article/nutrition-you-asked/how-do-we-modify-dairy-be-lactose-free'} },
       { q:'Which is true about real dairy milk compared to plant-based alternatives?',
-        a:['Dairy milk provides natural calcium without fortification','Plant-based milks have more natural nutrients','Both are equally fortified'], correct:0, from:'seal' },
-      { q:'Myth or fact: A glass of real dairy milk has a similar carbon footprint to a glass of almond milk?',
-        a:['Myth — dairy has a higher footprint per serving','Fact — they have identical footprints','Myth — almond milk uses more water per serving'], correct:2, from:'foodservice' }
+        a:['Dairy milk naturally contains calcium; most plant-based milks need calcium added (fortified) to match it','Plant-based milks naturally contain more calcium than dairy','Both are equally fortified'], correct:0, from:'seal',
+        source:{label:'FDA — Milk and Plant-Based Milk Alternatives: Know the Nutrient Difference', url:'https://www.fda.gov/consumers/consumer-updates/milk-and-plant-based-milk-alternatives-know-nutrient-difference'} },
+      { q:'Myth or fact: A glass of real dairy milk has about the same carbon footprint as a glass of almond milk?',
+        a:['Myth — research shows dairy milk has a notably higher carbon footprint per liter than almond milk','Fact — they have identical footprints','Myth — almond milk has the higher footprint of the two'], correct:0, from:'foodservice',
+        source:{label:'Our World in Data — Environmental Impact of Milks (Poore & Nemecek, 2018, Science)', url:'https://ourworldindata.org/environmental-impact-milks'} }
     ],
     completeMsg:'You’ve followed California dairy all the way from farm to flavor!'
   }
@@ -1318,7 +1329,14 @@ function startQuiz(locId){
           fireConfetti();
           fb.style.color='var(--green-dk)'; fb.textContent=`Correct! +${pts} points`;
           [...opts.children].forEach(o=>o.disabled=true);
-          setTimeout(()=>{ idx++; if(idx<questions.length) renderQ(body); else finish(); },900);
+          if(q.source){
+            const src=el('div','quiz-source',`Source: <a href="${q.source.url}" target="_blank" rel="noopener">${q.source.label}</a>`);
+            body.appendChild(src);
+          }
+          const nextRow=el('div','btnrow');
+          const nextBtn=el('button','btn btn-primary', idx<questions.length-1 ? 'Next question' : 'See results');
+          nextBtn.onclick=()=>{ idx++; if(idx<questions.length) renderQ(body); else finish(); };
+          nextRow.appendChild(nextBtn); body.appendChild(nextRow);
         } else {
           attempts++; b.classList.add('wrong'); b.disabled=true; Audio.bad();
           Analytics.track('quiz_answered',{location:locId,question:idx,correct:false});
