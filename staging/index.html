@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#0b5e2a">
+<link rel="icon" type="image/webp" href="assets/real-california-milk-logo-official.webp">
 <title>Real California Milk: The Farm-to-Flavor Journey</title>
 <meta name="description" content="An interactive journey through the California dairy supply chain — from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.">
 <style>
@@ -554,7 +555,7 @@ const LOCATIONS = [
     stage:'Stage 1 · Dairy Farms / Producers',
     title:'WHERE MILK BEGINS',
     region:'Central Valley (e.g., Tulare County)',
-    intro:'Meet the cows, people, technology, and daily care behind California dairy. 99% of California dairy farms are family owned.',
+    intro:'Meet the cows, people, technology, and daily care behind California dairy.',
     // normalized map position (0..1: x east, y north)
     map:[0.48,0.40],
     color:0x2a9c53,
@@ -601,7 +602,7 @@ const LOCATIONS = [
       {
         id:'resource', title:'Farm Resource Cycle', icon:'♻️',
         photo:'assets/photos/farm-solar.jpg', photoCredit:'Solar panels on a real California dairy farm',
-        intro:'Many California dairy farms use technology to work efficiently. Water may be reused for more than one job. Manure can become nutrients for crops, bedding, compost, or renewable energy. Farms using solar can cut energy use by up to 90%. Sustainability practices vary by farm — not every farm uses every tool.',
+        intro:'Many California dairy farms use technology to work efficiently. Water may be reused for more than one job. Manure can become nutrients for crops, bedding, compost, or renewable energy. Sustainability practices vary by farm — not every farm uses every tool.',
         game:{
           type:'match',
           prompt:'Route each farm resource to a place it can go.',
@@ -624,10 +625,10 @@ const LOCATIONS = [
     quiz:[
       { q:'Which of these does a dairy cow need to stay comfortable?',
         a:['A television','Cooling or shade','Loud music'], correct:1, from:'cowcare' },
-      { q:'Myth or fact: Dairy milk has more natural protein than plant-based alternatives like soy or almond milk?',
-        a:['Myth — they all have the same protein','Fact — real dairy milk naturally contains more protein','Both have exactly 30g of protein per serving'], correct:1, from:'milking' },
-      { q:'Why do plant-based milks like almond, oat, and soy need to be fortified with calcium and vitamins?',
-        a:['Because plants are unhealthy','Because they naturally lack the nutrients that come in real dairy milk','Because they taste better with added nutrients'], correct:1, from:'resource' }
+      { q:'Why do dairy farms cool milk quickly after milking?',
+        a:['To make it taste sweeter','To keep it fresh and safe until it reaches the processor','To turn it into cheese faster'], correct:1, from:'milking' },
+      { q:'On a California dairy farm, manure can be turned into which of these?',
+        a:['Only trash for the landfill','Nutrients for crops, bedding, compost, or renewable energy','Nothing — it has no other use'], correct:1, from:'resource' }
     ],
     completeMsg:'The cooled milk is loaded into a refrigerated tanker, headed for a California processor.'
   },
@@ -664,7 +665,7 @@ const LOCATIONS = [
       },
       {
         id:'products', title:'Many Products, One Start', icon:'🧀',
-        photo:'assets/photos/cheese-artisan.jpg', photoCredit:'Nearly 46% of California milk becomes California cheese',
+        photo:'assets/photos/cheese-artisan.jpg', photoCredit:'Real California cheesemaking',
         intro:'California milk is the starting point for many dairy products. Different products follow different paths — they do not all go through the same process. Pick a product to see a simple, high-level path.',
         game:{
           type:'branch',
@@ -703,12 +704,12 @@ const LOCATIONS = [
       }
     ],
     quiz:[
-      { q:'True or False: Real dairy milk is the only natural source of complete protein with all amino acids?',
-        a:['False — oat milk has just as much','True — dairy milk naturally contains all 9 essential amino acids','False — they all have identical profiles'], correct:1, from:'receiving' },
-      { q:'Myth or fact: Dairy cows are given hormones that harm human health?',
-        a:['Myth — any naturally occurring hormones in milk are broken down during digestion','Fact — dairy is full of dangerous hormones','Not sure — need more research'], correct:0, from:'products' },
-      { q:'Which plant-based milk requires the MOST water to produce compared to dairy milk?',
-        a:['Almond milk — it takes about 1,900 gallons of water per gallon produced','Oat milk — uses the least water','Soy milk — needs more water than both'], correct:0, from:'cheese' }
+      { q:'What do processors check before approving an incoming milk shipment?',
+        a:["The driver's music preferences",'Temperature, cleanliness, and quality','The color of the tanker truck'], correct:1, from:'receiving' },
+      { q:'True or False: Every dairy product (cheese, butter, yogurt, ice cream) is made using the exact same process?',
+        a:['True — they are all identical','False — different products follow different paths from the same milk','True, but only for organic milk'], correct:1, from:'products' },
+      { q:'Where would a large case of shredded cheese destined for a restaurant kitchen typically be headed?',
+        a:['A household refrigerator','A foodservice / restaurant distributor','Directly back to a farm'], correct:1, from:'cheese' }
     ],
     completeMsg:'Packaged products are loaded into a refrigerated delivery truck, headed for market.'
   },
@@ -794,12 +795,12 @@ const LOCATIONS = [
       }
     ],
     quiz:[
-      { q:'Myth or fact: Lactose-free real dairy milk is made by adding chemicals?',
-        a:['Myth — lactose is simply broken down into simpler sugars using an enzyme','Fact — chemicals are added to remove lactose','Partially true — some chemicals are used'], correct:0, from:'grocery' },
-      { q:'Which is true about real dairy milk compared to plant-based alternatives?',
-        a:['Dairy milk provides natural calcium without fortification','Plant-based milks have more natural nutrients','Both are equally fortified'], correct:0, from:'seal' },
-      { q:'Myth or fact: A glass of real dairy milk has a similar carbon footprint to a glass of almond milk?',
-        a:['Myth — dairy has a higher footprint per serving','Fact — they have identical footprints','Myth — almond milk uses more water per serving'], correct:2, from:'foodservice' }
+      { q:'Where do shoppers usually find dairy products like milk, yogurt, and butter in a grocery store?',
+        a:['On a dry-goods shelf','In the refrigerated dairy case','Near the checkout candy'], correct:1, from:'grocery' },
+      { q:'What does the Real California Milk seal help shoppers do?',
+        a:['Find a coupon','Identify dairy products made with Real California milk','Get a discount at checkout'], correct:1, from:'seal' },
+      { q:'Why might a restaurant buy dairy in larger foodservice-format packages instead of small consumer packages?',
+        a:['Because restaurants use more product and it fits how they prepare food','Because foodservice packages are required by law','Because small packages are not allowed in restaurants'], correct:0, from:'foodservice' }
     ],
     completeMsg:'You’ve followed California dairy all the way from farm to flavor!'
   }
