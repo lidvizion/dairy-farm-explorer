@@ -139,6 +139,15 @@ body.touch-controls-active #caption{bottom:356px;}
   cursor:pointer;color:#5a5140;}
 .seg button.on{background:var(--green);color:#fff;}
 
+/* real-photo cards (lessons, quizzes, location cards) */
+.real-photo{position:relative;border-radius:14px;overflow:hidden;margin:0 0 12px;box-shadow:0 4px 14px rgba(0,0,0,.18);
+  background:#e8e2d0;}
+.real-photo img{display:block;width:100%;height:130px;object-fit:cover;}
+@media (min-height:700px){.real-photo img{height:180px;}}
+.real-photo .credit{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font-size:11.5px;font-weight:700;
+  color:#fff;background:linear-gradient(0deg,rgba(0,0,0,.65),rgba(0,0,0,0));text-shadow:0 1px 2px rgba(0,0,0,.5);}
+.real-photo .credit::before{content:'📷 ';}
+
 /* quiz */
 .quiz-q{font-size:17px;font-weight:800;margin:4px 0 14px;line-height:1.4;}
 .quiz-opt{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 16px;border-radius:12px;
@@ -356,8 +365,7 @@ body.touch-controls-active #caption{bottom:356px;}
 <div id="title" class="overlay">
   <div class="card">
     <div class="card-body">
-      <!-- CLIENT: replace assets/real-california-milk-logo.svg with approved logo -->
-      <img class="logo" id="titleLogo" src="assets/real-california-milk-logo.svg" alt="Real California Milk (logo placeholder)">
+      <img class="logo" id="titleLogo" src="assets/real-california-milk-logo-official.webp" alt="Real California Milk">
       <h1>THE FARM-TO-FLAVOR JOURNEY</h1>
       <p class="subtitle">Follow California dairy from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.</p>
       <div class="settings-row" role="group" aria-label="Graphics quality">
@@ -496,7 +504,7 @@ const GAME_STATES = {
 
 // CLIENT: drop approved files at these paths (same names) to replace placeholders.
 const BRAND_ASSETS = {
-  logo: 'assets/real-california-milk-logo.svg',
+  logo: 'assets/real-california-milk-logo-official.webp',
   seal: 'assets/real-california-milk-seal.svg'
 };
 
@@ -546,14 +554,17 @@ const LOCATIONS = [
     stage:'Stage 1 · Dairy Farms / Producers',
     title:'WHERE MILK BEGINS',
     region:'Central Valley (e.g., Tulare County)',
-    intro:'Meet the cows, people, technology, and daily care behind California dairy.',
+    intro:'Meet the cows, people, technology, and daily care behind California dairy. 99% of California dairy farms are family owned.',
     // normalized map position (0..1: x east, y north)
     map:[0.48,0.40],
     color:0x2a9c53,
     badge:BADGES.farm,
+    heroPhoto:'assets/photos/farm-family.webp',
+    photoCredit:'Real California dairy family',
     lessons:[
       {
         id:'cowcare', title:'Cow Care', icon:'🐄',
+        photo:'assets/photos/cow-holstein.jpg', photoCredit:'A real California Holstein',
         intro:'Cows need good feed, clean water, comfortable resting areas, and daily care. Farmers watch cow comfort and health closely. California farms differ by region and climate, so cooling and comfort tools vary from farm to farm.',
         game:{
           type:'multiselect',
@@ -572,6 +583,7 @@ const LOCATIONS = [
       },
       {
         id:'milking', title:'Milking & Cooling', icon:'🥛',
+        photo:'assets/photos/farm-tech.jpg', photoCredit:'Smart tech keeps real California cows comfortable',
         intro:'Milk moves from the cow through clean, sanitary milking equipment. It is cooled quickly and stored in a refrigerated tank. A refrigerated tanker then carries it to a processor. Keeping milk cold matters at every step.',
         game:{
           type:'sequence',
@@ -588,7 +600,8 @@ const LOCATIONS = [
       },
       {
         id:'resource', title:'Farm Resource Cycle', icon:'♻️',
-        intro:'Many California dairy farms use technology to work efficiently. Water may be reused for more than one job. Manure can become nutrients for crops, bedding, compost, or renewable energy. Sustainability practices vary by farm — not every farm uses every tool.',
+        photo:'assets/photos/farm-solar.jpg', photoCredit:'Solar panels on a real California dairy farm',
+        intro:'Many California dairy farms use technology to work efficiently. Water may be reused for more than one job. Manure can become nutrients for crops, bedding, compost, or renewable energy. Farms using solar can cut energy use by up to 90%. Sustainability practices vary by farm — not every farm uses every tool.',
         game:{
           type:'match',
           prompt:'Route each farm resource to a place it can go.',
@@ -628,6 +641,8 @@ const LOCATIONS = [
     map:[0.42,0.52],
     color:0x4aa3d8,
     badge:BADGES.processor,
+    heroPhoto:'assets/photos/cheese-artisan.jpg',
+    photoCredit:'Real California cheesemaking',
     lessons:[
       {
         id:'receiving', title:'Receiving & Quality', icon:'🔬',
@@ -649,6 +664,7 @@ const LOCATIONS = [
       },
       {
         id:'products', title:'Many Products, One Start', icon:'🧀',
+        photo:'assets/photos/cheese-artisan.jpg', photoCredit:'Nearly 46% of California milk becomes California cheese',
         intro:'California milk is the starting point for many dairy products. Different products follow different paths — they do not all go through the same process. Pick a product to see a simple, high-level path.',
         game:{
           type:'branch',
@@ -666,6 +682,7 @@ const LOCATIONS = [
       },
       {
         id:'cheese', title:'Cheese Shredding & Packaging', icon:'📦',
+        photo:'assets/photos/cheese-plate.jpg', photoCredit:'Real California cheese, ready to package',
         intro:'On a safe, simplified cheese line, a finished cheese block is portioned. Some cheese stays in blocks or slices. Some goes through a shredder, then it is weighed and packaged. Packages are made in two channels: consumer packages for grocery, and larger foodservice packages for restaurants and other commercial buyers.',
         game:{
           type:'match',
@@ -711,9 +728,12 @@ const LOCATIONS = [
     // Interact button (only a direct tap on the beacon icon would work).
     // These sit in the open plaza, near their matching storefront.
     stationPos:[[-8,4],[0,-7],[8,4]],
+    heroPhoto:'assets/photos/market-flatbread.jpg',
+    photoCredit:'Real California dairy on the table',
     lessons:[
       {
         id:'grocery', title:'Grocery Journey', icon:'🛒',
+        photo:'assets/photos/market-ricotta-toast.jpg', photoCredit:'Real California dairy, ready to enjoy',
         intro:'Dairy products move through refrigerated distribution and storage. Shoppers find them in the refrigerated dairy section. The Real California Milk seal helps shoppers spot qualifying California dairy products.',
         game:{
           type:'match',
@@ -734,6 +754,7 @@ const LOCATIONS = [
       },
       {
         id:'seal', title:'Look for the Seal', icon:'🔎',
+        photo:'assets/photos/market-dip.jpg', photoCredit:'A real California dairy product',
         intro:'Look in the dairy section. Find the Real California Milk seal. Choosing products with the seal means choosing dairy made with Real California milk.',
         game:{
           type:'seal',
@@ -751,6 +772,7 @@ const LOCATIONS = [
       },
       {
         id:'foodservice', title:'Restaurant & Foodservice Buyers', icon:'👩‍🍳',
+        photo:'assets/photos/market-flatbread.jpg', photoCredit:'A real California dairy dish, restaurant-style',
         intro:'Restaurants and foodservice operators often buy dairy in larger formats. Chefs may use California dairy in pizzas, sauces, baked goods, beverages, and desserts. Distributors and purchasing teams move products from processors to commercial kitchens. Package size depends on how the product will be used.',
         game:{
           type:'match',
@@ -909,6 +931,16 @@ const $ = id => document.getElementById(id);
 const el = (tag,cls,html) => { const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; };
 
 function toast(txt){ const d=el('div','toast',txt); $('toasts').appendChild(d); setTimeout(()=>d.remove(),1800); }
+
+// Real-photo card used in lesson/quiz modals — swaps the blocky 3D look for
+// an actual California dairy photo, with a small credit line for authenticity.
+function photoCard(src,credit){
+  const wrap=el('div','real-photo');
+  const img=el('img'); img.src=src; img.alt=credit||'Real California dairy photo'; img.loading='lazy';
+  wrap.appendChild(img);
+  if(credit){ wrap.appendChild(el('div','credit',credit)); }
+  return wrap;
+}
 function caption(txt){ $('caption').textContent = txt||''; }
 
 function updateHUD(){
@@ -1086,6 +1118,7 @@ function startLesson(locId, lessonId){
   Analytics.track('lesson_started',{location:locId,lesson:lessonId});
   caption(lesson.intro);
   openModal(`${lesson.icon} ${lesson.title}`, loc.stage, body=>{
+    if(lesson.photo) body.appendChild(photoCard(lesson.photo,lesson.photoCredit));
     body.appendChild(el('p',null,lesson.intro));
     const gameHost = el('div','game-host'); body.appendChild(gameHost);
     renderGame(gameHost, lesson);
@@ -1295,7 +1328,11 @@ function startQuiz(locId){
   Audio.click();
   Analytics.track('quiz_started',{location:locId});
   let idx=0, correctCount=0;
-  openModal(`🧠 ${loc.badge.name} Quiz`, loc.stage, body=>{ renderQ(body); });
+  openModal(`🧠 ${loc.badge.name} Quiz`, loc.stage, body=>{
+    if(loc.heroPhoto) body.appendChild(photoCard(loc.heroPhoto,loc.photoCredit));
+    const qBody=el('div'); body.appendChild(qBody);
+    renderQ(qBody);
+  });
 
   function renderQ(body){
     const q=questions[idx]; let attempts=0;
@@ -2382,7 +2419,7 @@ function renderFallback(){
   root.innerHTML='';
   const wrap=el('div','fb-wrap');
   const head=el('div','fb-head');
-  head.innerHTML=`<img src="${BRAND_ASSETS.logo}" alt="Real California Milk (logo placeholder)">
+  head.innerHTML=`<img src="${BRAND_ASSETS.logo}" alt="Real California Milk">
     <h1>The Farm-to-Flavor Journey</h1>
     <p>${COPY.title.split(':')[1]||''}</p>
     <p style="font-size:12.5px;color:#789;">Text-friendly version — the same lessons, quizzes, and certificate, without 3D.</p>`;
@@ -2395,7 +2432,8 @@ function renderFallback(){
   LOCATIONS.forEach(loc=>{
     const unlocked=Progress.isUnlocked(loc.id), done=Progress.isLocationDone(loc.id);
     const card=el('div','fb-loc'+(unlocked?'':' locked'));
-    card.innerHTML=`<div class="stage">${loc.stage}</div><h3>${loc.order}. ${loc.title} ${done?'<span class="fb-done">✓ done</span>':''}</h3><p>${loc.intro}</p>`;
+    if(loc.heroPhoto) card.appendChild(photoCard(loc.heroPhoto,loc.photoCredit));
+    card.appendChild(el('div',null,`<div class="stage">${loc.stage}</div><h3>${loc.order}. ${loc.title} ${done?'<span class="fb-done">✓ done</span>':''}</h3><p>${loc.intro}</p>`));
     const btns=el('div','fb-lessons');
     if(!unlocked){ btns.innerHTML='<span style="color:#999;font-weight:700;">🔒 Complete the previous location to unlock.</span>'; }
     else{
@@ -2447,9 +2485,7 @@ $('beginBtn').onclick=async ()=>{
   $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
   $('title').classList.add('hidden');
   if(!webglOK){ enterFallback(); return; }
-  // Don't force intro to replay within the same session
-  if(sessionStorage.getItem('rcm_introSeen')==='1'){ go(GAME_STATES.MAP); }
-  else { go(GAME_STATES.EARTH_INTRO); }
+  go(GAME_STATES.EARTH_INTRO);
 };
 
 async function boot(){
