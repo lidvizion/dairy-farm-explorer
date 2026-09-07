@@ -23,9 +23,9 @@ and three badges total. Target play time ≈ 7–10 minutes.
 
 ## Run it locally
 
-It’s a **single self-contained `index.html`** — no build step, no install. It
-loads Three.js from a CDN (needs internet) and uses local placeholder assets in
-`assets/`.
+It’s a **static ES-module site** — no build step or install. `index.html` is
+the page shell; browser-native modules in `js/` load Three.js from a CDN and
+use local assets in `assets/`.
 
 - **Local server (recommended):**
   ```bash
@@ -59,13 +59,12 @@ update the live site, push the updated `index.html` + `assets/` to the repo’s
 
 ## Where to edit things (for non-developers)
 
-Everything content-related lives in clearly labeled sections near the **top of
-the `<script type="module">` block** in `index.html`:
+Everything content-related lives in [js/config/content.js](js/config/content.js):
 
 | You want to change… | Edit this |
 |---|---|
-| Titles, intro lines, map header/disclaimer | `COPY` object (Section 2) |
-| Location names, stages, intros, lesson text, mini-games | `LOCATIONS` array (Section 2) |
+| Titles, intro lines, map header/disclaimer | `COPY` object |
+| Location names, stages, intros, lesson text, mini-games | `LOCATIONS` array |
 | **Quiz questions & answers** | each location’s `quiz:[ … ]` inside `LOCATIONS` |
 | Badge names / emoji | `BADGES` object |
 | Brand asset file paths | `BRAND_ASSETS` object |
@@ -76,6 +75,18 @@ Lesson text is **not** scattered through the 3D code — it all lives in
 `LOCATIONS`. The mini-game *renderers* (Section 5) are generic and read from the
 `game:{…}` object on each lesson, so you can revise wording without touching
 rendering logic.
+
+### Module map
+
+| Responsibility | Module |
+|---|---|
+| Page entry point and game orchestration | `js/app.js` |
+| Content, locations, scoring, links | `js/config/content.js` |
+| Local progress and analytics adapter | `js/core/progress.js` |
+| Synthesized game audio | `js/core/audio.js` |
+| Shared DOM helpers | `js/ui/dom.js` |
+| Lesson-content validation | `js/lessons/validate-content.js` |
+| Graphics-quality policy | `js/scenes/quality.js` |
 
 **Localization (future):** all player-facing strings are inside `COPY`,
 `LOCATIONS`, and `BADGES`. To add Spanish later, wrap these in a language-keyed
@@ -120,8 +131,8 @@ appear automatically (title screen, packages, seal-spotter, certificate).
 
 ## How to connect analytics later
 
-A privacy-conscious **no-op analytics wrapper** is built in (`Analytics`,
-Section 3). It already fires events: `intro_started`, `intro_completed`,
+A privacy-conscious **no-op analytics wrapper** is built in
+(`js/core/progress.js`). It already fires events: `intro_started`, `intro_completed`,
 `intro_skipped`, `map_opened`, `location_started`, `lesson_started`,
 `lesson_completed`, `quiz_started`, `quiz_answered`, `location_completed`,
 `game_completed`, `external_cta_clicked`. **No personal data is included.**
