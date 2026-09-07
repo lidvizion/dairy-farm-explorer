@@ -1,0 +1,8 @@
+{
+  "name": "real-california-milk-journey",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -252,11 +252,13 @@ export function startQuiz(locId){
         if(i===q.correct){
           b.classList.add('right');
           const first=attempts===0, pts=first?SCORING.quizFirst:SCORING.quizLater;
-          Progress.addQuizPoints(pts,first); if(first)correctCount++;
+          const awarded=Progress.addQuizPoints(locId,idx,pts,first);
+          if(first)correctCount++;
           Analytics.track('quiz_answered',{location:locId,question:idx,correct:true,firstTry:first});
           Audio.good();
           fireConfetti();
-          fb.style.color='var(--green-dk)'; fb.textContent=`Correct! +${pts} points`;
+          fb.style.color='var(--green-dk)';
+          fb.textContent=awarded?`Correct! +${pts} points`:'Correct! Review complete.';
           [...opts.children].forEach(o=>o.disabled=true);
           if(q.source){
             const src=el('div','quiz-source',`Source: <a href="${q.source.url}" target="_blank" rel="noopener">${q.source.label}</a>`);
