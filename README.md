@@ -85,6 +85,7 @@ rendering logic.
 | Local progress and analytics adapter | `js/core/progress.js` |
 | Synthesized game audio | `js/core/audio.js` |
 | Shared DOM helpers | `js/ui/dom.js` |
+| Lesson and quiz renderers | `js/lessons/renderer.js` |
 | Lesson-content validation | `js/lessons/validate-content.js` |
 | Graphics-quality policy | `js/scenes/quality.js` |
 
