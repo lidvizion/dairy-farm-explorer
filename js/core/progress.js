@@ -22,8 +22,17 @@ const Storage = {
 };
 
 export const Progress = (() => {
-  const fresh = () => ({ points: 0, lessons: {}, locations: {}, badges: {}, collectibles: {}, quizFirstTry: 0 });
-  let data = Storage.load() || fresh();
+  const fresh = () => ({ points: 0, lessons: {}, locations: {}, badges: {}, collectibles: {}, quizAwards: {}, quizFirstTry: 0 });
+  const saved = Storage.load() || {};
+  let data = {
+    ...fresh(),
+    ...saved,
+    lessons: { ...(saved.lessons || {}) },
+    locations: { ...(saved.locations || {}) },
+    badges: { ...(saved.badges || {}) },
+    collectibles: { ...(saved.collectibles || {}) },
+    quizAwards: { ...(saved.quizAwards || {}) }
+  };
   const persist = () => {
     Storage.save(data);
     document.dispatchEvent(new Event('rcm:progresschange'));
@@ -48,10 +57,14 @@ export const Progress = (() => {
       Analytics.track('lesson_completed', { location: loc, lesson });
       return true;
     },
-    addQuizPoints(points, firstTry) {
+    addQuizPoints(location, question, points, firstTry) {
+      const key = `${location}.${question}`;
+      if (data.quizAwards[key]) return false;
+      data.quizAwards[key] = true;
       data.points += points;
       if (firstTry) data.quizFirstTry++;
       persist();
+      return true;
     },
     completeLocation(loc) {
       if (data.locations[loc]) return false;

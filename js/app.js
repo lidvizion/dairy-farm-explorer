@@ -209,6 +209,20 @@ async function initThree(){
   }catch(e){ webglOK=false; return false; }
 }
 
+function applyRendererQuality(){
+  if(!renderer) return;
+  const high=effectiveQuality()==='high';
+  renderer.setPixelRatio(Math.min(devicePixelRatio,high?2:1.5));
+  renderer.shadowMap.enabled=high;
+  renderer.shadowMap.needsUpdate=true;
+  renderer.setSize(innerWidth,innerHeight);
+  if(active?.scene){
+    active.scene.traverse(object=>{
+      if(object.isDirectionalLight||object.isSpotLight) object.castShadow=high;
+    });
+  }
+}
+
 // Deep-dispose a scene's geometry, materials, textures.
 function disposeScene3D(scene){
   scene.traverse(obj=>{
@@ -568,9 +582,9 @@ function enterMap(opts={}){
     const colHex = '#'+col.toString(16).padStart(6,'0');
     // white "badge" backing makes the pin readable against any patch of the
     // photo (ocean, forest, farmland all have different colors/contrast)
-    const badge=pinBadge(colHex); badge.scale.set(3.4,3.4,1); badge.position.y=0.1; g.add(badge);
-    const icon=B.emojiSprite(done?'✅':unlocked?'📍':'🔒',2.2); icon.position.y=0.14; g.add(icon);
-    const label=B.labelSprite(`${loc.order}. ${loc.title.replace('WHERE ','').replace(/^(.{22}).+/,'$1…')}`,1.05); label.position.y=2.8; g.add(label);
+    const badge=pinBadge(colHex); badge.scale.set(4.1,4.1,1); badge.position.y=0.1; g.add(badge);
+    const icon=B.emojiSprite(done?'✅':unlocked?'📍':'🔒',2.7); icon.position.y=0.14; g.add(icon);
+    const label=B.labelSprite(`${loc.order}. ${loc.title.replace('WHERE ','').replace(/^(.{22}).+/,'$1…')}`,1.2); label.position.y=3.35; g.add(label);
     const ring=new THREE.Mesh(new THREE.RingGeometry(2.1,2.6,28),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.7,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=-1.4; g.add(ring);
     // generous invisible tap target — much larger than the visible badge so
     // fingers/imprecise clicks near the pin still register
@@ -905,8 +919,8 @@ function makeBeacon(emoji,color,labelText){
   const g=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.5,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=0.06; g.add(ring);
   const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.62,6,12,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.3,depthWrite:false,side:THREE.DoubleSide})); pillar.position.y=3; g.add(pillar);
-  const icon=B.emojiSprite(emoji,1.8); icon.position.y=3.2; g.add(icon);
-  const label=B.labelSprite(labelText,0.8); label.position.y=4.6; g.add(label);
+  const icon=B.emojiSprite(emoji,2.15); icon.position.y=3.35; g.add(icon);
+  const label=B.labelSprite(labelText,0.95); label.position.y=5.0; g.add(label);
   g.userData={ring,pillar,icon,label};
   return g;
 }
@@ -939,7 +953,6 @@ function buildFarm(scene,addObst){
   mh.add(box(6,3,5,lamb(0xe8ece0),0,1.5,0));
   const tank=new THREE.Group(); const steel=lamb(0xd9e2e8); const body=cyl(1,1,3,steel,0,0,0,18); body.rotation.z=Math.PI/2; tank.add(body); tank.add(ball(1,steel,1.5,0,0)); tank.add(ball(1,steel,-1.5,0,0)); tank.position.set(0,2,0); mh.add(tank);
   mh.position.set(8,0,-2); scene.add(mh); addObst(8,-2,3.4);
-  scene.add(withLabel(labelSprite('Milking & Bulk Tank',1),8,4,-2));
 
   // refrigerated tanker
   const tanker=makeTanker(); tanker.position.set(16,0,4); tanker.rotation.y=-0.4; scene.add(tanker); addObst(16,4,2.4);
@@ -960,6 +973,17 @@ function buildFarm(scene,addObst){
 function addFarmCows(scene){
   const cows=[];
   for(let i=0;i<4;i++){ const c=makeCow(1,i!==2); c.position.set(-10+i*2.2,0,-8); c.rotation.y=Math.PI/2; scene.add(c); cows.push(c); }
+  // Photographic cutouts add a credible visual anchor while the lightweight
+  // procedural herd continues to supply animation and collision geometry.
+  const cowTexture=new THREE.TextureLoader().load('assets/characters/holstein-cow.png');
+  cowTexture.colorSpace=THREE.SRGBColorSpace;
+  for(const [x,z,scale] of [[-15,-7,1],[-18,-10,.82]]){
+    const cow=new THREE.Sprite(new THREE.SpriteMaterial({map:cowTexture,transparent:true,alphaTest:.08}));
+    cow.scale.set(5.8*scale,3.9*scale,1);
+    cow.position.set(x,1.95*scale,z);
+    cow.userData.type='cow';
+    scene.add(cow); cows.push(cow);
+  }
   // make cows clickable for a moo
   cows.forEach(c=>{ c.userData.type='cow'; });
   // enterLocation merges these into the location's clickables after setActive.
@@ -1259,8 +1283,19 @@ $('btnSound').onclick=()=>{ const on=Audio.toggle(); $('btnSound').innerHTML=(on
 
 // quality segmented control
 $('qualitySeg').querySelectorAll('button').forEach(b=>{
-  if(b.dataset.q===quality) b.classList.add('on'); else b.classList.remove('on');
-  b.onclick=()=>{ quality=b.dataset.q; localStorage.setItem('rcm_quality',quality); $('qualitySeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); };
+  const selected=b.dataset.q===quality;
+  b.classList.toggle('on',selected);
+  b.setAttribute('aria-pressed',selected?'true':'false');
+  b.onclick=()=>{
+    quality=b.dataset.q;
+    localStorage.setItem('rcm_quality',quality);
+    $('qualitySeg').querySelectorAll('button').forEach(x=>{
+      x.classList.toggle('on',x===b);
+      x.setAttribute('aria-pressed',x===b?'true':'false');
+    });
+    applyRendererQuality();
+    toast(`Graphics: ${quality==='perf'?'Performance':quality[0].toUpperCase()+quality.slice(1)}`);
+  };
 });
 
 // BEGIN
