@@ -1,0 +1,39 @@
+README.md
+  s_909789c82eccc1::t_625da98a023e6d 79-90
+  s_909789c82eccc1::t_4ad64f595a2538 26-28,62,66-67
+  s_909789c82eccc1::t_106072a4292839 134-135
+index.html
+  s_909789c82eccc1::t_5794dc0ee84cb8 477
+js/config/content.js
+  s_909789c82eccc1::t_a199f50529eb5c 1-326
+js/lessons/validate-content.js
+  s_909789c82eccc1::t_ff1792e5a2db27 1-9
+js/scenes/quality.js
+  s_909789c82eccc1::t_ff1792e5a2db27 1-8
+js/app.js
+  s_909789c82eccc1::t_1cfa938cac0107 1-8,16,468,471,1577
+  s_909789c82eccc1::t_a199f50529eb5c 9-15,17-167,456-467,469-470,472-1576,1578-1606
+  s_909789c82eccc1::t_88a39970b0cb6b 168-455
+js/core/progress.js
+  s_909789c82eccc1::t_ff1792e5a2db27 1-80
+js/ui/dom.js
+  s_909789c82eccc1::t_ff1792e5a2db27 1-15
+js/core/audio.js
+  s_909789c82eccc1::t_ff1792e5a2db27 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "4f25f559c858fbdf96692bfc3ddfcc7cc26b640f",
+  "prompts": {},
+  "sessions": {
+    "s_909789c82eccc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07dab-58fd-7eb1-9fb1-aa95620299b8",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
