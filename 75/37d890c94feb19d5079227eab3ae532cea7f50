@@ -1,0 +1,27 @@
+.env.example
+  s_909789c82eccc1::t_4b02981f55c3aa 1-24
+.claude/launch.json
+  s_909789c82eccc1::t_4b02981f55c3aa 1-11
+UX-IMPROVEMENT-PLAN.md
+  s_909789c82eccc1::t_4b02981f55c3aa 1-60
+visual-style.md
+  s_909789c82eccc1::t_4b02981f55c3aa 1-132
+.gitignore
+  s_909789c82eccc1::t_4b02981f55c3aa 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "7537d890c94feb19d5079227eab3ae532cea7f50",
+  "prompts": {},
+  "sessions": {
+    "s_909789c82eccc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07dab-58fd-7eb1-9fb1-aa95620299b8",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
