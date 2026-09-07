@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dairy-farm-explorer",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd \"/Users/shawn/Library/CloudStorage/GoogleDrive-shawn@lidvizion.com/Shared drives/Lid Vizion - Marketing Agent/dairy-farm-explorer\" && python3 -m http.server 8934"],
+      "port": 8934
+    }
+  ]
+}
