@@ -1,0 +1,25 @@
+js/lessons/renderer.js
+  s_909789c82eccc1::t_2f17edc7fb7952 15-304
+  s_909789c82eccc1::t_806caa1c274b06 1-14
+README.md
+  s_909789c82eccc1::t_9f1302b8812aa0 88
+js/app.js
+  s_909789c82eccc1::t_806caa1c274b06 6,764,814,1244,1317
+  s_909789c82eccc1::t_7c6297801ff314 1318
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "5c664df33e542394d289e1579cdc72ede92efe68",
+  "prompts": {},
+  "sessions": {
+    "s_909789c82eccc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07dab-58fd-7eb1-9fb1-aa95620299b8",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
