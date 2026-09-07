@@ -1,0 +1,19 @@
+.github/workflows/deploy-pages.yml
+  s_a280954ea4f03d::t_59bb2be6de40ea 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "6456545f213f924e75de94646e0a05e3d761ea81",
+  "prompts": {},
+  "sessions": {
+    "s_a280954ea4f03d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c69aeee6-cfde-4ffd-9ede-19545c994ece",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
