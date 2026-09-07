@@ -6,7 +6,7 @@ export const GAME_STATES = {
 
 // CLIENT: drop approved files at these paths (same names) to replace placeholders.
 export const BRAND_ASSETS = {
-  logo: 'assets/real-california-milk-logo.svg',
+  logo: 'assets/real-california-milk-logo-official.webp',
   seal: 'assets/real-california-milk-seal.svg'
 };
 

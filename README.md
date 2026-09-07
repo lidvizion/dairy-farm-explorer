@@ -98,7 +98,7 @@ logic needs to change. English is the only language shipped now.
 
 Placeholders live in `assets/`:
 
-- `assets/real-california-milk-logo.svg`
+- `assets/real-california-milk-logo-official.webp`
 - `assets/real-california-milk-seal.svg`
 
 Drop the **client-approved files in at the same paths/filenames** and they
@@ -186,7 +186,7 @@ and reads **OPEN** when you’re beside a station.
 
 Before public launch, Real California Milk should provide / approve:
 
-1. **Official logo** → replace `assets/real-california-milk-logo.svg`.
+1. **Official logo** → replace `assets/real-california-milk-logo-official.webp`.
 2. **Official (current) seal** → replace `assets/real-california-milk-seal.svg`.
 3. **Approved brand colors** → update the `:root` CSS `CLIENT:` values.
 4. **Approved fonts / web-font files** → currently system fonts.

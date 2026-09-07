@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b5e2a">
+<link rel="icon" type="image/webp" href="assets/real-california-milk-logo-official.webp">
 <title>Real California Milk: The Farm-to-Flavor Journey</title>
 <meta name="description" content="An interactive journey through the California dairy supply chain — from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.">
 <style>
@@ -327,6 +328,50 @@ body.touch-controls-active #caption{bottom:356px;}
   #mapHeader h2{font-size:17px;}
 }
 
+/* Documentary presentation layer: the environment stays primary while UI
+   reads like a compact field guide instead of an arcade overlay. */
+:root{
+  --green:#1e5a40;--green-dk:#123c2b;--green-lt:#e8eee8;--cream:#f4f0e6;
+  --sun:#d59b36;--sun-dk:#a66e1f;--ink:#17221c;--shadow:0 14px 42px rgba(5,15,10,.25);
+}
+#title.overlay{
+  justify-content:flex-start;
+  background:linear-gradient(90deg,rgba(7,16,12,.9),rgba(7,16,12,.56) 48%,rgba(7,16,12,.08)),
+    url('assets/environments/dairy-farm-morning.jpg') center/cover no-repeat;
+  padding:clamp(20px,5vw,72px);
+}
+#title .card{max-width:590px;text-align:left;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(244,240,230,.96);}
+#title .card-body{padding:clamp(26px,4vw,46px);}
+#title .logo{width:150px;margin:0 0 28px;}
+#title h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(38px,4.2vw,58px);line-height:1;letter-spacing:-.035em;margin:0 0 18px;text-transform:none;}
+#title .subtitle{margin:0 0 22px;font-size:16px;line-height:1.62;}
+#title .settings-row,#title .btnrow{justify-content:flex-start;}
+.btn,.hbtn,.chip,.seg,.seg button,.mapnav-btn{border-radius:7px;}
+#hud{top:14px;left:14px;right:14px;}
+.chip{background:rgba(10,22,16,.84);box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.hbtn{background:rgba(244,240,230,.94);box-shadow:0 8px 24px rgba(0,0,0,.18);}
+#mapHeader{background:rgba(10,22,16,.76);border:1px solid rgba(255,255,255,.18);border-radius:7px;}
+#mapHeader h2{font-family:Georgia,'Times New Roman',serif;font-weight:700;}
+.mapnav-btn{align-items:flex-start;text-align:left;background:rgba(18,60,43,.94);border:1px solid rgba(255,255,255,.2);}
+.mapnav-btn.locked{background:rgba(54,65,59,.88);opacity:.82;}
+#hint,#caption{border-radius:6px;background:rgba(10,22,16,.84);}
+
+/* Desktop players use keyboard/mouse. Keeping touch sticks visible here was
+   consuming a large portion of the scene and obscuring objectives. */
+@media (hover:hover) and (pointer:fine){
+  body.touch-controls-active #joy,body.touch-controls-active #lookJoy,body.touch-controls-active #touchAct{display:none!important;}
+  body.touch-controls-active #hint{bottom:20px;}
+  body.touch-controls-active #caption{bottom:76px;}
+}
+
+@media (max-width:640px){
+  #title.overlay{align-items:flex-end;background-position:62% center;padding:14px;}
+  #title .card{max-height:94vh;}
+  #title .card-body{padding:24px 20px;}
+  #title h1{font-size:34px;}
+  #title .logo{width:118px;margin-bottom:20px;}
+}
+
 /* Reduced motion: kill non-essential animations globally */
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
@@ -364,17 +409,16 @@ body.touch-controls-active #caption{bottom:356px;}
 <div id="title" class="overlay">
   <div class="card">
     <div class="card-body">
-      <!-- CLIENT: replace assets/real-california-milk-logo.svg with approved logo -->
-      <img class="logo" id="titleLogo" src="assets/real-california-milk-logo.svg" alt="Real California Milk (logo placeholder)">
-      <h1>THE FARM-TO-FLAVOR JOURNEY</h1>
+      <img class="logo" id="titleLogo" src="assets/real-california-milk-logo-official.webp" alt="Real California Milk">
+      <h1>The farm-to-flavor journey</h1>
       <p class="subtitle">Follow California dairy from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.</p>
       <div id="resumeBanner" class="hidden" role="status"></div>
       <div class="settings-row" role="group" aria-label="Graphics quality">
         <span style="font-size:13px;font-weight:700;color:#5a5140;align-self:center;">Graphics:</span>
         <div class="seg" id="qualitySeg">
-          <button data-q="auto" class="on">Auto</button>
-          <button data-q="high">High</button>
-          <button data-q="perf">Performance</button>
+          <button data-q="auto" class="on" aria-pressed="true">Auto</button>
+          <button data-q="high" aria-pressed="false">High</button>
+          <button data-q="perf" aria-pressed="false">Performance</button>
         </div>
       </div>
       <div class="btnrow" style="justify-content:center;">
