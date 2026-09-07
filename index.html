@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#0b5e2a">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123c2b">
 <link rel="icon" type="image/webp" href="assets/real-california-milk-logo-official.webp">
+<link rel="preload" as="image" href="assets/environments/dairy-farm-morning.jpg">
 <title>Real California Milk: The Farm-to-Flavor Journey</title>
 <meta name="description" content="An interactive journey through the California dairy supply chain — from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.">
 <style>
@@ -15,20 +16,22 @@
    warm golden accents) chosen to feel on-brand until approved values arrive.
 ============================================================================ */
 :root{
-  --green:#1a7a3c;        /* CLIENT: approve primary green */
-  --green-dk:#0b5e2a;     /* CLIENT: approve deep green */
-  --green-lt:#e8f4ea;
-  --cream:#fff9ee;        /* CLIENT: approve cream */
-  --sun:#f5b21e;          /* CLIENT: approve warm golden accent */
-  --sun-dk:#d8930a;
-  --ink:#1f2a22;
-  --sky:#bfe3f5;
+  --green:#1e5a40;        /* CLIENT: approve primary green */
+  --green-dk:#123c2b;     /* CLIENT: approve deep green */
+  --green-lt:#e8eee8;
+  --cream:#f4f0e6;        /* CLIENT: approve cream */
+  --sun:#d59b36;          /* CLIENT: approve warm golden accent */
+  --sun-dk:#a66e1f;
+  --ink:#17221c;
+  --sky:#a8c4c8;
   --white:#ffffff;
-  --shadow:0 10px 34px rgba(0,0,0,.28);
-  --focus:#0a63c2;        /* high-contrast focus ring */
+  --steel:#aeb8b5;
+  --earth:#8a725a;
+  --shadow:0 18px 54px rgba(5,15,10,.28);
+  --focus:#f0b84a;        /* high-contrast focus ring */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#06121f;
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#07100c;
   font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);}
 canvas{display:block;}
 .hidden{display:none !important;}
@@ -329,6 +332,159 @@ body.touch-controls-active #caption{bottom:356px;}
   #mapHeader h2{font-size:17px;}
 }
 
+/* ============================================================================
+   WORKING CALIFORNIA DAIRY — DOCUMENTARY UI SYSTEM
+   The environment stays visually dominant; interface chrome reads like a
+   field log rather than an arcade HUD. See visual-style.md for the full system.
+============================================================================ */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
+
+#title.overlay{justify-content:flex-start;background:
+  linear-gradient(90deg,rgba(7,16,12,.92) 0%,rgba(7,16,12,.74) 42%,rgba(7,16,12,.12) 76%),
+  linear-gradient(0deg,rgba(7,16,12,.45),transparent 52%),
+  url('assets/environments/dairy-farm-morning.jpg') center/cover no-repeat;padding:clamp(20px,5vw,72px);}
+#title .card{max-width:590px;text-align:left;border:1px solid rgba(255,255,255,.18);border-radius:8px;
+  background:rgba(244,240,230,.96);box-shadow:0 28px 90px rgba(0,0,0,.42);backdrop-filter:blur(14px);}
+#title .card-body{padding:clamp(24px,4vw,46px);}
+#title .logo{width:148px;max-width:42%;margin:0 0 30px;}
+.title-kicker,.scene-kicker,.journey-label{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;}
+.title-kicker{color:var(--green);margin-bottom:9px;}
+#title h1{font-family:Georgia,'Times New Roman',serif;color:var(--ink);font-size:clamp(38px,4.4vw,62px);
+  line-height:.98;letter-spacing:-.035em;margin:0 0 18px;text-wrap:balance;}
+#title .subtitle{max-width:500px;margin:0 0 24px;color:#33423a;font-size:16px;line-height:1.62;}
+.route-preview{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(23,34,28,.22);
+  border-bottom:1px solid rgba(23,34,28,.22);margin:22px 0 18px;}
+.route-stop{position:relative;padding:14px 12px 14px 0;min-width:0;}
+.route-stop+.route-stop{padding-left:14px;border-left:1px solid rgba(23,34,28,.16);}
+.route-stop .num{display:block;color:var(--sun-dk);font-size:11px;font-weight:900;letter-spacing:.12em;margin-bottom:4px;}
+.route-stop .name{display:block;font-size:12px;font-weight:800;line-height:1.25;color:var(--ink);}
+#title .settings-row{justify-content:flex-start;margin:16px 0 6px;}
+.seg{background:#ded9cd;border-radius:6px;padding:3px;}
+.seg button{border-radius:4px;padding:7px 12px;}
+.seg button.on{background:var(--green-dk);}
+#title .btnrow{justify-content:flex-start!important;margin-top:18px!important;}
+#title .disclaimer{margin:18px 0 0;max-width:510px;color:#677169;font-size:11.5px;}
+
+.btn{border-radius:6px;padding:12px 20px;letter-spacing:.01em;box-shadow:none;}
+.btn:hover{transform:translateY(-1px);}
+.btn-primary{background:var(--green-dk);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 5px 14px rgba(18,60,43,.22);}
+.btn-sun{background:var(--sun);color:#241a09;box-shadow:0 5px 14px rgba(213,155,54,.24);}
+.btn-ghost{background:#dfdbd0;color:var(--ink);box-shadow:none;}
+
+#hud{top:16px;left:16px;right:16px;align-items:flex-start;flex-wrap:nowrap;}
+#hud .group{gap:6px;flex-wrap:nowrap;}
+.journey-log{pointer-events:auto;display:flex;align-items:center;gap:14px;min-height:48px;padding:8px 14px;
+  color:#fff;background:rgba(10,22,16,.82);border:1px solid rgba(255,255,255,.18);border-radius:7px;
+  box-shadow:0 10px 32px rgba(0,0,0,.22);backdrop-filter:blur(12px);}
+.journey-label{color:#e1b45c;white-space:nowrap;}
+.journey-metrics{display:flex;align-items:center;gap:13px;}
+.journey-metric{display:flex;align-items:baseline;gap:3px;white-space:nowrap;}
+.journey-metric strong{font-size:17px;font-variant-numeric:tabular-nums;}
+.journey-metric small{font-size:10px;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.08em;}
+.journey-metric.points{border-left:1px solid rgba(255,255,255,.18);padding-left:13px;}
+.hbtn{min-height:42px;border-radius:7px;padding:9px 12px;background:rgba(244,240,230,.94);color:var(--green-dk);
+  border:1px solid rgba(18,60,43,.18);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:12px;
+  text-transform:uppercase;letter-spacing:.06em;backdrop-filter:blur(10px);}
+.hbtn:hover{background:#fff;color:var(--green-dk);}
+.hbtn-go{background:var(--sun);color:#241a09;border-color:rgba(100,62,7,.18);}
+.ui-symbol{font-size:15px;line-height:1;font-weight:500;}
+
+#sceneContext{position:fixed;z-index:27;top:82px;left:18px;width:min(320px,calc(100vw - 36px));padding:13px 15px;
+  color:#fff;background:rgba(10,22,16,.74);border-left:3px solid var(--sun);border-radius:3px 7px 7px 3px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);backdrop-filter:blur(10px);pointer-events:none;transition:opacity .3s;}
+#sceneContext .scene-kicker{display:block;color:#e1b45c;margin-bottom:4px;}
+#sceneContext strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:1.1;}
+#sceneContext .scene-progress{display:block;margin-top:7px;font-size:11px;color:rgba(255,255,255,.76);letter-spacing:.04em;}
+#reticle{position:fixed;z-index:26;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);
+  border:1px solid rgba(255,255,255,.85);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.28);pointer-events:none;}
+#reticle::after{content:'';position:absolute;width:3px;height:3px;left:50%;top:50%;transform:translate(-50%,-50%);
+  border-radius:50%;background:rgba(255,255,255,.92);}
+
+.overlay.dim{background:rgba(6,14,10,.7);backdrop-filter:blur(8px);}
+.card{background:var(--cream);border-radius:10px;border:1px solid rgba(255,255,255,.7);box-shadow:0 28px 80px rgba(0,0,0,.42);}
+.card-head{background:var(--green-dk);padding:20px 24px 18px;border-bottom:3px solid var(--sun);}
+.card-head h2{font-family:Georgia,'Times New Roman',serif;font-size:25px;font-weight:700;letter-spacing:-.015em;}
+.card-head .sub{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#d7e2db;}
+.modal-close{border-radius:4px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.06);}
+.real-photo{border-radius:6px;box-shadow:none;border:1px solid rgba(23,34,28,.14);}
+.real-photo img{height:180px;}
+.real-photo .credit{font-size:10px;letter-spacing:.04em;}
+.real-photo .credit::before{content:'FIELD IMAGE · ';}
+.mg-instructions{background:#e4e9e2;border:1px solid #c5d0c7;border-left:3px solid var(--green);
+  border-radius:4px;color:#263d31;}
+.pick,.match-item,.quiz-opt,.pkg{border-radius:6px;border-width:1px;box-shadow:none;}
+.pick:hover,.match-item:hover,.quiz-opt:hover,.pkg:hover{border-color:var(--green);}
+.toast{border-radius:5px;background:rgba(244,240,230,.97);font-size:14px;color:var(--green-dk);
+  border-left:3px solid var(--sun);box-shadow:0 14px 34px rgba(0,0,0,.24);}
+
+#hint{left:24px;bottom:24px;transform:none;max-width:min(520px,calc(100vw - 48px));border-radius:5px;
+  background:rgba(10,22,16,.82);border:1px solid rgba(255,255,255,.16);font-size:12px;text-align:left;
+  box-shadow:0 10px 30px rgba(0,0,0,.22);backdrop-filter:blur(10px);}
+#hint.action{background:rgba(18,60,43,.94);border-color:rgba(225,180,92,.72);box-shadow:0 0 0 1px rgba(213,155,54,.2),0 12px 30px rgba(0,0,0,.24);}
+#caption{left:24px;bottom:79px;transform:none;max-width:min(520px,calc(100vw - 48px));border-radius:5px;
+  background:rgba(10,22,16,.82);font-size:13px;text-align:left;border-left:3px solid var(--sun);}
+
+#mapHeader{top:86px;max-width:640px;background:rgba(10,22,16,.76);border:1px solid rgba(255,255,255,.15);
+  border-radius:6px;padding:11px 22px;backdrop-filter:blur(10px);}
+#mapHeader h2{font-family:Georgia,'Times New Roman',serif;font-size:24px;letter-spacing:-.015em;}
+#mapHeader p{font-size:11px;text-transform:uppercase;letter-spacing:.1em;}
+#mapDisclaimer{bottom:12px;background:rgba(7,16,12,.58);border-radius:3px;color:#e4e9e5;}
+#mapNav{bottom:44px;gap:8px;width:min(820px,94vw);flex-wrap:nowrap;}
+.mapnav-btn{align-items:flex-start;text-align:left;flex:1;min-width:0;border-radius:6px;padding:13px 15px;
+  background:rgba(18,60,43,.92);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(10px);box-shadow:0 12px 34px rgba(0,0,0,.24);}
+.mapnav-btn .n{font-size:10px;letter-spacing:.1em;text-transform:uppercase;}
+.mapnav-btn .t{font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.15;}
+.mapnav-btn.locked{background:rgba(47,58,52,.82);opacity:.78;}
+.mapnav-btn.done{background:rgba(18,60,43,.92);border-color:rgba(213,155,54,.75);}
+
+.stick{width:108px;height:108px;bottom:20px;background:rgba(10,22,16,.34);border:1px solid rgba(255,255,255,.45);}
+#joy{left:18px}#lookJoy{right:18px}
+.stick .knob{width:44px;height:44px;background:rgba(244,240,230,.92);}
+#touchAct{width:78px;height:78px;right:28px;bottom:142px;border-width:2px;border-radius:50%;font-size:11px;
+  background:rgba(18,60,43,.9);opacity:0;pointer-events:none;transform:scale(.86);}
+#touchAct.ready{background:var(--sun);box-shadow:0 0 0 3px rgba(213,155,54,.34),0 6px 18px rgba(0,0,0,.3);
+  opacity:1;pointer-events:auto;transform:scale(1);}
+body.touch-controls-active #hint{left:50%;bottom:154px;transform:translateX(-50%);text-align:center;}
+body.touch-controls-active #caption{left:50%;bottom:203px;transform:translateX(-50%);text-align:center;}
+
+#complete.overlay{background:
+  linear-gradient(rgba(7,16,12,.78),rgba(7,16,12,.88)),url('assets/environments/market-kitchen.jpg') center/cover no-repeat;}
+#complete .card{border:1px solid rgba(255,255,255,.68);border-top:4px solid var(--sun);border-radius:8px;}
+#complete .trophy{font-size:0;width:68px;height:68px;margin:4px auto 14px;border:2px solid var(--sun);border-radius:50%;position:relative;}
+#complete .trophy::before{content:'JOURNEY';position:absolute;left:50%;top:23px;transform:translateX(-50%);font-size:9px;
+  font-weight:900;letter-spacing:.13em;color:var(--green-dk);}
+#complete h1{font-family:Georgia,'Times New Roman',serif;color:var(--ink);text-transform:none;font-size:27px;}
+.badge-chip .em{font-size:25px;filter:grayscale(1);}
+
+@media (max-width:900px){
+  #hud{top:8px;left:8px;right:8px;gap:5px;}
+  .journey-log{padding:7px 9px;gap:7px;min-height:42px;}
+  .journey-label{display:none;}
+  .journey-metrics{gap:7px;}
+  .journey-metric.points{display:none;}
+  .journey-metric small{font-size:8px;}
+  .journey-metric strong{font-size:14px;}
+  .hbtn{padding:9px;min-width:42px;min-height:42px;justify-content:center;}
+  .hbtn .lbl{display:none;}
+  #sceneContext{top:60px;left:8px;width:min(280px,calc(100vw - 16px));}
+  #mapHeader{top:62px;max-width:88vw;}
+}
+@media (max-width:680px){
+  #title.overlay{align-items:flex-end;padding:12px;background-position:58% center;}
+  #title .card{max-width:none;max-height:94vh;}
+  #title .card-body{padding:22px;}
+  #title .logo{width:105px;margin-bottom:17px;}
+  #title h1{font-size:36px;}
+  #title .subtitle{font-size:14px;line-height:1.45;}
+  .route-stop{padding:10px 6px 10px 0;}.route-stop+.route-stop{padding-left:8px;}
+  .route-stop .name{font-size:10px;}.route-stop .num{font-size:9px;}
+  #mapHeader h2{font-size:18px;}
+  #mapNav{bottom:46px;gap:5px;}
+  .mapnav-btn{padding:10px 8px;}.mapnav-btn .t{font-size:12px;}.mapnav-btn .n{font-size:8px;}
+  .real-photo img{height:145px;}
+}
+
 /* Reduced motion: kill non-essential animations globally */
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
@@ -343,21 +499,30 @@ body.touch-controls-active #caption{bottom:356px;}
 
 <!-- persistent HUD (shown on map + in locations) -->
 <div id="hud" class="hidden" role="region" aria-label="Journey progress and controls">
-  <div class="group" aria-live="polite">
-    <div class="chip" title="Journey Points">⭐ <span class="big" id="hudPoints">0</span></div>
-    <div class="chip" title="Locations completed">📍 <span id="hudLoc">0</span>/3</div>
-    <div class="chip" title="Lessons completed">📘 <span id="hudLes">0</span>/9</div>
-    <div class="chip" title="Badges earned">🏅 <span id="hudBadge">0</span>/3</div>
+  <div class="journey-log" aria-live="polite">
+    <span class="journey-label">Journey log</span>
+    <div class="journey-metrics">
+      <span class="journey-metric"><strong id="hudLoc">0</strong><small>/ 3 stops</small></span>
+      <span class="journey-metric"><strong id="hudLes">0</strong><small>/ 9 notes</small></span>
+      <span class="journey-metric"><strong id="hudBadge">0</strong><small>/ 3 stamps</small></span>
+      <span class="journey-metric points"><strong id="hudPoints">0</strong><small>points</small></span>
+    </div>
   </div>
-  <div class="group">
-    <button class="hbtn hbtn-go hidden" id="btnSteps" title="Jump to any lesson or the quiz" aria-label="Steps">📋 <span class="lbl">Steps</span></button>
-    <button class="hbtn" id="btnMap" title="Go to the California map" aria-label="Map">🗺️ <span class="lbl">Map</span></button>
-    <button class="hbtn" id="btnSound" title="Toggle sound" aria-pressed="true" aria-label="Sound">🔊 <span class="lbl">Sound</span></button>
-    <button class="hbtn" id="btnHelp" title="Help &amp; controls" aria-label="Help">❓ <span class="lbl">Help</span></button>
-    <button class="hbtn" id="btnReset" title="Stuck? Reset your position" aria-label="Reset position">🔄 <span class="lbl">Reset</span></button>
+  <div class="group controls">
+    <button class="hbtn hbtn-go hidden" id="btnSteps" title="Open the Field Guide" aria-label="Field Guide"><span class="ui-symbol" aria-hidden="true">▦</span><span class="lbl">Field Guide</span></button>
+    <button class="hbtn" id="btnMap" title="Go to the California route" aria-label="Route"><span class="ui-symbol" aria-hidden="true">⌁</span><span class="lbl">Route</span></button>
+    <button class="hbtn" id="btnSound" title="Toggle sound" aria-pressed="true" aria-label="Sound"><span class="ui-symbol" aria-hidden="true">◖</span><span class="lbl">Sound on</span></button>
+    <button class="hbtn" id="btnHelp" title="Help and controls" aria-label="Help"><span class="ui-symbol" aria-hidden="true">?</span><span class="lbl">Help</span></button>
+    <button class="hbtn" id="btnReset" title="Stuck? Reset your position" aria-label="Reset position"><span class="ui-symbol" aria-hidden="true">↺</span><span class="lbl">Reset</span></button>
   </div>
 </div>
 
+<aside id="sceneContext" class="hidden" aria-live="polite">
+  <span class="scene-kicker" id="sceneStage"></span>
+  <strong id="sceneName"></strong>
+  <span class="scene-progress" id="sceneProgress"></span>
+</aside>
+<div id="reticle" class="hidden" aria-hidden="true"></div>
 <div id="hint" class="hidden"></div>
 <div id="caption" aria-live="polite"></div>
 <div id="toasts" aria-live="assertive"></div>
@@ -367,8 +532,14 @@ body.touch-controls-active #caption{bottom:356px;}
   <div class="card">
     <div class="card-body">
       <img class="logo" id="titleLogo" src="assets/real-california-milk-logo-official.webp" alt="Real California Milk">
-      <h1>THE FARM-TO-FLAVOR JOURNEY</h1>
+      <div class="title-kicker">An interactive California field journey</div>
+      <h1>From farm<br>to flavor.</h1>
       <p class="subtitle">Follow California dairy from cows and family farms to processors, packages, grocery shelves, and restaurant kitchens.</p>
+      <div class="route-preview" aria-label="Three-stop journey">
+        <div class="route-stop"><span class="num">STOP 01</span><span class="name">The dairy farm</span></div>
+        <div class="route-stop"><span class="num">STOP 02</span><span class="name">Processing &amp; packaging</span></div>
+        <div class="route-stop"><span class="num">STOP 03</span><span class="name">Market &amp; kitchen</span></div>
+      </div>
       <div class="settings-row" role="group" aria-label="Graphics quality">
         <span style="font-size:13px;font-weight:700;color:#5a5140;align-self:center;">Graphics:</span>
         <div class="seg" id="qualitySeg">
@@ -378,7 +549,7 @@ body.touch-controls-active #caption{bottom:356px;}
         </div>
       </div>
       <div class="btnrow" style="justify-content:center;">
-        <button class="btn btn-primary" id="beginBtn" style="font-size:19px;padding:15px 36px;">BEGIN THE CALIFORNIA JOURNEY</button>
+        <button class="btn btn-primary" id="beginBtn" style="font-size:16px;padding:14px 25px;">Begin the field journey <span aria-hidden="true">→</span></button>
       </div>
       <p class="disclaimer">This interactive journey represents the California dairy supply chain. Locations and facilities are illustrative. No login is required and no personal information is collected.</p>
     </div>
@@ -509,6 +680,14 @@ const BRAND_ASSETS = {
   seal: 'assets/real-california-milk-seal.svg'
 };
 
+const ENVIRONMENT_ASSETS = {
+  map: 'assets/environments/california-route.jpg',
+  farm: 'assets/environments/dairy-farm-morning.jpg',
+  processor: 'assets/environments/processing-facility.jpg',
+  market: 'assets/environments/market-kitchen.jpg',
+  cow: 'assets/characters/holstein-cow.png'
+};
+
 // CLIENT: confirm/approve destination URLs.
 const EXTERNAL_LINKS = {
   products:    'https://www.realcaliforniamilk.com/',
@@ -575,9 +754,9 @@ const LOCATIONS = [
             {t:'Clean water',ic:'💧',ok:true},
             {t:'A comfortable place to rest',ic:'🛏️',ok:true},
             {t:'Cooling or shade',ic:'⛱️',ok:true},
-            {t:'A television',ic:'📺',ok:false},
-            {t:'Loud music all night',ic:'🎸',ok:false},
-            {t:'A swimming pool',ic:'🏊',ok:false}
+            {t:'A refrigerated bulk tank',ic:'◫',ok:false},
+            {t:'A package label',ic:'▤',ok:false},
+            {t:'A delivery schedule',ic:'◷',ok:false}
           ],
           success:'Great check! Water, rest, and cooling all help keep cows comfortable.'
         }
@@ -623,10 +802,10 @@ const LOCATIONS = [
       }
     ],
     quiz:[
-      { q:'Which of these does a dairy cow need to stay comfortable?',
-        a:['A television','Cooling or shade','Loud music'], correct:1, from:'cowcare' },
+      { q:'Which of these directly supports dairy cow comfort?',
+        a:['A package label','Cooling or shade','A delivery schedule'], correct:1, from:'cowcare' },
       { q:'Why do dairy farms cool milk quickly after milking?',
-        a:['To make it taste sweeter','To keep it fresh and safe until it reaches the processor','To turn it into cheese faster'], correct:1, from:'milking' },
+        a:['To begin packaging at the farm','To keep it fresh and safe until it reaches the processor','To choose which product it will become'], correct:1, from:'milking' },
       { q:'On a California dairy farm, manure can be turned into which of these?',
         a:['Only trash for the landfill','Nutrients for crops, bedding, compost, or renewable energy','Nothing — it has no other use'], correct:1, from:'resource' }
     ],
@@ -640,6 +819,8 @@ const LOCATIONS = [
     region:'Central Valley',
     intro:'At California processing facilities, milk is checked, transformed, packaged, and prepared for customers.',
     map:[0.42,0.52],
+    stationPos:[[-9,4],[0,3],[9,4]],
+    quizPos:[14,-1],
     color:0x4aa3d8,
     badge:BADGES.processor,
     heroPhoto:'assets/photos/cheese-artisan.jpg',
@@ -656,9 +837,9 @@ const LOCATIONS = [
             {t:'Is the milk still cold?',ic:'🌡️',ok:true},
             {t:'Is the tanker clean?',ic:'🧼',ok:true},
             {t:'Does the milk pass a quality check?',ic:'✅',ok:true},
-            {t:'Does the driver like pizza?',ic:'🍕',ok:false},
-            {t:'What color is the truck?',ic:'🎨',ok:false},
-            {t:'How loud is the horn?',ic:'📢',ok:false}
+            {t:'Is the finished package labeled?',ic:'▤',ok:false},
+            {t:'Which product path comes next?',ic:'⌁',ok:false},
+            {t:'Where will the final package be sold?',ic:'⌂',ok:false}
           ],
           success:'Approved! Cold, clean, and quality-checked milk is ready for the next step.'
         }
@@ -705,7 +886,7 @@ const LOCATIONS = [
     ],
     quiz:[
       { q:'What do processors check before approving an incoming milk shipment?',
-        a:["The driver's music preferences",'Temperature, cleanliness, and quality','The color of the tanker truck'], correct:1, from:'receiving' },
+        a:['The future package size','Temperature, cleanliness, and quality','The destination store shelf'], correct:1, from:'receiving' },
       { q:'True or False: Every dairy product (cheese, butter, yogurt, ice cream) is made using the exact same process?',
         a:['True — they are all identical','False — different products follow different paths from the same milk','True, but only for organic milk'], correct:1, from:'products' },
       { q:'Where would a large case of shredded cheese destined for a restaurant kitchen typically be headed?',
@@ -729,6 +910,7 @@ const LOCATIONS = [
     // Interact button (only a direct tap on the beacon icon would work).
     // These sit in the open plaza, near their matching storefront.
     stationPos:[[-8,4],[0,-7],[8,4]],
+    quizPos:[0,-1],
     heroPhoto:'assets/photos/market-flatbread.jpg',
     photoCredit:'Real California dairy on the table',
     lessons:[
@@ -841,9 +1023,21 @@ const Storage = {
 const Progress = (() => {
   const fresh = () => ({
     points:0, lessons:{}, locations:{}, badges:{}, collectibles:{},
-    quizFirstTry:0
+    quizAwards:{}, quizFirstTry:0
   });
-  let data = Storage.load() || fresh();
+  const normalize = saved => {
+    const base=fresh();
+    if(!saved || typeof saved!=='object') return base;
+    return {
+      ...base,...saved,
+      lessons:{...base.lessons,...(saved.lessons||{})},
+      locations:{...base.locations,...(saved.locations||{})},
+      badges:{...base.badges,...(saved.badges||{})},
+      collectibles:{...base.collectibles,...(saved.collectibles||{})},
+      quizAwards:{...base.quizAwards,...(saved.quizAwards||{})}
+    };
+  };
+  let data = normalize(Storage.load());
   function persist(){ Storage.save(data); updateHUD(); }
   return {
     get data(){ return data; },
@@ -864,8 +1058,12 @@ const Progress = (() => {
       Analytics.track('lesson_completed',{location:loc,lesson:les});
       return true;
     },
-    addQuizPoints(pts, firstTry){
+    addQuizPoints(loc, question, pts, firstTry){
+      const k=`${loc}.${question}`;
+      if(data.quizAwards[k]) return false;
+      data.quizAwards[k]=true;
       data.points += pts; if (firstTry) data.quizFirstTry++; persist();
+      return true;
     },
     completeLocation(loc){
       if (data.locations[loc]) return false;
@@ -891,7 +1089,9 @@ const Progress = (() => {
 
 // --- Audio: synthesized SFX, no assets, respects sound toggle, no autoplay ---
 const Audio = (() => {
-  let ctx=null, enabled=(localStorage.getItem('rcm_sound')!=='off');
+  let savedSound='on';
+  try{ savedSound=localStorage.getItem('rcm_sound')||'on'; }catch(e){}
+  let ctx=null, enabled=(savedSound!=='off'), requestedAmbience=null, ambienceBus=null;
   function init(){ // called on first user gesture
     if (!ctx){ try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
     if (ctx && ctx.state==='suspended') ctx.resume();
@@ -904,10 +1104,42 @@ const Audio = (() => {
     g.gain.setValueAtTime(vol,t0); g.gain.exponentialRampToValueAtTime(0.001,t0+dur);
     o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0+dur+0.05);
   }
+  function stopAmbience(){
+    if(!ambienceBus) return;
+    const old=ambienceBus; ambienceBus=null;
+    const now=ctx?ctx.currentTime:0;
+    try{ old.master.gain.cancelScheduledValues(now); old.master.gain.setTargetAtTime(0.0001,now,0.12); }catch(e){}
+    setTimeout(()=>old.sources.forEach(s=>{ try{s.stop();}catch(e){} }),500);
+  }
+  function startAmbience(kind){
+    requestedAmbience=kind||null;
+    stopAmbience();
+    if(!kind||!enabled) return;
+    init(); if(!ctx) return;
+    const master=ctx.createGain(); master.gain.setValueAtTime(0.0001,ctx.currentTime);
+    master.gain.exponentialRampToValueAtTime(kind==='processor'?0.045:0.032,ctx.currentTime+0.8);
+    master.connect(ctx.destination);
+    const sources=[];
+    const seconds=2, buffer=ctx.createBuffer(1,ctx.sampleRate*seconds,ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*(0.55+0.45*Math.sin(i/data.length*Math.PI));
+    const noise=ctx.createBufferSource(); noise.buffer=buffer; noise.loop=true;
+    const filter=ctx.createBiquadFilter(); filter.type=kind==='market'?'bandpass':'lowpass';
+    filter.frequency.value=kind==='farm'?520:kind==='processor'?340:760; filter.Q.value=kind==='market'?0.5:0.7;
+    const ng=ctx.createGain(); ng.gain.value=kind==='farm'?0.32:kind==='processor'?0.18:0.12;
+    noise.connect(filter).connect(ng).connect(master); noise.start(); sources.push(noise);
+    const hums=kind==='processor'?[52,104]:kind==='market'?[58]:[64,128];
+    hums.forEach((freq,i)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type=i?'sine':'triangle'; o.frequency.value=freq;
+      g.gain.value=(kind==='processor'?0.16:0.07)/(i+1); o.connect(g).connect(master); o.start(); sources.push(o); });
+    const lfo=ctx.createOscillator(),lfoGain=ctx.createGain(); lfo.frequency.value=0.09; lfoGain.gain.value=0.06;
+    lfo.connect(lfoGain).connect(ng.gain); lfo.start(); sources.push(lfo);
+    ambienceBus={master,sources};
+  }
   return {
     init,
     get enabled(){ return enabled; },
-    toggle(){ enabled=!enabled; localStorage.setItem('rcm_sound',enabled?'on':'off'); if(enabled) init(); return enabled; },
+    toggle(){ enabled=!enabled; try{localStorage.setItem('rcm_sound',enabled?'on':'off');}catch(e){} if(enabled){init();startAmbience(requestedAmbience);}else stopAmbience(); return enabled; },
+    ambience(kind){ startAmbience(kind); },
     click(){ tone(600,0.06,'square',0.06,820); },
     pop(){ tone(340,0.09,'sine',0.16,900); tone(1200,0.07,'sine',0.08,1500,0.05); },
     good(){ tone(660,0.1,'sine',0.16); tone(880,0.22,'sine',0.16,null,0.09); },
@@ -929,7 +1161,9 @@ const Audio = (() => {
    4. DOM / HUD / MODAL / TOAST helpers
 ============================================================================ */
 const $ = id => document.getElementById(id);
-const el = (tag,cls,html) => { const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; };
+const el = (tag,cls,html) => { const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html;
+  if(cls&&cls.split(' ').includes('quiz-feedback')){e.setAttribute('role','status');e.setAttribute('aria-live','polite');}
+  return e; };
 
 function toast(txt){ const d=el('div','toast',txt); $('toasts').appendChild(d); setTimeout(()=>d.remove(),1800); }
 
@@ -951,7 +1185,7 @@ function updateHUD(){
   $('hudBadge').textContent = Progress.badgeCount();
 }
 
-let modalOpen=false;
+let modalOpen=false,previousFocus=null,inertedSiblings=[];
 
 // "Scroll for more" affordance: modal content (lessons especially — steps that
 // build up a list, matching games, etc.) can grow taller than the viewport,
@@ -968,12 +1202,18 @@ function checkModalScroll(){
   hint.classList.toggle('hidden', !overflow || atBottom);
 }
 function openModal(title, sub, bodyBuilder){
+  const replacing=modalOpen;
   modalOpen=true; keys.clear();
+  if(!replacing)previousFocus=document.activeElement;
   $('modalTitle').innerHTML = title;
   $('modalSub').textContent = sub||'';
   const body=$('modalBody'); body.innerHTML='';
   bodyBuilder(body);
   $('modal').classList.remove('hidden');
+  if(!replacing){
+    inertedSiblings=[...document.body.children].filter(n=>n!==$('modal')&&n.tagName!=='SCRIPT'&&!n.inert);
+    inertedSiblings.forEach(n=>{n.inert=true;});
+  }
   const card=$('modalCard'); card.scrollTop=0;
   // focus first focusable for keyboard users
   const f=body.querySelector('button,input,[tabindex]'); if(f) setTimeout(()=>f.focus(),30);
@@ -984,18 +1224,29 @@ function openModal(title, sub, bodyBuilder){
 }
 function closeModal(){
   $('modal').classList.add('hidden'); modalOpen=false;
+  inertedSiblings.forEach(n=>{n.inert=false;}); inertedSiblings=[];
   $('scrollHint').classList.add('hidden');
   if(modalScrollObserver){ modalScrollObserver.disconnect(); modalScrollObserver=null; }
   // Backing out of a lesson/quiz via the X (or any other close path) should
   // never leave that lesson's caption text stuck on screen, overlapping the
   // movement hint underneath it.
   caption('');
+  if(previousFocus&&document.contains(previousFocus))previousFocus.focus();
+  previousFocus=null;
 }
 $('modalCard').addEventListener('scroll',checkModalScroll);
 addEventListener('resize',()=>{ if(modalOpen) checkModalScroll(); });
 // Always-available X button — players can back out of any lesson, quiz, or
 // dialog without being forced to finish it.
 $('modalClose').addEventListener('click',closeModal);
+$('modal').addEventListener('keydown',e=>{
+  if(e.key!=='Tab')return;
+  const focusable=[...$('modal').querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex]:not([tabindex="-1"])')].filter(x=>!x.closest('.hidden'));
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+});
 
 // ---- confetti celebration (small burst, no deps) ----
 let confettiRAF=null;
@@ -1046,16 +1297,16 @@ function confirmDialog(title, msg, onYes, yesLabel='Yes', noLabel='Cancel'){
 // help dialog
 function showHelp(){
   Audio.click();
-  openModal('❓ How to Play','Follow California dairy from farm to flavor.',body=>{
+  openModal('How to explore','Follow California dairy from farm to flavor.',body=>{
     body.innerHTML = `
       <p><b>Goal:</b> Visit 3 California destinations. At each one, finish 3 short lessons and a quiz to earn a badge. You do not need to collect anything extra to finish.</p>
       <ul>
         <li><b>Desktop:</b> Move with <b>W A S D</b> or arrow keys. Look with mouse drag. <b>E</b> or click to interact. Hold <b>Shift</b> to move faster. <b>Esc</b> or the Map button to leave a scene.</li>
         <li><b>Mobile — two thumb sticks:</b> the <b>left stick moves</b>, the <b>right stick looks</b> around. Tap the big <b>Interact</b> button (it turns gold and says <b>OPEN</b> when you’re next to a station).</li>
-        <li><b>📋 Steps</b> lets you jump straight to any lesson or the quiz without walking. On the map, use the buttons at the bottom to enter each stop.</li>
-        <li><b>Map</b> returns you to California. <b>Sound</b> toggles audio. <b>Reset</b> puts you back at the scene’s start if you get stuck.</li>
+        <li><b>Field Guide</b> lets you open any field note or the chapter checkpoint without precise walking. On the route, use the destination cards at the bottom to enter each stop.</li>
+        <li><b>Route</b> returns you to California. <b>Sound</b> toggles audio. <b>Reset</b> puts you back at the scene’s start if you get stuck.</li>
       </ul>
-      <p style="font-size:13px;color:#777;">Optional golden milk drops are worth a few extra points, but they are never required.</p>
+      <p style="font-size:13px;color:#5f6a63;">Optional brass field markers add a note to your journey log, but they are never required.</p>
       <div class="btnrow">
         <button class="btn btn-ghost" id="helpResetAll">Reset all progress</button>
         <button class="btn btn-primary" id="helpClose">Got it</button>
@@ -1074,18 +1325,15 @@ function showHelp(){
 function showStepsMenu(){
   const loc = active.loc; if(!loc) return;
   Audio.click();
-  openModal(`📋 ${loc.title}`, loc.stage, body=>{
-    body.appendChild(el('p',null,'Tap a step to jump straight to it.'));
-    // Grid of compact tiles (icon + short label) that flow left-to-right and
-    // wrap, instead of one long vertical list — much less scrolling, esp.
-    // on short mobile screens.
+  openModal(`Field Guide · ${loc.title}`, loc.stage, body=>{
+    body.appendChild(el('p',null,'Open a field note directly, or return to the environment and follow its numbered marker.'));
     const list=el('div'); list.style.display='grid';
     list.style.gridTemplateColumns='repeat(auto-fit, minmax(122px,1fr))'; list.style.gap='10px';
     loc.lessons.forEach((les,i)=>{
       const done=Progress.isLessonDone(loc.id,les.id);
       const b=el('button','btn '+(done?'btn-ghost':'btn-primary'));
       b.style.cssText='flex-direction:column;gap:4px;padding:14px 8px;text-align:center;white-space:normal;line-height:1.25;';
-      b.innerHTML=`<span style="font-size:26px;">${les.icon}</span><span style="font-size:13px;font-weight:800;">${i+1}. ${les.title}</span>${done?'<span style="font-size:12px;">✓ Done</span>':''}`;
+      b.innerHTML=`<span style="font-size:11px;letter-spacing:.14em;">FIELD NOTE 0${i+1}</span><span style="font-size:13px;font-weight:800;">${les.title}</span>${done?'<span style="font-size:12px;">Logged</span>':''}`;
       b.onclick=()=>{ closeModal(); startLesson(loc.id,les.id); };
       list.appendChild(b);
     });
@@ -1094,13 +1342,13 @@ function showStepsMenu(){
     const locDone=Progress.isLocationDone(loc.id);
     const q=el('button','btn '+(quizReady?'btn-sun':'btn-ghost'));
     q.style.cssText='flex-direction:column;gap:4px;padding:14px 8px;text-align:center;white-space:normal;line-height:1.25;';
-    q.innerHTML=`<span style="font-size:26px;">🧠</span><span style="font-size:13px;font-weight:800;">Take the Quiz</span>${locDone?'<span style="font-size:12px;">✓ Done</span>':quizReady?'':'<span style="font-size:12px;">🔒 Locked</span>'}`;
+    q.innerHTML=`<span style="font-size:11px;letter-spacing:.14em;">CHECKPOINT</span><span style="font-size:13px;font-weight:800;">Chapter review</span>${locDone?'<span style="font-size:12px;">Complete</span>':quizReady?'':'<span style="font-size:12px;">Locked</span>'}`;
     q.disabled=!quizReady;
     q.onclick=()=>{ closeModal(); startQuiz(loc.id); };
     list.appendChild(q);
     body.appendChild(list);
     const row=el('div','btnrow');
-    const back=el('button','btn btn-ghost','🗺️ Back to map'); back.onclick=()=>{ closeModal(); go(GAME_STATES.MAP); };
+    const back=el('button','btn btn-ghost','Back to route'); back.onclick=()=>{ closeModal(); go(GAME_STATES.MAP); };
     const close=el('button','btn btn-primary','Keep exploring'); close.onclick=closeModal;
     row.append(back,close); body.appendChild(row);
   });
@@ -1114,11 +1362,12 @@ let currentLesson = null; // {loc, lesson}
 function startLesson(locId, lessonId){
   const loc = LOC_BY_ID[locId];
   const lesson = loc.lessons.find(l=>l.id===lessonId);
+  const lessonNumber = loc.lessons.indexOf(lesson)+1;
   currentLesson = { loc, lesson };
   Audio.click();
   Analytics.track('lesson_started',{location:locId,lesson:lessonId});
   caption(lesson.intro);
-  openModal(`${lesson.icon} ${lesson.title}`, loc.stage, body=>{
+  openModal(`Field Note 0${lessonNumber} · ${lesson.title}`, loc.stage, body=>{
     if(lesson.photo) body.appendChild(photoCard(lesson.photo,lesson.photoCredit));
     body.appendChild(el('p',null,lesson.intro));
     const gameHost = el('div','game-host'); body.appendChild(gameHost);
@@ -1130,7 +1379,6 @@ function lessonSolved(){
   const {loc,lesson} = currentLesson;
   const isNew = Progress.completeLesson(loc.id, lesson.id);
   Audio.good();
-  fireConfetti();
   if (isNew) toast(`+${SCORING.lesson} ⭐ Lesson complete!`);
   const body=$('modalBody');
   const done=el('div','btnrow');
@@ -1274,7 +1522,7 @@ function renderBranch(host,g){
       if(i<p.steps.length-1){ const a=el('span','branch-arrow','→'); path.appendChild(a); }
     });
     Audio.pop();
-    if(seen.size>=1){ done.disabled=false; }
+    if(seen.size>=2){ done.disabled=false; }
     if(seen.size>=2 && !solved){ solved=true; fb.style.color='var(--green-dk)'; fb.textContent=g.success; }
   }
   g.products.forEach((p,i)=>{ const b=el('button',null,`${p.ic} ${p.name}`); b.onclick=()=>show(i); tabs.appendChild(b); });
@@ -1350,13 +1598,12 @@ function startQuiz(locId){
         if(i===q.correct){
           b.classList.add('right');
           const first=attempts===0, pts=first?SCORING.quizFirst:SCORING.quizLater;
-          Progress.addQuizPoints(pts,first); if(first)correctCount++;
+          const awarded=Progress.addQuizPoints(locId,idx,pts,first); if(first)correctCount++;
           Analytics.track('quiz_answered',{location:locId,question:idx,correct:true,firstTry:first});
           Audio.good();
-          fireConfetti();
-          fb.style.color='var(--green-dk)'; fb.textContent=`Correct! +${pts} points`;
+          fb.style.color='var(--green-dk)'; fb.textContent=awarded?`Correct. +${pts} points`:'Correct. Review complete.';
           [...opts.children].forEach(o=>o.disabled=true);
-          setTimeout(()=>{ idx++; if(idx<questions.length) renderQ(body); else finish(); },900);
+          setTimeout(()=>{ if(!modalOpen)return; idx++; if(idx<questions.length) renderQ(body); else finish(); },1500);
         } else {
           attempts++; b.classList.add('wrong'); b.disabled=true; Audio.bad();
           Analytics.track('quiz_answered',{location:locId,question:idx,correct:false});
@@ -1369,14 +1616,15 @@ function startQuiz(locId){
   function finish(){
     const isNew=Progress.completeLocation(locId);
     Audio.fanfare();
+    fireConfetti();
     const body=$('modalBody'); body.innerHTML='';
-    body.appendChild(el('div',null,`<div style="text-align:center;font-size:52px;">${loc.badge.emoji}</div>`));
+    body.appendChild(el('div',null,`<div style="width:64px;height:64px;margin:0 auto 10px;border:2px solid var(--sun);border-radius:50%;display:grid;place-items:center;font-weight:900;letter-spacing:.08em;color:var(--green-dk);">0${loc.order}</div>`));
     body.appendChild(el('h2',null,`<span style="color:var(--green-dk)">Badge earned: ${loc.badge.name}!</span>`));
     body.querySelector('h2').style.textAlign='center';
     body.appendChild(el('p',null,`<div style="text-align:center;">You answered <b>${correctCount}/${questions.length}</b> on the first try.</div>`));
     body.appendChild(el('p',null,`<div style="text-align:center;color:#555;">${loc.completeMsg}</div>`));
     const row=el('div','btnrow'); row.style.justifyContent='center';
-    const cont=el('button','btn btn-primary','Continue to the map 🗺️');
+    const cont=el('button','btn btn-primary','Continue to the route →');
     cont.onclick=()=>{ closeModal(); go(GAME_STATES.MAP,{justCompleted:locId}); };
     row.appendChild(cont); body.appendChild(row);
     if(isNew) toast(`+${SCORING.location} ⭐ Location complete!`);
@@ -1387,8 +1635,9 @@ function startQuiz(locId){
    7. THREE.js setup, quality, disposal
 ============================================================================ */
 let THREE=null, RoundedBoxGeometry=null, renderer=null, camera=null, webglOK=true;
-let quality = localStorage.getItem('rcm_quality') || 'auto';
-const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+let quality='auto';
+try{ quality=localStorage.getItem('rcm_quality')||'auto'; }catch(e){}
+const isTouch = matchMedia('(pointer: coarse)').matches;
 
 function effectiveQuality(){
   if(quality==='high') return 'high';
@@ -1407,26 +1656,38 @@ async function initThree(){
   try{ ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
   catch(e){ RoundedBoxGeometry=null; }
   try{
-    renderer = new THREE.WebGLRenderer({ antialias: effectiveQuality()==='high' });
-    const maxPR = effectiveQuality()==='high' ? 2 : 1.5;
-    renderer.setPixelRatio(Math.min(devicePixelRatio, maxPR));
+    renderer = new THREE.WebGLRenderer({ antialias: effectiveQuality()==='high',powerPreference:'high-performance' });
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.02;
     renderer.setSize(innerWidth, innerHeight);
-    renderer.shadowMap.enabled = effectiveQuality()==='high';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.insertBefore(renderer.domElement, document.body.firstChild);
-    camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 2000);
+    camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 2000);
     camera.rotation.order='YXZ';
+    applyQuality();
     addEventListener('resize', ()=>{
       if(!renderer) return;
       camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+      applyQuality();
       renderer.setSize(innerWidth,innerHeight);
     });
     return true;
   }catch(e){ webglOK=false; return false; }
 }
 
+function applyQuality(){
+  if(!renderer) return;
+  const high=effectiveQuality()==='high';
+  renderer.setPixelRatio(Math.min(devicePixelRatio,high?2:1.25));
+  renderer.shadowMap.enabled=high;
+  renderer.toneMappingExposure=high?1.02:.96;
+}
+
 // Deep-dispose a scene's geometry, materials, textures.
 function disposeScene3D(scene){
+  if(scene.background&&scene.background.isTexture) scene.background.dispose();
+  if(scene.environment&&scene.environment.isTexture&&scene.environment!==scene.background) scene.environment.dispose();
   scene.traverse(obj=>{
     if(obj.geometry) obj.geometry.dispose();
     if(obj.material){
@@ -1441,7 +1702,7 @@ function disposeScene3D(scene){
    8. BUILD HELPERS + first-person controller
 ============================================================================ */
 function makeBuilders(){
-  const lamb=(color,extra={})=>new THREE.MeshLambertMaterial({color,...extra});
+  const lamb=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:0.76,metalness:0.04,...extra});
   const basic=(color,extra={})=>new THREE.MeshBasicMaterial({color,...extra});
   function box(w,h,d,mat,x=0,y=0,z=0,shadow=true){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y,z); if(shadow){m.castShadow=m.receiveShadow=true;} return m; }
   // Rounded-corner box (three/addons RoundedBoxGeometry) for a softer, more
@@ -1458,11 +1719,22 @@ function makeBuilders(){
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
     const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true})); s.scale.set(scale,scale,1); return s;
   }
+  function numberSprite(value,color='#d59b36',scale=1){
+    const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
+    x.clearRect(0,0,256,256);
+    x.fillStyle='rgba(10,22,16,.94)'; x.beginPath(); x.arc(128,128,100,0,Math.PI*2); x.fill();
+    x.lineWidth=10; x.strokeStyle=color; x.stroke();
+    x.fillStyle='#f4f0e6'; x.font='800 92px Segoe UI, sans-serif'; x.textAlign='center'; x.textBaseline='middle';
+    const raw=String(value),display=/^\d+$/.test(raw)?raw.padStart(2,'0'):raw;
+    x.fillText(display,128,132);
+    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false})); s.scale.set(scale,scale,1); return s;
+  }
   function labelSprite(text,scale=1){
     // Auto-shrinks the font so long labels ("Consumer + Foodservice Packages")
     // fit inside the pill instead of clipping off the canvas edge.
     const c=document.createElement('canvas'); c.width=512; c.height=128; const x=c.getContext('2d');
-    x.fillStyle='rgba(11,94,42,.92)'; roundRect(x,6,30,500,68,20); x.fill();
+    x.fillStyle='rgba(10,22,16,.92)'; roundRect(x,6,30,500,68,8); x.fill();
     x.fillStyle='#fff'; x.textAlign='center'; x.textBaseline='middle';
     const maxTextWidth=460; let fontSize=40;
     x.font=`700 ${fontSize}px Segoe UI, sans-serif`;
@@ -1495,14 +1767,14 @@ function makeBuilders(){
     }
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
   }
-  return {lamb,basic,box,rbox,cyl,ball,emojiSprite,labelSprite,noiseTexture,cowTexture};
+  return {lamb,basic,box,rbox,cyl,ball,emojiSprite,numberSprite,labelSprite,noiseTexture,cowTexture};
 }
 let B=null; // builders (set after THREE loads)
 
 // ---- First-person controller (shared by location scenes) ----
-const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0};
+const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0,vx:0,vz:0};
 let curOBST=[], curBounds={minX:-40,maxX:40,minZ:-40,maxZ:40}, curSpawn={x:0,z:0,yaw:0};
-function resetPlayer(){ player.x=curSpawn.x; player.z=curSpawn.z; player.yaw=curSpawn.yaw; player.pitch=0; if(camera){camera.position.set(player.x,player.eye,player.z); camera.rotation.y=player.yaw; camera.rotation.x=0;} }
+function resetPlayer(){ player.x=curSpawn.x; player.z=curSpawn.z; player.yaw=curSpawn.yaw; player.pitch=0; player.vx=player.vz=0; if(camera){camera.position.set(player.x,player.eye,player.z); camera.rotation.y=player.yaw; camera.rotation.x=0;} }
 
 function updatePlayer(dt){
   // right look joystick — continuous camera rotation while held
@@ -1517,16 +1789,18 @@ function updatePlayer(dt){
   if(keys.has('KeyD')||keys.has('ArrowRight'))fx+=1;
   fx+=joyVec.x; fz+=joyVec.y;
   const m=Math.hypot(fx,fz); if(m>1){fx/=m;fz/=m;}
-  const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight'))?10:6;
+  const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight'))?7.2:4.2;
   const sin=Math.sin(player.yaw),cos=Math.cos(player.yaw);
-  const vx=(fx*cos-fz*sin)*speed, vz=(fx*-sin-fz*cos)*speed*-1;
-  player.x+=vx*dt; player.z+=vz*dt;
+  const targetVX=(fx*cos+fz*sin)*speed, targetVZ=(-fx*sin+fz*cos)*speed;
+  const response=1-Math.exp(-dt*11);
+  player.vx+=(targetVX-player.vx)*response; player.vz+=(targetVZ-player.vz)*response;
+  player.x+=player.vx*dt; player.z+=player.vz*dt;
   const R=0.55;
   for(const o of curOBST){ const dx=player.x-o.x,dz=player.z-o.z,rr=o.r+R,d2=dx*dx+dz*dz; if(d2<rr*rr&&d2>1e-4){const d=Math.sqrt(d2),p=(rr-d)/d; player.x+=dx*p; player.z+=dz*p;} }
   player.x=Math.max(curBounds.minX,Math.min(curBounds.maxX,player.x));
   player.z=Math.max(curBounds.minZ,Math.min(curBounds.maxZ,player.z));
-  const moving=m>0.1; player.bob+=dt*(moving?speed*1.4:0);
-  const bobY=moving?Math.sin(player.bob)*0.05:0;
+  const moving=Math.hypot(player.vx,player.vz)>0.25; player.bob+=dt*(moving?speed*1.2:0);
+  const bobY=moving?Math.sin(player.bob)*0.022:0;
   camera.position.set(player.x,player.eye+bobY,player.z);
   camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
 }
@@ -1542,6 +1816,9 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>keys.delete(e.code));
 
 const joyVec={x:0,y:0}, lookVec={x:0,y:0};
+function clearInput(){ keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0; player.vx=player.vz=0; }
+addEventListener('blur',clearInput);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) clearInput(); });
 let downX=0,downY=0,downT=0,lastX=0,lastY=0,movedFar=false;
 
 // Reusable virtual-stick factory (Roblox-style): drag the knob, get a -1..1 vector.
@@ -1561,7 +1838,7 @@ $('touchAct').addEventListener('click',()=>{ if(!modalOpen) interactNearest(); }
 /* pointer look + tap-to-interact on canvas (attached after renderer exists) */
 function attachCanvasInput(){
   const cv=renderer.domElement;
-  cv.addEventListener('pointerdown',e=>{ if(modalOpen||!isLocationState())return; lookId=e.pointerId; downX=lastX=e.clientX; downY=lastY=e.clientY; downT=performance.now(); movedFar=false; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointerdown',e=>{ if(modalOpen)return; movedFar=false; downX=lastX=e.clientX; downY=lastY=e.clientY; downT=performance.now(); if(!isLocationState())return; lookId=e.pointerId; cv.setPointerCapture(e.pointerId); });
   cv.addEventListener('pointermove',e=>{ if(e.pointerId!==lookId||modalOpen)return; const dx=e.clientX-lastX,dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; if(Math.hypot(e.clientX-downX,e.clientY-downY)>7)movedFar=true; player.yaw-=dx*0.0045; player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch-dy*0.0045)); });
   cv.addEventListener('pointerup',e=>{ if(e.pointerId!==lookId)return; lookId=null; if(!modalOpen&&!movedFar&&performance.now()-downT<450) tryClick(e.clientX,e.clientY); });
   cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1601,16 +1878,19 @@ function go(stateId, opts={}){
   $('mapDisclaimer').classList.toggle('hidden',!onMap);
   $('mapNav').classList.toggle('hidden',!onMap);
   const inLoc=[GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId);
-  // Joysticks visible on all platforms (desktop gets arrow labels; mobile uses touch).
-  // This helps players discover the movement and look controls without guessing.
-  $('joy').classList.toggle('hidden',!inLoc);
-  $('lookJoy').classList.toggle('hidden',!inLoc);
-  $('touchAct').classList.toggle('hidden',!inLoc);
-  document.body.classList.toggle('touch-controls-active',inLoc);
+  const showTouch=inLoc&&isTouch;
+  $('joy').classList.toggle('hidden',!showTouch);
+  $('lookJoy').classList.toggle('hidden',!showTouch);
+  $('touchAct').classList.toggle('hidden',!showTouch);
+  $('reticle').classList.toggle('hidden',!inLoc||isTouch);
+  $('sceneContext').classList.toggle('hidden',!inLoc);
+  document.body.classList.toggle('touch-controls-active',showTouch);
   $('btnSteps').classList.toggle('hidden',!inLoc);
+  $('btnMap').classList.toggle('hidden',onMap);
   $('btnReset').classList.toggle('hidden',!inLoc);
   $('hint').classList.toggle('hidden',!inLoc);
   caption('');
+  if(!inLoc) Audio.ambience(null);
 
   if(stateId===GAME_STATES.EARTH_INTRO) return enterEarthIntro();
   if(stateId===GAME_STATES.MAP)         return enterMap(opts);
@@ -1631,24 +1911,22 @@ function caToWorld(nx,ny){ return { x:(nx-0.5)*CA_W, z:-((ny-0.5)*CA_H) }; }
 
 /* ---------------- EARTH INTRO ---------------- */
 let reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-// Grabs whatever frame the intro video is showing right now, so the map
-// screen can open on a still of the same California footage instead of a
-// generic color. Wrapped in try/catch: if the browser blocks canvas capture
-// for any reason, we silently fall back to the old map look.
-function captureVideoFrame(video){
-  try{
-    if(!video || video.readyState<2 || !video.videoWidth) return null;
-    const c=document.createElement('canvas');
-    c.width=video.videoWidth; c.height=video.videoHeight;
-    c.getContext('2d').drawImage(video,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',0.86);
-  }catch(e){ return null; }
-}
-let capturedMapBg=null;
 
 function enterEarthIntro(){
   Analytics.track('intro_started');
-  const finish=()=>finishIntro();
+  let didFinish=false;
+  const finish=()=>{ if(didFinish)return; didFinish=true; finishIntro(); };
+
+  if(reducedMotion){
+    const panel=$('introReduced'); panel.classList.remove('hidden');
+    panel.querySelector('h2').textContent=COPY.intro.line1;
+    panel.querySelector('p').textContent=COPY.intro.line2;
+    panel.querySelector('.r-slide').classList.add('show');
+    $('skipIntro').textContent='Continue to the route →';
+    $('skipIntro').classList.remove('hidden'); $('skipIntro').onclick=finish;
+    setActive(GAME_STATES.EARTH_INTRO,{dispose:()=>{panel.classList.add('hidden');$('skipIntro').classList.add('hidden');}});
+    return;
+  }
 
   // Video intro. Only the dark-backed caption pill carries text over the
   // footage — the old large white title/subtitle was unreadable over bright
@@ -1657,8 +1935,10 @@ function enterEarthIntro(){
   vid.src='assets/california-intro.mp4';
   vid.classList.remove('hidden');
   vid.currentTime=0;
-  vid.play().catch(e=>console.log('Video autoplay prevented, skipping intro'));
+  vid.play().catch(finish);
+  vid.addEventListener('error',finish,{once:true});
 
+  $('skipIntro').textContent='Skip intro →';
   $('skipIntro').classList.remove('hidden');
   $('skipIntro').onclick=finish;
   caption(COPY.intro.line1);
@@ -1671,7 +1951,7 @@ function enterEarthIntro(){
   const update=(dt,t)=>{
     if(t0===null)t0=t;
     const elapsed=t-t0;
-    if(!finished && (vid.ended || elapsed/1000>=DURATION)){ finished=true; finish(); }
+    if(!finished && (vid.ended || elapsed>=DURATION)){ finished=true; finish(); }
   };
 
   setActive(GAME_STATES.EARTH_INTRO,{
@@ -1711,16 +1991,8 @@ function makeEarthTexture(){
 }
 
 function finishIntro(){
-  if(sessionStorage) sessionStorage.setItem('rcm_introSeen','1');
+  try{ sessionStorage.setItem('rcm_introSeen','1'); }catch(e){}
   Analytics.track('intro_completed');
-  // Grab whatever frame is showing right now (natural end, timeout, or Skip)
-  // so the map opens on a still of this same footage. Skip this if the
-  // player skipped very early (still shows Earth from far away, before the
-  // zoom reaches California) — a half-zoomed frame looks worse than the
-  // regular illustrated map, so fall back to that instead.
-  const vid=$('introVideo');
-  const zoomedInEnough = vid.ended || (vid.duration && vid.currentTime/vid.duration>0.6) || vid.currentTime>3.5;
-  if(zoomedInEnough) capturedMapBg = captureVideoFrame(vid) || capturedMapBg;
   $('introReduced').classList.add('hidden');
   $('skipIntro').classList.add('hidden');
   caption('');
@@ -1732,19 +2004,12 @@ $('skipIntro').addEventListener('click',()=>{ Analytics.track('intro_skipped'); 
 function enterMap(opts={}){
   Analytics.track('map_opened');
   const scene=new THREE.Scene();
-  // If we captured a still from the intro video, use it as a photoreal
-  // backdrop and skip the cartoon terrain (sea/CA-blob/mountains) so the
-  // destination pins float over real California footage instead — this is
-  // what the player just flew into, not a separate illustrated map.
-  const usePhotoBg = !!capturedMapBg;
-  if(usePhotoBg){
-    const tex=new THREE.TextureLoader().load(capturedMapBg);
-    tex.colorSpace=THREE.SRGBColorSpace;
-    scene.background=tex;
-  } else {
-    scene.background=new THREE.Color(0x8fd3f4);
-    scene.fog=new THREE.Fog(0x8fd3f4,60,160);
-  }
+  // A fixed late-flight frame keeps the route geography stable on every visit.
+  // It comes from the bundled California intro and retains its source credit.
+  const usePhotoBg=true;
+  const tex=new THREE.TextureLoader().load(ENVIRONMENT_ASSETS.map);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  scene.background=tex;
   scene.add(new THREE.HemisphereLight(0xeaf6ff,0x6f9f5f,1.1));
   const sun=new THREE.DirectionalLight(0xfff3d6,1.9); sun.position.set(30,60,20);
   if(effectiveQuality()==='high'){ sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-40;sun.shadow.camera.right=40;sun.shadow.camera.top=40;sun.shadow.camera.bottom=-40; sun.shadow.camera.far=160; }
@@ -1764,29 +2029,16 @@ function enterMap(opts={}){
     for(let i=0;i<10;i++){ const {x,z}=caToWorld(0.6+Math.random()*0.25,0.4+Math.random()*0.5); const mtn=new THREE.Mesh(new THREE.ConeGeometry(1.1+Math.random(),2+Math.random()*2,5),B.lamb(0x8a7d5a)); mtn.position.set(x,1.6,z); mtn.castShadow=true; scene.add(mtn); }
   }
 
-  // markers — sized generously (both visually and for hit-testing) since
-  // these sit over a photo backdrop now and need to read clearly at any
-  // terrain color, and be easy to tap directly on a phone screen.
-  function pinBadge(col){
-    const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d');
-    x.beginPath(); x.arc(64,64,56,0,Math.PI*2);
-    x.fillStyle='rgba(255,255,255,0.97)'; x.fill();
-    x.lineWidth=8; x.strokeStyle=col; x.stroke();
-    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
-    return new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
-  }
   const markers=[]; const markerHitList=[];
+  let recapDelay=null,recapInterval=null;
   LOCATIONS.forEach(loc=>{
     const {x,z}=caToWorld(loc.map[0],loc.map[1]);
     const g=new THREE.Group(); g.position.set(x,1.7,z);
     const unlocked=Progress.isUnlocked(loc.id), done=Progress.isLocationDone(loc.id);
     const col = done?0x2a9c53 : unlocked?loc.color : 0x9e9e9e;
     const colHex = '#'+col.toString(16).padStart(6,'0');
-    // white "badge" backing makes the pin readable against any patch of the
-    // photo (ocean, forest, farmland all have different colors/contrast)
-    const badge=pinBadge(colHex); badge.scale.set(3.4,3.4,1); badge.position.y=0.1; g.add(badge);
-    const icon=B.emojiSprite(done?'✅':unlocked?'📍':'🔒',2.2); icon.position.y=0.14; g.add(icon);
-    const label=B.labelSprite(`${loc.order}. ${loc.title.replace('WHERE ','').replace(/^(.{22}).+/,'$1…')}`,1.05); label.position.y=2.8; g.add(label);
+    const badge=B.numberSprite(done?'✓':unlocked?loc.order:'—',colHex,3.25); badge.position.y=0.1; g.add(badge);
+    const label=B.labelSprite(`0${loc.order} / ${loc.title.replace('WHERE ','').replace(/^(.{22}).+/,'$1…')}`,1.05); label.position.y=2.8; g.add(label);
     const ring=new THREE.Mesh(new THREE.RingGeometry(2.1,2.6,28),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.7,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=-1.4; g.add(ring);
     // generous invisible tap target — much larger than the visible badge so
     // fingers/imprecise clicks near the pin still register
@@ -1808,8 +2060,8 @@ function enterMap(opts={}){
   const seg1=drawRoute(LOCATIONS[0],LOCATIONS[1],Progress.isLocationDone('farm'));
   const seg2=drawRoute(LOCATIONS[1],LOCATIONS[2],Progress.isLocationDone('processor'));
 
-  // truck sprite (animates along a route when a location was just completed)
-  const truck=B.emojiSprite('🚚',2.2); truck.visible=false; scene.add(truck);
+  // A restrained moving route marker carries the handoff between chapters.
+  const truck=B.numberSprite('→','#d59b36',2.15); truck.visible=false; scene.add(truck);
   let truckAnim=null;
   if(opts.justCompleted){
     let seg=null;
@@ -1834,14 +2086,15 @@ function enterMap(opts={}){
     markers.forEach((m,i)=>{ m.position.y=m.userData.baseY+Math.sin(t*2+i)*0.18; if(m.userData.unlocked&&!m.userData.done){ const s=1+Math.sin(t*3+i)*0.08; m.userData.ring.scale.setScalar(s);} });
     if(truckAnim){ truckAnim.t=Math.min(1,truckAnim.t+dt*0.4); const s=truckAnim.seg; truck.position.set(s.A.x+(s.Bp.x-s.A.x)*truckAnim.t,2.6,s.A.z+(s.Bp.z-s.A.z)*truckAnim.t); if(truckAnim.t>=1){truck.visible=false; truckAnim=null;} }
   };
-  setActive(GAME_STATES.MAP,{scene,update,dispose:()=>{ removeMapButtons(); }});
+  setActive(GAME_STATES.MAP,{scene,update,dispose:()=>{ removeMapButtons(); if(recapDelay)clearTimeout(recapDelay); if(recapInterval)clearInterval(recapInterval); }});
 
   // store marker hit list for click handling
   active.markerHitList=markerHitList;
 
   // Recap / completion trigger
-  if(Progress.allDone() && !sessionStorage.getItem('rcm_recapDone') ){
-    setTimeout(()=>playRecap(markers,{seg1,seg2},truck),700);
+  let recapDone=false; try{recapDone=!!sessionStorage.getItem('rcm_recapDone');}catch(e){}
+  if(Progress.allDone() && !recapDone ){
+    recapDelay=setTimeout(()=>{recapInterval=playRecap(markers,{seg1,seg2},truck);},700);
   }
   updateHUD();
 }
@@ -1864,12 +2117,12 @@ function onMarker(loc){
 function ensureMapButtons(){
   removeMapButtons();
   const grp=$('hud').querySelector('.group:last-child');
-  const replay=el('button','hbtn map-extra','🎬 <span class="lbl">Replay Intro</span>'); replay.id='btnReplayIntro'; replay.title='Replay Intro'; replay.setAttribute('aria-label','Replay Intro');
+  const replay=el('button','hbtn map-extra','<span class="ui-symbol" aria-hidden="true">▷</span><span class="lbl">Replay Intro</span>'); replay.id='btnReplayIntro'; replay.title='Replay Intro'; replay.setAttribute('aria-label','Replay Intro');
   replay.onclick=()=>{ Audio.click(); go(GAME_STATES.EARTH_INTRO); };
   grp.appendChild(replay);
   if(Progress.allDone()){
-    const fx=el('button','hbtn map-extra','🧭 <span class="lbl">Free Explore</span>'); fx.id='btnFreeExplore'; fx.title='Free Explore'; fx.setAttribute('aria-label','Free Explore');
-    fx.onclick=()=>{ Audio.click(); openModal('🧭 Free Explore','Revisit any destination',body=>{
+    const fx=el('button','hbtn map-extra','<span class="ui-symbol" aria-hidden="true">◇</span><span class="lbl">Free Explore</span>'); fx.id='btnFreeExplore'; fx.title='Free Explore'; fx.setAttribute('aria-label','Free Explore');
+    fx.onclick=()=>{ Audio.click(); openModal('Free explore','Revisit any destination',body=>{
       body.appendChild(el('p',null,'You’ve completed the journey! Revisit any destination to explore or replay its lessons.'));
       const row=el('div','btnrow'); row.style.justifyContent='center';
       LOCATIONS.forEach(l=>{ const b=el('button','btn btn-ghost',`${l.badge.emoji} ${l.title.replace('WHERE ','')}`); b.onclick=()=>{ closeModal(); onMarker(l); }; row.appendChild(b); });
@@ -1886,8 +2139,8 @@ function buildMapNav(){
   LOCATIONS.forEach(loc=>{
     const unlocked=Progress.isUnlocked(loc.id), done=Progress.isLocationDone(loc.id);
     const b=el('button','mapnav-btn'+(done?' done':unlocked?'':' locked'));
-    const status = done?'✓ Done' : unlocked?'Tap to enter' : '🔒 Locked';
-    b.innerHTML=`<span class="n">${loc.badge.emoji} Stop ${loc.order}</span><span class="t">${loc.title.replace('WHERE ','').replace('CALIFORNIA DAIRY MEETS ITS CUSTOMERS','MARKET & KITCHEN')}</span><span class="n">${status}</span>`;
+    const status = done?'Completed' : unlocked?'Enter location' : 'Locked';
+    b.innerHTML=`<span class="n">Stop 0${loc.order} · ${loc.region}</span><span class="t">${loc.title.replace('WHERE ','').replace('CALIFORNIA DAIRY MEETS ITS CUSTOMERS','MARKET & KITCHEN')}</span><span class="n">${status}</span>`;
     b.setAttribute('aria-label',`Stop ${loc.order}: ${loc.title}. ${status}`);
     b.onclick=()=>onMarker(loc);
     nav.appendChild(b);
@@ -1896,9 +2149,9 @@ function buildMapNav(){
 
 // Final recap animation, then completion screen
 function playRecap(markers,segs,truck){
-  sessionStorage.setItem('rcm_recapDone','1');
+  try{sessionStorage.setItem('rcm_recapDone','1');}catch(e){}
   caption('Here’s the whole journey: farm to processor to market.');
-  toast('🎬 Journey recap');
+  toast('Journey recap');
   // simple: pulse each marker in order, move truck across both segments, then completion
   let step=0;
   const seq=[
@@ -1908,6 +2161,7 @@ function playRecap(markers,segs,truck){
     ()=>{ caption(''); go(GAME_STATES.COMPLETION); }
   ];
   const iv=setInterval(()=>{ if(step<seq.length){ seq[step](); step++; } else clearInterval(iv); },1200);
+  return iv;
 }
 function flashMarker(m){ if(!m)return; m.userData.ring.material.color.set(0xf5b21e); m.userData.ring.material.opacity=1; setTimeout(()=>{ if(m.userData.ring.material){m.userData.ring.material.opacity=0.7;} },700); }
 
@@ -1915,15 +2169,27 @@ function flashMarker(m){ if(!m)return; m.userData.ring.material.color.set(0xf5b2
 function enterLocation(locId){
   const loc=LOC_BY_ID[locId];
   Analytics.track('location_started',{location:locId});
-  const scene=new THREE.Scene(); scene.background=new THREE.Color(0xbfe3f5); scene.fog=new THREE.Fog(0xcfe8f5,55,130);
-  scene.add(new THREE.HemisphereLight(0xdff1ff,0x7aa85c,1.15));
-  const sun=new THREE.DirectionalLight(0xfff3d6,2.3); sun.position.set(30,55,20);
+  Audio.ambience(locId);
+  const scene=new THREE.Scene();
+  const bg=new THREE.TextureLoader().load(ENVIRONMENT_ASSETS[locId]); bg.colorSpace=THREE.SRGBColorSpace;
+  bg.mapping=THREE.EquirectangularReflectionMapping; scene.background=bg;
+  const atmos={farm:0xb9aa8d,processor:0xb9c5c8,market:0xbda98f}[locId];
+  scene.fog=new THREE.Fog(atmos,34,96);
+  const sky={farm:0xffe2b0,processor:0xe9f4f5,market:0xffddae}[locId];
+  const earth={farm:0x6f604b,processor:0x727a78,market:0x71675b}[locId];
+  scene.add(new THREE.HemisphereLight(sky,earth,1.35));
+  const sun=new THREE.DirectionalLight(locId==='processor'?0xeaf7ff:0xffddb0,locId==='processor'?2.2:2.7); sun.position.set(locId==='market'?-35:30,42,18);
   if(effectiveQuality()==='high'){ sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45; sun.shadow.camera.far=160; sun.shadow.bias=-0.0006; }
   scene.add(sun);
 
   // ground
-  const grass=B.noiseTexture(loc.id==='farm'?'#7fb85a':'#cfd7c8',['#6fae4e','#86c163','#9fb98a'],600); grass.repeat.set(24,24);
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(160,160),B.lamb(0xffffff,{map:grass})); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+  const groundSpec=loc.id==='farm'
+    ?['#77634d',['#5d4d3d','#92795b','#b09674']]
+    :loc.id==='processor'
+      ?['#a3a9a6',['#7d8582','#bbc0bd','#909794']]
+      :['#a89b87',['#887b69','#c1b49f','#958874']];
+  const groundTex=B.noiseTexture(groundSpec[0],groundSpec[1],1100); groundTex.repeat.set(36,36);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(160,160),B.lamb(0xffffff,{map:groundTex,roughness:.96,metalness:0})); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
   const clickables=[]; const obst=[];
   const addObst=(x,z,r)=>obst.push({x,z,r});
@@ -1943,18 +2209,19 @@ function enterLocation(locId){
   loc.lessons.forEach((lesson,i)=>{
     const [sx,sz]=stationPos[i];
     const done=Progress.isLessonDone(locId,lesson.id);
-    const g=makeBeacon(lesson.icon, done?0x9e9e9e:loc.color, `${i+1}. ${lesson.title}`);
+    const g=makeBeacon(i+1, done?0x7f8983:loc.color, `${i+1}. ${lesson.title}`);
     g.position.set(sx,0,sz);
     Object.assign(g.userData,{type:'station',kind:'lesson',lesson,idx:i,done});
     scene.add(g); clickables.push(g); beacons.push(g); addObst(sx,sz,0.6);
   });
   // quiz station (center-back), locked until 3 lessons done
-  const quizG=makeBeacon('🧠',0xf5b21e,'Take the Quiz');
-  quizG.position.set(0,-18,0);
+  const quizG=makeBeacon('Q',0xd59b36,'Chapter Checkpoint');
+  const [quizX,quizZ]=loc.quizPos||[0,-18];
+  quizG.position.set(quizX,0,quizZ);
   Object.assign(quizG.userData,{type:'station',kind:'quiz'});
-  scene.add(quizG); clickables.push(quizG); addObst(0,-18,0.6);
+  scene.add(quizG); clickables.push(quizG); addObst(quizX,quizZ,0.6);
 
-  // collectibles (golden milk drops) — optional
+  // optional brass field markers add a small observation bonus
   const drops=[];
   const dropSpots=[[-14,2],[14,2],[0,4]];
   dropSpots.forEach(([dx,dz],i)=>{
@@ -1975,6 +2242,9 @@ function enterLocation(locId){
     quizG.userData.unlocked=unlocked;
     quizG.userData.doneLoc=Progress.isLocationDone(locId);
     setBeaconLocked(quizG, !(lessonsDone>=loc.lessons.length));
+    $('sceneStage').textContent=`Stop 0${loc.order} · ${loc.region}`;
+    $('sceneName').textContent=loc.title.replace('WHERE ','').replace('CALIFORNIA DAIRY MEETS ITS CUSTOMERS','Market & kitchen');
+    $('sceneProgress').textContent=`${lessonsDone} of ${loc.lessons.length} field notes complete · ${lessonsDone>=loc.lessons.length?'checkpoint ready':'follow the next marker'}`;
   };
   refreshStations();
   afterLessonReturn=()=>refreshStations();
@@ -1983,10 +2253,9 @@ function enterLocation(locId){
   // Uses a simple billboard-style sprite that always faces camera
   function makeArrowSprite(){
     const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
-    x.fillStyle='rgba(255, 206, 77, 0.9)'; x.fillRect(0,0,256,256);
-    x.fillStyle='#1a1a1a';
-    x.font='bold 120px Arial'; x.textAlign='center'; x.textBaseline='middle';
-    x.fillText('↓',128,128);
+    x.fillStyle='rgba(10,22,16,.86)'; x.beginPath(); x.arc(128,128,78,0,Math.PI*2); x.fill();
+    x.lineWidth=8;x.strokeStyle='#d59b36';x.stroke();
+    x.fillStyle='#f4f0e6';x.font='bold 94px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText('⌄',128,112);
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
     const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
     s.scale.set(5,5,1); return s;
@@ -1998,10 +2267,15 @@ function enterLocation(locId){
   const update=(dt,t)=>{
     if(!modalOpen) updatePlayer(dt);
     // animate beacons + drops
-    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=3.2+Math.sin(t*2+i)*0.22;} if(c.userData.ring&&c.userData.pillar&&c.userData.pillar.visible){ c.userData.pillar.material.opacity=0.22+Math.sin(t*3+i)*0.1; } }
-      if(c.userData.type==='drop'){ c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6; if(Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
-      // gentle head-graze bob + tail swish so cows read as alive, not static props
-      if(c.userData.type==='cow'){ const tt=t+c.userData.phase; c.userData.head.rotation.x=Math.sin(tt*0.6)*0.14+0.06; c.userData.tail.rotation.x=Math.sin(tt*2.2)*0.3; c.userData.tail.rotation.z=Math.cos(tt*1.4)*0.12; } });
+    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){
+        if(c.userData.icon)c.userData.icon.position.y=reducedMotion?1.65:1.65+Math.sin(t*1.8+i)*0.035;
+        if(c.userData.ring&&c.userData.pillar&&c.userData.pillar.visible)c.userData.pillar.material.opacity=reducedMotion?.62:.55+Math.sin(t*2+i)*.08;
+      }
+      if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2+i)*0.05;c.rotation.y+=dt*.55;} if(Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
+      if(c.userData.type==='cow'&&!reducedMotion){ const tt=t+(c.userData.phase||0);
+        if(c.userData.head&&c.userData.tail){c.userData.head.rotation.x=Math.sin(tt*.6)*.1+.04;c.userData.tail.rotation.x=Math.sin(tt*2)*.24;c.userData.tail.rotation.z=Math.cos(tt*1.3)*.1;}
+        if(c.userData.sprite){const s=c.userData.baseScale;c.userData.sprite.scale.y=s.y*(1+Math.sin(tt*.85)*.006);}
+      } });
 
     // Update direction arrow to point toward next destination + flash
     if(!modalOpen){
@@ -2015,9 +2289,9 @@ function enterLocation(locId){
         dirArrow.position.copy(nextDest.position);
         dirArrow.position.y=4.5;
         // Pulsing scale + opacity for flashing effect
-        const pulse=0.85+Math.sin(t*2.5)*0.35;
+        const pulse=reducedMotion?0.9:0.88+Math.sin(t*2.1)*0.08;
         dirArrow.scale.set(pulse,pulse,1);
-        dirArrow.material.opacity=0.85+Math.sin(t*2.5)*0.15;
+        dirArrow.material.opacity=reducedMotion?0.9:0.8+Math.sin(t*2.1)*0.12;
         dirArrow.visible=true;
       } else {
         dirArrow.visible=false;
@@ -2027,15 +2301,16 @@ function enterLocation(locId){
   };
 
   setActive(locId==='farm'?GAME_STATES.FARM:locId==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET,{
-    scene,update,dispose:()=>{ afterLessonReturn=()=>{}; }
+    scene,update,dispose:()=>{ afterLessonReturn=()=>{}; clearTimeout(introCaptionTimer); }
   });
   active.clickables=clickables; active.loc=loc; active.beacons=beacons; active.quizG=quizG;
 
-  function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} 💧 Golden milk drop!`); } }
+  function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`Field note logged · +${SCORING.collectible} points`); } }
   active.collectDrop=collectDrop;
 
   caption(loc.intro);
-  toast(`${loc.badge.emoji} ${loc.title}`);
+  const introCaptionTimer=setTimeout(()=>{ if(active.loc===loc&&!modalOpen)caption(''); },5600);
+  toast(`Stop 0${loc.order} · ${loc.title.replace('WHERE ','')}`);
 }
 
 function updateLocHint(loc,beacons,quizG){
@@ -2049,7 +2324,7 @@ function updateLocHint(loc,beacons,quizG){
     hint.classList.add('action');
     if(near.userData.kind==='quiz'){
       if(Progress.isLocationDone(loc.id)){ hint.innerHTML=`✅ Quiz complete — get close to start over`; ready=true; }
-      else if(Progress.locationLessonsDone(loc.id)>=loc.lessons.length){ hint.innerHTML=`🧠 <b>${near.userData.lesson.title}</b> — get closer to start`; ready=true; }
+      else if(Progress.locationLessonsDone(loc.id)>=loc.lessons.length){ hint.innerHTML=`<b>Chapter checkpoint</b> — get closer to begin`; ready=true; }
       else hint.innerHTML=`🔒 Finish all 3 lessons to unlock the quiz (${Progress.locationLessonsDone(loc.id)}/3)`;
     } else {
       const dn=near.userData.done;
@@ -2059,8 +2334,8 @@ function updateLocHint(loc,beacons,quizG){
   } else {
     hint.classList.remove('action');
     hint.innerHTML = isTouch
-      ? 'Left stick to move · right stick to look · or tap <b>📋 Steps</b> to jump to any lesson.'
-      : 'Walk (W A S D or arrows) to a glowing station — it starts automatically when you get close, or use <b>📋 Steps</b>.';
+      ? 'Left stick to move · right stick to look · open <b>Field Guide</b> for direct access.'
+      : 'W A S D to move · drag to look · follow the numbered marker · <b>E</b> to inspect.';
   }
   // context-aware interact button (mobile) — only touch DOM when state changes
   const rs = ready?'1':'0';
@@ -2119,16 +2394,19 @@ function activateStation(g){
 /* ---- beacon + drop factories ---- */
 function makeBeacon(emoji,color,labelText){
   const g=new THREE.Group();
-  const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.5,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=0.06; g.add(ring);
-  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.62,6,12,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.3,depthWrite:false,side:THREE.DoubleSide})); pillar.position.y=3; g.add(pillar);
-  const icon=B.emojiSprite(emoji,1.8); icon.position.y=3.2; g.add(icon);
-  const label=B.labelSprite(labelText,0.8); label.position.y=4.6; g.add(label);
+  const colorHex='#'+new THREE.Color(color).getHexString();
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.72,1.02,36),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.46,side:THREE.DoubleSide,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.y=.018; g.add(ring);
+  const foot=B.rbox(.52,.12,.52,B.lamb(0x26322c,{roughness:.62,metalness:.28}),0,.06,0,.035);g.add(foot);
+  const post=B.cyl(.045,.055,1.25,B.lamb(0x69736f,{roughness:.32,metalness:.72}),0,.68,0,10);g.add(post);
+  const pillar=B.rbox(1.02,1.02,.08,B.lamb(color,{emissive:color,emissiveIntensity:.08,transparent:true,opacity:.62,roughness:.48}),0,1.55,0,.08);g.add(pillar);
+  const icon=B.numberSprite(emoji,colorHex,1.08); icon.position.y=1.65; g.add(icon);
+  const label=B.labelSprite(labelText,.7); label.position.y=2.45; g.add(label);
   g.userData={ring,pillar,icon,label};
   return g;
 }
-function setBeaconDone(g,done,color){ g.userData.ring.material.color.set(done?0x9e9e9e:color); g.userData.ring.material.opacity=done?0.4:0.85; g.userData.pillar.visible=!done; }
-function setBeaconLocked(g,locked){ g.userData.pillar.visible=!locked; g.userData.ring.material.color.set(locked?0x9e9e9e:0xf5b21e); g.userData.ring.material.opacity=locked?0.4:0.85; g.userData.icon.material.opacity=locked?0.5:1; g.userData.icon.material.transparent=true; }
-function makeDrop(){ const g=new THREE.Group(); const m=B.lamb(0xf5b21e,{emissive:0x7a5600,emissiveIntensity:0.4}); const ball=new THREE.Mesh(new THREE.SphereGeometry(0.32,12,10),m); const tip=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.45,12),m); tip.position.y=0.42; g.add(ball); g.add(tip); return g; }
+function setBeaconDone(g,done,color){ g.userData.done=done; g.userData.ring.material.color.set(done?0x7f8983:color); g.userData.ring.material.opacity=done?.18:.46; g.userData.pillar.material.opacity=done?.24:.62; g.userData.icon.material.opacity=done?.56:1; g.userData.icon.material.transparent=true; }
+function setBeaconLocked(g,locked){ g.userData.locked=locked; g.userData.ring.material.color.set(locked?0x68716c:0xd59b36); g.userData.ring.material.opacity=locked?.18:.46; g.userData.pillar.material.opacity=locked?.2:.62; g.userData.icon.material.opacity=locked?.4:1; g.userData.icon.material.transparent=true; }
+function makeDrop(){ const g=new THREE.Group(); const brass=B.lamb(0xd59b36,{emissive:0x5d3f0a,emissiveIntensity:.16,metalness:.62,roughness:.3}); const tag=B.cyl(.28,.28,.07,brass,0,.2,0,6); tag.rotation.z=Math.PI/2; g.add(tag); const stem=B.cyl(.028,.028,.62,B.lamb(0x455149,{metalness:.55,roughness:.42}),0,.54,0,8); g.add(stem); const marker=B.numberSprite('i','#d59b36',.38); marker.position.y=.88; g.add(marker); return g; }
 
 /* ---- location environment builders (low-poly, themed) ---- */
 function buildFarm(scene,addObst){
@@ -2175,10 +2453,16 @@ function buildFarm(scene,addObst){
 }
 function addFarmCows(scene){
   const cows=[];
-  for(let i=0;i<4;i++){ const c=makeCow(1,i!==2); c.position.set(-10+i*2.2,0,-8); c.rotation.y=Math.PI/2; scene.add(c); cows.push(c); }
-  // make cows clickable for a moo
-  cows.forEach(c=>{ c.userData.type='cow'; });
-  // enterLocation merges these into the location's clickables after setActive.
+  const tex=new THREE.TextureLoader().load(ENVIRONMENT_ASSETS.cow);tex.colorSpace=THREE.SRGBColorSpace;
+  const positions=effectiveQuality()==='high'?[[-10,-8,1],[-15,-10,.82]]:[[-10,-8,1]];
+  positions.forEach(([x,z,s],i)=>{
+    const g=new THREE.Group();g.position.set(x,0,z);
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,alphaTest:.06,depthWrite:false}));
+    sprite.scale.set(4.6*s,3.15*s,1);sprite.position.y=1.57*s;g.add(sprite);
+    const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.45*s,28),new THREE.MeshBasicMaterial({color:0x101510,transparent:true,opacity:.22,depthWrite:false}));
+    shadow.scale.set(1,.34,1);shadow.rotation.x=-Math.PI/2;shadow.position.y=.016;g.add(shadow);
+    g.userData={type:'cow',sprite,baseScale:sprite.scale.clone(),phase:i*2.7};scene.add(g);cows.push(g);
+  });
   scene.userData.cows=cows;
 }
 function makeCow(scale=1,spotted=true){
@@ -2398,11 +2682,11 @@ function enterCompletion(){
   $('cLes').textContent=`${Progress.lessonsDoneCount()}/9`;
   $('cFirst').textContent=Progress.data.quizFirstTry;
   const br=$('cBadges'); br.innerHTML='';
-  LOCATIONS.forEach(l=>{ if(Progress.data.badges[l.id]){ const c=el('div','badge-chip',`<span class="em">${l.badge.emoji}</span><span>${l.badge.name}</span>`); br.appendChild(c);} });
+  LOCATIONS.forEach(l=>{ if(Progress.data.badges[l.id]){ const c=el('div','badge-chip',`<span class="em">0${l.order}</span><span>${l.badge.name}</span>`); br.appendChild(c);} });
   $('complete').classList.remove('hidden');
 }
 $('cMap').onclick=()=>{ $('complete').classList.add('hidden'); go(GAME_STATES.MAP); };
-$('cReplay').onclick=()=>{ confirmDialog('Play again?','This resets your progress and starts a fresh journey.',()=>{ Progress.reset(); sessionStorage.removeItem('rcm_recapDone'); $('complete').classList.add('hidden'); go(GAME_STATES.MAP); },'Start over','Cancel'); };
+$('cReplay').onclick=()=>{ confirmDialog('Play again?','This resets your progress and starts a fresh journey.',()=>{ Progress.reset(); try{sessionStorage.removeItem('rcm_recapDone');}catch(e){} $('complete').classList.add('hidden'); go(GAME_STATES.MAP); },'Start over','Cancel'); };
 $('cProducts').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'products'}); window.open(EXTERNAL_LINKS.products,'_blank','noopener'); };
 $('cFoodservice').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'foodservice'}); window.open(EXTERNAL_LINKS.foodservice,'_blank','noopener'); };
 
@@ -2472,25 +2756,34 @@ $('btnMap').onclick=()=>{ if(webglOK){ Audio.click(); go(GAME_STATES.MAP);} };
 $('btnSteps').onclick=showStepsMenu;
 $('btnHelp').onclick=showHelp;
 $('btnReset').onclick=()=>{ Audio.click(); if(isLocationState()){ resetPlayer(); toast('Position reset'); } else { toast('Nothing to reset here'); } };
-$('btnSound').onclick=()=>{ const on=Audio.toggle(); $('btnSound').innerHTML=(on?'🔊':'🔇')+' <span class="lbl">Sound</span>'; $('btnSound').setAttribute('aria-pressed',on?'true':'false'); };
+function renderSoundButton(){
+  const on=Audio.enabled,b=$('btnSound');
+  b.innerHTML=`<span class="ui-symbol" aria-hidden="true">${on?'◖':'○'}</span><span class="lbl">Sound ${on?'on':'off'}</span>`;
+  b.setAttribute('aria-pressed',on?'true':'false');b.setAttribute('aria-label',`Sound ${on?'on':'off'}`);
+}
+$('btnSound').onclick=()=>{ Audio.toggle(); renderSoundButton(); };
 
 // quality segmented control
 $('qualitySeg').querySelectorAll('button').forEach(b=>{
-  if(b.dataset.q===quality) b.classList.add('on'); else b.classList.remove('on');
-  b.onclick=()=>{ quality=b.dataset.q; localStorage.setItem('rcm_quality',quality); $('qualitySeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); };
+  const selected=b.dataset.q===quality;b.classList.toggle('on',selected);b.setAttribute('aria-pressed',selected?'true':'false');
+  b.onclick=()=>{ quality=b.dataset.q; try{localStorage.setItem('rcm_quality',quality);}catch(e){} applyQuality();
+    $('qualitySeg').querySelectorAll('button').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on?'true':'false');}); };
 });
 
 // BEGIN
 $('beginBtn').onclick=async ()=>{
   Audio.init(); Audio.click();
-  $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
+  renderSoundButton();
   $('title').classList.add('hidden');
   if(!webglOK){ enterFallback(); return; }
-  go(GAME_STATES.EARTH_INTRO);
+  let seen=false;try{seen=!!sessionStorage.getItem('rcm_introSeen');}catch(e){}
+  if(seen||Progress.lessonsDoneCount()>0||Progress.locationsDoneCount()>0)go(GAME_STATES.MAP,{resumed:true});
+  else go(GAME_STATES.EARTH_INTRO);
 };
 
 async function boot(){
   updateHUD();
+  if(Progress.lessonsDoneCount()>0||Progress.locationsDoneCount()>0)$('beginBtn').innerHTML='Resume the field journey <span aria-hidden="true">→</span>';
   const ok=await initThree();
   if(!ok){
     // WebGL failed → fallback path, but keep the title so user still chooses BEGIN
@@ -2510,7 +2803,7 @@ async function boot(){
   });
   $('boot').classList.add('hidden');
   // sound button initial label
-  $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
+  renderSoundButton();
 }
 
 // debug hooks for automated testing / QA
