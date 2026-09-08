@@ -7,7 +7,7 @@ export const GAME_STATES = {
 // CLIENT: drop approved files at these paths (same names) to replace placeholders.
 export const BRAND_ASSETS = {
   logo: 'assets/real-california-milk-logo-official.webp',
-  seal: 'assets/real-california-milk-seal.svg'
+  seal: 'assets/real-california-milk-logo-official.webp'
 };
 
 // CLIENT: confirm/approve destination URLs.
@@ -61,6 +61,8 @@ export const LOCATIONS = [
     map:[0.48,0.40],
     color:0x2a9c53,
     badge:BADGES.farm,
+    stationPos:[[-6,1],[2,-5],[12,-7]],
+    quizPos:[0,-16],
     lessons:[
       {
         id:'cowcare', title:'Cow Care', icon:'🐄',
@@ -73,9 +75,9 @@ export const LOCATIONS = [
             {t:'Clean water',ic:'💧',ok:true},
             {t:'A comfortable place to rest',ic:'🛏️',ok:true},
             {t:'Cooling or shade',ic:'⛱️',ok:true},
-            {t:'A television',ic:'📺',ok:false},
-            {t:'Loud music all night',ic:'🎸',ok:false},
-            {t:'A swimming pool',ic:'🏊',ok:false}
+            {t:'Block airflow through the barn',ic:'🚪',ok:false},
+            {t:'Skip water checks on cooler days',ic:'💧',ok:false},
+            {t:'Leave wet bedding until tomorrow',ic:'🛏️',ok:false}
           ],
           success:'Great check! Water, rest, and cooling all help keep cows comfortable.'
         }
@@ -119,13 +121,13 @@ export const LOCATIONS = [
       }
     ],
     quiz:[
-      { q:'Which of these does a dairy cow need to stay comfortable?',
+      { q:"Your herd needs relief on a warm afternoon. What belongs in the comfort plan?",
         a:['A television','Cooling or shade','Loud music'], correct:1, from:'cowcare',
-        source:{label:'University of Minnesota Extension — Why Cow Comfort Matters', url:'https://extension.umn.edu/dairy-handling-and-best-practices/why-cow-comfort-matters'} },
-      { q:'Why is milk cooled quickly right after it leaves the cow?',
+        source:{label:'University of Minnesota Extension — Why Cow Comfort Matters', url:'https://extension.umn.edu/agriculture/animals-and-livestock/dairy/why-cow-comfort-matters'} },
+      { q:"Milk has reached the bulk tank. Why turn on cooling right away?",
         a:['To keep it fresh and safe by slowing bacterial growth','To make it taste sweeter','Cows prefer their milk served cold'], correct:0, from:'milking',
         source:{label:'Virginia Cooperative Extension — Is Your Milk Cold Enough?', url:'https://sites.ext.vt.edu/newsletter-archive/dairy/2004-06/coldmilk.html'} },
-      { q:'What can a California dairy farm do with manure using a digester?',
+      { q:"A farm has an anaerobic digester. What useful output can it capture from manure?",
         a:['Nothing — it always has to be thrown away','Capture the gas it produces to make renewable energy','Turn it directly back into milk'], correct:1, from:'resource',
         source:{label:'CDFA — Dairy Digester Research & Development Program', url:'https://www.cdfa.ca.gov/oars/ddrdp/'} }
     ],
@@ -147,6 +149,8 @@ export const LOCATIONS = [
     map:[0.42,0.52],
     color:0x4aa3d8,
     badge:BADGES.processor,
+    stationPos:[[-8,6],[0,4],[8,6]],
+    quizPos:[17,0],
     lessons:[
       {
         id:'receiving', title:'Receiving & Quality', icon:'🔬',
@@ -159,9 +163,9 @@ export const LOCATIONS = [
             {t:'Is the milk still cold?',ic:'🌡️',ok:true},
             {t:'Is the tanker clean?',ic:'🧼',ok:true},
             {t:'Does the milk pass a quality check?',ic:'✅',ok:true},
-            {t:'Does the driver like pizza?',ic:'🍕',ok:false},
-            {t:'What color is the truck?',ic:'🎨',ok:false},
-            {t:'How loud is the horn?',ic:'📢',ok:false}
+            {t:'Approve it just because it arrived on time',ic:'🕒',ok:false},
+            {t:'Skip checks for a familiar supplier',ic:'🤝',ok:false},
+            {t:'Judge the milk by the truck’s paintwork',ic:'🚛',ok:false}
           ],
           success:'Approved! Cold, clean, and quality-checked milk is ready for the next step.'
         }
@@ -176,9 +180,9 @@ export const LOCATIONS = [
             {name:'Fluid milk',ic:'🥛',steps:['Receive & check milk','Standardize','Pasteurize','Package & chill']},
             {name:'Cheese',ic:'🧀',steps:['Receive & check milk','Add cultures','Form curds & press','Age or package']},
             {name:'Butter',ic:'🧈',steps:['Separate cream','Churn cream','Work & shape','Package & chill']},
-            {name:'Yogurt',ic:'🥣',steps:['Receive & check milk','Add cultures','Culture (ferment)','Package & chill']},
+            {name:'Yogurt',ic:'🥣',steps:['Receive & check milk','Heat-treat milk','Cool & add cultures','Culture, then chill & package']},
             {name:'Ice cream',ic:'🍦',steps:['Blend mix','Pasteurize','Freeze & whip in air','Package & freeze']},
-            {name:'Sour cream',ic:'🥛',steps:['Separate cream','Add cultures','Culture (ferment)','Package & chill']}
+            {name:'Sour cream',ic:'🥛',steps:['Prepare & pasteurize cream','Cool & add cultures','Culture (ferment)','Package & chill']}
           ],
           success:'You explored a product path! Milk can become many different dairy foods.'
         }
@@ -205,13 +209,13 @@ export const LOCATIONS = [
       }
     ],
     quiz:[
-      { q:'Under the rules that govern Grade "A" milk, what do processors check before accepting a tanker of milk?',
-        a:['Temperature, cleanliness, and quality (including bacteria and antibiotic-residue testing)','The color of the truck','How loud the horn is'], correct:0, from:'receiving',
+      { q:"The delivery is on time. Which checks still matter before accepting its milk?",
+        a:['Milk temperature, cleanliness, and quality checks','Only whether the truck arrived on time','Only whether it is the usual supplier'], correct:0, from:'receiving',
         source:{label:'FDA — Grade "A" Pasteurized Milk Ordinance (PMO) Centennial', url:'https://www.fda.gov/food/milk-guidance-documents-regulatory-information/pasteurized-milk-ordinance-centennial'} },
-      { q:'Which of these is part of how cheese is made (but not butter)?',
+      { q:"You’ve switched the line from butter to cheese. Which process belongs to cheese?",
         a:['Adding cultures, then forming and pressing curds','Churning cream until it separates into butter and buttermilk','Freezing and whipping in air'], correct:0, from:'products',
         source:{label:'University of Guelph — Dairy Science and Technology', url:'https://books.lib.uoguelph.ca/dairyscienceandtechnologyebook/'} },
-      { q:'A restaurant orders a large case of shredded mozzarella instead of a small consumer bag. Which channel is that?',
+      { q:"A pizzeria orders a large case of shredded mozzarella. Which delivery channel fits?",
         a:['Foodservice / distributor','Grocery (household use)','Neither — restaurants can’t buy dairy in bulk'], correct:0, from:'cheese',
         source:{label:'USDA Agricultural Marketing Service — Dairy Market News', url:'https://www.ams.usda.gov/market-news/dairy'} }
     ],
@@ -241,6 +245,7 @@ export const LOCATIONS = [
     // Interact button (only a direct tap on the beacon icon would work).
     // These sit in the open plaza, near their matching storefront.
     stationPos:[[-8,4],[0,-7],[8,4]],
+    quizPos:[-1,-18],
     lessons:[
       {
         id:'grocery', title:'Grocery Journey', icon:'🛒',
@@ -259,7 +264,7 @@ export const LOCATIONS = [
             {id:'dry',t:'Dry-goods shelf'}
           ],
           multiTarget:true,
-          success:'Stocked! Dairy products belong in the cold case so they stay fresh.'
+          success:'Stocked! These perishable dairy items go in the refrigerated case; the crackers go on the dry-goods shelf.'
         }
       },
       {
@@ -295,20 +300,20 @@ export const LOCATIONS = [
             {id:'pizza',t:'Pizza prep'},
             {id:'bake',t:'Cooking / baking station'},
             {id:'bev',t:'Beverage / sauce / dessert station'},
-            {id:'shelf',t:'Grocery shelf (not restaurant receiving)'}
+            {id:'shelf',t:'Household grocery order'}
           ],
           success:'Delivered! Package size and format depend on how the dairy will be used.'
         }
       }
     ],
     quiz:[
-      { q:'Where would you expect to find milk, yogurt, and butter in a grocery store?',
+      { q:"Milk, yogurt, and butter have arrived at the store. Where should this delivery go?",
         a:['The refrigerated dairy case','The dry-goods aisle','Next to the checkout register'], correct:0, from:'grocery',
         source:{label:'FDA — Food Code (cold-holding requirements for perishable foods)', url:'https://www.fda.gov/media/181882/download'} },
-      { q:'What does the Real California Milk seal tell shoppers?',
-        a:['The product is made with 100% Grade A milk from California dairy farms','The product is organic','The product is on sale this week'], correct:0, from:'seal',
+      { q:"You spot this seal on a dairy package. What does it tell you?",
+        a:['The product is made with milk from California dairy farms','The product is organic','The product is on sale this week'], correct:0, from:'seal',
         source:{label:'Real California Milk — About Us', url:'https://www.realcaliforniamilk.com/about-us'} },
-      { q:'Why might a restaurant buy dairy in different package sizes than a home shopper?',
+      { q:"Dinner service needs much more dairy than one family meal. Why order a larger format?",
         a:['Foodservice kitchens use larger quantities and different formats than a household','Restaurants aren’t allowed to buy the same dairy products','There’s no real difference — every buyer gets the same package'], correct:0, from:'foodservice',
         source:{label:'USDA Agricultural Marketing Service — Dairy Market News', url:'https://www.ams.usda.gov/market-news/dairy'} }
     ],

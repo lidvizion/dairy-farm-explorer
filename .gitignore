@@ -5,11 +5,14 @@
 
 # Node modules
 node_modules/
+test-results/
+playwright-report/
 npm-debug.log
 yarn-error.log
 
 # Build outputs
 dist/
+site-dist/
 build/
 
 # IDE

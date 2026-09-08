@@ -23,18 +23,21 @@ and three badges total. Target play time ≈ 7–10 minutes.
 
 ## Run it locally
 
-It’s a **static ES-module site** — no build step or install. `index.html` is
-the page shell; browser-native modules in `js/` load Three.js from a CDN and
-use local assets in `assets/`.
+It’s a **static ES-module site** with no game build step. `index.html` is
+the page shell; browser-native modules in `js/` use the pinned, self-hosted
+Three.js distribution in `vendor/three/` and local assets in `assets/`.
+No external CDN is required to load the experience.
 
 - **Local server (recommended):**
   ```bash
-  python3 -m http.server 8431 --directory dairy-farm-explorer
+  npm start
   ```
-  then open http://localhost:8431
-- Or use the **`dairy-farm-explorer`** entry in `.claude/launch.json`.
-- Opening the file directly (double-click) also works, but a local server is
-  more reliable for ES-module import maps.
+  then open http://localhost:4174. No dependency install is needed to serve.
+- Set `PORT=4176 npm start` if that port is busy.
+- Use HTTP, not `file://`. ES-module loading from a file URL varies between
+  browsers and can fail. The file view now explains how to open the server.
+- The opening film plays on each visit. Pause, skip, and enter controls are
+  always available. Reduced-motion users choose whether to play it.
 
 Works on desktop (WASD + mouse-drag look) and mobile (joystick + touch look +
 big Interact button). If WebGL is unavailable, a **text-friendly fallback**
@@ -44,22 +47,24 @@ delivers the same lessons, quizzes, and certificate.
 
 This project is 100% static and Pages-ready.
 
-1. Commit `index.html`, `assets/`, and `README.md` to the repo
-   (`shawnwilborne/dairy-farm-explorer`), branch `main`.
-2. GitHub → **Settings → Pages** → Source: `main` / root. (Already configured
-   for the existing site.)
-3. Live URL: https://shawnwilborne.github.io/dairy-farm-explorer/
-   Allow a minute for the CDN to refresh after a push.
+The workflow in `.github/workflows/deploy-pages.yml` runs unit and browser
+tests for PRs targeting `staging` or `main`. Branch pushes deploy only after
+the tests pass: `staging` to `/staging/`, `main` to the production root.
+The configured repository is `lidvizion/dairy-farm-explorer`.
 
-No server, database, or build is required. The **Drive copy is canonical** — to
-update the live site, push the updated `index.html` + `assets/` to the repo’s
-`main` branch.
+`npm run package:site` copies only runtime files to `site-dist/`; development
+dependencies and test artifacts are not published. `npm run vendor`
+reproduces the checked-in Three.js files from the exact dependency version
+and preserves the upstream MIT license. Review rendering tests before any
+engine upgrade. No database or application server is required.
 
 ---
 
 ## Where to edit things (for non-developers)
 
-Everything content-related lives in [js/config/content.js](js/config/content.js):
+Core content lives in [js/config/content.js](js/config/content.js). Visual
+briefs, photos, and per-answer explanations live in
+[js/config/learning-experience.js](js/config/learning-experience.js):
 
 | You want to change… | Edit this |
 |---|---|
@@ -70,6 +75,7 @@ Everything content-related lives in [js/config/content.js](js/config/content.js)
 | Brand asset file paths | `BRAND_ASSETS` object |
 | External CTA links | `EXTERNAL_LINKS` object |
 | Scoring values | `SCORING` object |
+| Photos, activity missions, takeaways, answer explanations | `LEARNING_EXPERIENCES` |
 
 Lesson text is **not** scattered through the 3D code — it all lives in
 `LOCATIONS`. The mini-game *renderers* (Section 5) are generic and read from the
@@ -88,18 +94,25 @@ rendering logic.
 | Lesson and quiz renderers | `js/lessons/renderer.js` |
 | Lesson-content validation | `js/lessons/validate-content.js` |
 | Graphics-quality policy | `js/scenes/quality.js` |
+| Film lifecycle, independent of WebGL | `js/ui/intro.js` |
+| Accessible photographic chapter selector | `js/ui/journey-map.js` |
+| Photo/task layouts and option shuffling | `js/lessons/presentation.js` |
+| Undoable route and pausable cooling demonstration | `js/lessons/milk-route.js` |
+| Farm, processing, and market environment builders | `js/scenes/location-environments.js` |
+| Instanced trees, paths, atmosphere | `js/scenes/environment-detail.js` |
+| Rig-aware prop animation | `js/scenes/animation.js` |
 
-**Localization (future):** all player-facing strings are inside `COPY`,
-`LOCATIONS`, and `BADGES`. To add Spanish later, wrap these in a language-keyed
-lookup (e.g. `{ en:{…}, es:{…} }`) and select the active language — no scene
-logic needs to change. English is the only language shipped now.
+**Localization (future):** educational copy is separated from rendering.
+Generic control labels still need extraction to a shared locale dictionary.
+English is the only language shipped now.
 
 ## Replacing brand assets
 
-Placeholders live in `assets/`:
+The opening, seal activity, and certificate use the existing
+`assets/real-california-milk-logo-official.webp` at its native aspect ratio.
+The old placeholder SVG is retained on disk but is no longer used by the UI.
 
 - `assets/real-california-milk-logo-official.webp`
-- `assets/real-california-milk-seal.svg`
 
 Drop the **client-approved files in at the same paths/filenames** and they
 appear automatically (title screen, packages, seal-spotter, certificate).
@@ -118,15 +131,19 @@ appear automatically (title screen, packages, seal-spotter, certificate).
 - Saved locally with **`localStorage`** under the key **`rcm_journey_v1`**
   (points, lessons, locations, badges, optional collectibles, first-try count).
 - Sound preference: `rcm_sound`. Graphics quality: `rcm_quality`.
-- The Earth intro “seen this session” flag uses `sessionStorage`
-  (`rcm_introSeen`) so it won’t force-replay mid-session.
+- Quiz rewards have a per-question ledger and cannot be farmed by replaying.
+  Completed older saves are protected even when they lack that ledger.
+- The film is shown on every fresh page load; it is not skipped by a session flag.
+- If storage is denied, the game remains usable but progress lasts only for
+  the current page session.
 - **No login. No accounts. No personal information is collected or transmitted.**
   The optional name on the certificate is shown on-screen only and is never
   saved or sent.
 
 ### How to clear saved progress
-- In-game: **Help (❓) → “Reset all progress”**, or the **Reset** control /
-  “Play Again” (each asks for confirmation).
+- In-game: **Help (❓) → “Reset all progress”**, or “Play Again” on the
+  certificate (both ask for confirmation). The HUD Reset control only resets
+  your position.
 - Manually: browser DevTools → Application → Local Storage → remove
   `rcm_journey_v1` (or run `localStorage.removeItem('rcm_journey_v1')`).
 
@@ -134,7 +151,7 @@ appear automatically (title screen, packages, seal-spotter, certificate).
 
 A privacy-conscious **no-op analytics wrapper** is built in
 (`js/core/progress.js`). It already fires events: `intro_started`, `intro_completed`,
-`intro_skipped`, `map_opened`, `location_started`, `lesson_started`,
+`map_opened`, `location_started`, `lesson_started`,
 `lesson_completed`, `quiz_started`, `quiz_answered`, `location_completed`,
 `game_completed`, `external_cta_clicked`. **No personal data is included.**
 
@@ -154,8 +171,10 @@ By default events go nowhere (optionally `console.debug` when
 ## Accessibility & UX
 
 - Keyboard-accessible menus, visible focus rings, high-contrast text.
-- `prefers-reduced-motion` respected — the camera flight is replaced by simple
-  crossfades, and non-essential animations are disabled.
+- Reduced motion pauses the opening film until requested and bypasses the
+  animated cooling wait. Decorative UI motion and camera bob are disabled.
+- Dialog focus is contained and restored; background controls are inert.
+- The 3D world pauses while reading or answering a lesson.
 - Captions / aria-live regions for narration and important text.
 - Persistent **Map**, **Help**, **Sound**, and **Reset** controls.
 - Non-WebGL fallback contains the full educational journey.
@@ -176,9 +195,28 @@ and reads **OPEN** when you’re beside a station.
 **Easy navigation (all platforms):**
 - **📋 Steps** (top-right, inside a location) opens a menu to jump straight to
   any lesson or the quiz — no walking required.
-- On the **map**, a row of large **destination buttons** at the bottom enters
-  each stop, so you never have to tap a small 3D pin. Locked stops are greyed
-  until you unlock them.
+- The **Next lesson** panel starts the next incomplete activity directly.
+- The chapter selector uses large photo cards with explicit unlock conditions.
+
+## Verify changes
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+npm run test:browser
+```
+
+Browser tests run the real self-hosted engine on desktop and a touch/mobile
+Chromium viewport. They cover all nine activities, every incorrect quiz
+option, correct answers, retries, score deduplication, reloads, completion,
+reset, movement, quality switching, fallback, film playback, interrupted
+cooling, unavailable media/storage, and keyboard focus. Screenshots and
+failure traces are written to `test-results/` (ignored by Git).
+
+This is not physical-device certification. Safari/iOS, real school hardware,
+screen-reader testing, and client content/asset approval remain release checks.
+See [LEARNING-QA.md](LEARNING-QA.md) for the question-by-question review.
 
 ---
 
@@ -187,12 +225,13 @@ and reads **OPEN** when you’re beside a station.
 Before public launch, Real California Milk should provide / approve:
 
 1. **Official logo** → replace `assets/real-california-milk-logo-official.webp`.
-2. **Official (current) seal** → replace `assets/real-california-milk-seal.svg`.
+2. **Current seal** → confirm usage rights and the existing WebP asset.
 3. **Approved brand colors** → update the `:root` CSS `CLIENT:` values.
 4. **Approved fonts / web-font files** → currently system fonts.
-5. **Final educational copy** → `COPY` + `LOCATIONS` (kept general; no
-   statistics, rankings, environmental goals, or nutrition/health claims are
-   included pending approved sources).
+5. **Final educational copy** → `LOCATIONS` + `LEARNING_EXPERIENCES`.
+   Activities are simplified, not food-production instructions. Legacy
+   off-topic nutrition/comparison `funFacts` remain in the source pending
+   review but are not displayed in the revised quiz results.
 6. **Final calls to action** and **approved links** → `EXTERNAL_LINKS`
    (currently realcaliforniamilk.com and realcaliforniamilkfoodservice.com).
 7. **Any real farm / processor / retailer / restaurant names** — none are used;
