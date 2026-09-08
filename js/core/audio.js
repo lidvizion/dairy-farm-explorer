@@ -1,7 +1,8 @@
+import { readPreference, writePreference } from './preferences.js';
 // Synthesized audio keeps the game self-contained and avoids loading sound files.
 export const Audio = (() => {
   let context = null;
-  let enabled = localStorage.getItem('rcm_sound') !== 'off';
+  let enabled = readPreference('rcm_sound', 'on') !== 'off';
   const init = () => {
     if (!context) { try { context = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
     if (context?.state === 'suspended') context.resume();
@@ -23,7 +24,7 @@ export const Audio = (() => {
   return {
     init,
     get enabled() { return enabled; },
-    toggle() { enabled = !enabled; localStorage.setItem('rcm_sound', enabled ? 'on' : 'off'); if (enabled) init(); return enabled; },
+    toggle() { enabled = !enabled; writePreference('rcm_sound', enabled ? 'on' : 'off'); if (enabled) init(); return enabled; },
     click() { tone(600, 0.06, 'square', 0.06, 820); },
     pop() { tone(340, 0.09, 'sine', 0.16, 900); tone(1200, 0.07, 'sine', 0.08, 1500, 0.05); },
     good() { tone(660, 0.1, 'sine', 0.16); tone(880, 0.22, 'sine', 0.16, null, 0.09); },

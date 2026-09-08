@@ -59,7 +59,7 @@ export const Progress = (() => {
     },
     addQuizPoints(location, question, points, firstTry) {
       const key = `${location}.${question}`;
-      if (data.quizAwards[key]) return false;
+      if (data.quizAwards[key] || data.locations[location]) return false;
       data.quizAwards[key] = true;
       data.points += points;
       if (firstTry) data.quizFirstTry++;

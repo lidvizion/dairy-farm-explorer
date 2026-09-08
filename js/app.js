@@ -5,6 +5,12 @@ import { $, el, toast, caption } from './ui/dom.js';
 import { validateLessonContent } from './lessons/validate-content.js';
 import { configureLessonRenderer, setAfterLessonReturn, startLesson, startQuiz } from './lessons/renderer.js';
 import { effectiveQuality as determineQuality, isTouchDevice } from './scenes/quality.js';
+import { animateCow } from './scenes/animation.js';
+import { createEnvironmentBuilders } from './scenes/location-environments.js';
+import { dressEnvironment } from './scenes/environment-detail.js';
+import { playIntro } from './ui/intro.js';
+import { renderJourneyMap, DESTINATIONS } from './ui/journey-map.js';
+import { readPreference, writePreference } from './core/preferences.js';
 
 /* Application orchestration: UI flow, lesson rendering, and 3D scenes. */
 
@@ -17,6 +23,7 @@ function updateHUD(){
 document.addEventListener('rcm:progresschange', updateHUD);
 
 let modalOpen=false;
+let modalReturnFocus=null;
 
 // "Scroll for more" affordance: modal content (lessons especially — steps that
 // build up a list, matching games, etc.) can grow taller than the viewport,
@@ -33,6 +40,12 @@ function checkModalScroll(){
   hint.classList.toggle('hidden', !overflow || atBottom);
 }
 function openModal(title, sub, bodyBuilder){
+  stopConfetti();
+  document.dispatchEvent(new Event('rcm:modalopen'));
+  const settings=$('graphicsSettings');
+  settings.classList.add('hidden'); document.body.appendChild(settings);
+  if(!modalOpen) modalReturnFocus=document.activeElement;
+  for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct']) $(id).inert=true;
   modalOpen=true; keys.clear();
   $('modalTitle').innerHTML = title;
   $('modalSub').textContent = sub||'';
@@ -48,6 +61,11 @@ function openModal(title, sub, bodyBuilder){
   modalScrollObserver.observe(body,{childList:true,subtree:true});
 }
 function closeModal(){
+  stopConfetti();
+  document.dispatchEvent(new Event('rcm:modalclose'));
+  for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct']) $(id).inert=false;
+  $('graphicsSettings').classList.add('hidden');
+  document.body.appendChild($('graphicsSettings'));
   $('modal').classList.add('hidden'); modalOpen=false;
   $('scrollHint').classList.add('hidden');
   if(modalScrollObserver){ modalScrollObserver.disconnect(); modalScrollObserver=null; }
@@ -55,7 +73,15 @@ function closeModal(){
   // never leave that lesson's caption text stuck on screen, overlapping the
   // movement hint underneath it.
   caption('');
+  if(modalReturnFocus?.isConnected) modalReturnFocus.focus({preventScroll:true});
 }
+document.addEventListener('keydown', e=>{
+  if(!modalOpen || e.key!=='Tab') return;
+  const focusable=[...$('modal').querySelectorAll('button:not(:disabled),a[href],input,[tabindex="0"]')].filter(node=>node.getClientRects().length);
+  const first=focusable[0], last=focusable.at(-1);
+  if(e.shiftKey && (document.activeElement===first || ! $('modal').contains(document.activeElement))){e.preventDefault();last?.focus();}
+  else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}
+});
 $('modalCard').addEventListener('scroll',checkModalScroll);
 addEventListener('resize',()=>{ if(modalOpen) checkModalScroll(); });
 // Always-available X button — players can back out of any lesson, quiz, or
@@ -64,7 +90,13 @@ $('modalClose').addEventListener('click',closeModal);
 
 // ---- confetti celebration (small burst, no deps) ----
 let confettiRAF=null;
+function stopConfetti(){
+  if(confettiRAF) cancelAnimationFrame(confettiRAF);
+  confettiRAF=null;
+  $('confettiCanvas').classList.add('hidden');
+}
 function fireConfetti(){
+  if(reducedMotion) return;
   const canvas=$('confettiCanvas'); canvas.classList.remove('hidden');
   canvas.width=innerWidth; canvas.height=innerHeight;
   const ctx=canvas.getContext('2d');
@@ -117,7 +149,7 @@ function showHelp(){
       <ul>
         <li><b>Desktop:</b> Move with <b>W A S D</b> or arrow keys. Look with mouse drag. <b>E</b> or click to interact. Hold <b>Shift</b> to move faster. <b>Esc</b> or the Map button to leave a scene.</li>
         <li><b>Mobile — two thumb sticks:</b> the <b>left stick moves</b>, the <b>right stick looks</b> around. Tap the big <b>Interact</b> button (it turns gold and says <b>OPEN</b> when you’re next to a station).</li>
-        <li><b>📋 Steps</b> lets you jump straight to any lesson or the quiz without walking. On the map, use the buttons at the bottom to enter each stop.</li>
+        <li><b>Next lesson</b> starts your next objective without walking. <b>📋 Steps</b> opens any lesson you want to revisit. On the map, choose a destination card.</li>
         <li><b>Map</b> returns you to California. <b>Sound</b> toggles audio. <b>Reset</b> puts you back at the scene’s start if you get stuck.</li>
       </ul>
       <p style="font-size:13px;color:#777;">Optional golden milk drops are worth a few extra points, but they are never required.</p>
@@ -126,6 +158,10 @@ function showHelp(){
         <button class="btn btn-primary" id="helpClose">Got it</button>
       </div>`;
     $('helpClose').onclick=closeModal;
+    const settings=$('graphicsSettings');
+    settings.classList.remove('hidden');
+    body.appendChild(el('h3',null,'Graphics quality'));
+    body.appendChild(settings);
     $('helpResetAll').onclick=()=>{
       confirmDialog('Reset all progress?','This clears your points, lessons, and badges on this device. This cannot be undone.',()=>{
         Progress.reset(); toast('Progress reset'); go(GAME_STATES.MAP);
@@ -175,7 +211,7 @@ function showStepsMenu(){
    7. THREE.js setup, quality, disposal
 ============================================================================ */
 let THREE=null, RoundedBoxGeometry=null, renderer=null, camera=null, webglOK=true;
-let quality = localStorage.getItem('rcm_quality') || 'auto';
+let quality = readPreference('rcm_quality', 'auto');
 const isTouch = isTouchDevice();
 
 function effectiveQuality(){
@@ -191,13 +227,22 @@ async function initThree(){
   try{ ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
   catch(e){ RoundedBoxGeometry=null; }
   try{
-    renderer = new THREE.WebGLRenderer({ antialias: effectiveQuality()==='high' });
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     const maxPR = effectiveQuality()==='high' ? 2 : 1.5;
     renderer.setPixelRatio(Math.min(devicePixelRatio, maxPR));
     renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = effectiveQuality()==='high';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     document.body.insertBefore(renderer.domElement, document.body.firstChild);
+    renderer.domElement.id = 'worldCanvas';
+    renderer.domElement.setAttribute('aria-label', 'Interactive 3D destination. Use WASD to move, drag to look, or use Next lesson.');
+    renderer.domElement.addEventListener('webglcontextlost', e => {
+      e.preventDefault();
+      webglOK=false;
+      if(isLocationState()) enterFallback();
+    });
     camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 2000);
     camera.rotation.order='YXZ';
     addEventListener('resize', ()=>{
@@ -225,6 +270,7 @@ function applyRendererQuality(){
 
 // Deep-dispose a scene's geometry, materials, textures.
 function disposeScene3D(scene){
+  if(scene.background?.isTexture) scene.background.dispose();
   scene.traverse(obj=>{
     if(obj.geometry) obj.geometry.dispose();
     if(obj.material){
@@ -295,7 +341,7 @@ function makeBuilders(){
   }
   return {lamb,basic,box,rbox,cyl,ball,emojiSprite,labelSprite,noiseTexture,cowTexture};
 }
-let B=null; // builders (set after THREE loads)
+let B=null, environments=null; // builders (set after THREE loads)
 
 // ---- First-person controller (shared by location scenes) ----
 const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0};
@@ -324,7 +370,7 @@ function updatePlayer(dt){
   player.x=Math.max(curBounds.minX,Math.min(curBounds.maxX,player.x));
   player.z=Math.max(curBounds.minZ,Math.min(curBounds.maxZ,player.z));
   const moving=m>0.1; player.bob+=dt*(moving?speed*1.4:0);
-  const bobY=moving?Math.sin(player.bob)*0.05:0;
+  const bobY=moving&&!reducedMotion?Math.sin(player.bob)*0.05:0;
   camera.position.set(player.x,player.eye+bobY,player.z);
   camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
 }
@@ -333,11 +379,15 @@ function updatePlayer(dt){
 const keys=new Set();
 addEventListener('keydown',e=>{
   if(modalOpen){ if(e.code==='Escape')closeModal(); return; }
+  if(e.target.closest('input,textarea,select')) return;
   if(e.code==='Escape'){ if(isLocationState()) go(GAME_STATES.MAP); return; }
+  if(!isLocationState()) return;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if(e.code==='KeyE') interactNearest();
 });
 addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>{ keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0; lookId=null; });
 
 const joyVec={x:0,y:0}, lookVec={x:0,y:0};
 let downX=0,downY=0,downT=0,lastX=0,lastY=0,movedFar=false;
@@ -364,7 +414,7 @@ function attachCanvasInput(){
   cv.addEventListener('pointerup',e=>{ if(e.pointerId!==lookId)return; lookId=null; if(!modalOpen&&!movedFar&&performance.now()-downT<450) tryClick(e.clientX,e.clientY); });
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   // map clicks (markers)
-  cv.addEventListener('click',e=>{ if(active.id===GAME_STATES.MAP && !modalOpen && !movedFar) tryMapClick(e.clientX,e.clientY); });
+  cv.addEventListener('pointercancel',()=>{lookId=null;});
 }
 
 const raycaster = { r:null, ndc:null };
@@ -387,7 +437,7 @@ function setActive(id,{scene=null,update=null,dispose=null}){
 function go(stateId, opts={}){
   // In no-WebGL mode, all map/location navigation resolves to the DOM fallback
   // hub (completion is a DOM screen and still works).
-  if(!webglOK && stateId!==GAME_STATES.COMPLETION){
+  if(!webglOK && [GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId)){
     $('complete').classList.add('hidden');
     enterFallback(); return;
   }
@@ -395,9 +445,10 @@ function go(stateId, opts={}){
   const showHUD = [GAME_STATES.MAP,GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId);
   $('hud').classList.toggle('hidden',!showHUD);
   const onMap = stateId===GAME_STATES.MAP;
-  $('mapHeader').classList.toggle('hidden',!onMap);
-  $('mapDisclaimer').classList.toggle('hidden',!onMap);
-  $('mapNav').classList.toggle('hidden',!onMap);
+  $('caption').classList.remove('hidden');
+  $('fallback').classList.add('hidden');
+  $('complete').classList.add('hidden');
+  $('btnMap').classList.toggle('hidden',onMap);
   const inLoc=[GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId);
   // Joysticks visible on all platforms (desktop gets arrow labels; mobile uses touch).
   // This helps players discover the movement and look controls without guessing.
@@ -408,328 +459,88 @@ function go(stateId, opts={}){
   $('btnSteps').classList.toggle('hidden',!inLoc);
   $('btnReset').classList.toggle('hidden',!inLoc);
   $('hint').classList.toggle('hidden',!inLoc);
+  $('objective').classList.toggle('hidden',!inLoc);
+  document.body.dataset.screen=stateId;
+  keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0;
   caption('');
+  $('hint').textContent='';
 
+  try {
   if(stateId===GAME_STATES.EARTH_INTRO) return enterEarthIntro();
   if(stateId===GAME_STATES.MAP)         return enterMap(opts);
   if(stateId===GAME_STATES.FARM)        return enterLocation('farm');
   if(stateId===GAME_STATES.PROCESSOR)   return enterLocation('processor');
   if(stateId===GAME_STATES.MARKET)      return enterLocation('market');
   if(stateId===GAME_STATES.COMPLETION)  return enterCompletion();
+  } catch(error) {
+    console.error('Destination could not be opened', error);
+    enterFallback();
+  }
 }
 
-/* ---------- California silhouette (normalized 0..1; x east, y north) ---------- */
-const CA_OUTLINE=[
-  [0.18,1.00],[0.55,1.00],[0.60,0.72],[0.72,0.55],[0.98,0.30],[0.72,0.14],
-  [0.62,0.10],[0.50,0.20],[0.40,0.25],[0.30,0.34],[0.22,0.43],[0.14,0.53],
-  [0.10,0.63],[0.02,0.74],[0.06,0.87]
-];
-const CA_W=26, CA_H=44;
-function caToWorld(nx,ny){ return { x:(nx-0.5)*CA_W, z:-((ny-0.5)*CA_H) }; }
-
-/* ---------------- EARTH INTRO ---------------- */
-let reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-// Grabs whatever frame the intro video is showing right now, so the map
-// screen can open on a still of the same California footage instead of a
-// generic color. Wrapped in try/catch: if the browser blocks canvas capture
-// for any reason, we silently fall back to the old map look.
-function captureVideoFrame(video){
-  try{
-    if(!video || video.readyState<2 || !video.videoWidth) return null;
-    const c=document.createElement('canvas');
-    c.width=video.videoWidth; c.height=video.videoHeight;
-    c.getContext('2d').drawImage(video,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',0.86);
-  }catch(e){ return null; }
-}
-let capturedMapBg=null;
+/* ---------------- OPENING FILM + JOURNEY MAP ---------------- */
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let engineReady = Promise.resolve(false);
 
 function enterEarthIntro(){
   Analytics.track('intro_started');
-  const finish=()=>finishIntro();
-
-  // Video intro. Only the dark-backed caption pill carries text over the
-  // footage — the old large white title/subtitle was unreadable over bright
-  // video, so it's intentionally not used here.
-  const vid=$('introVideo');
-  vid.src='assets/california-intro.mp4';
-  vid.classList.remove('hidden');
-  vid.currentTime=0;
-  vid.play().catch(e=>console.log('Video autoplay prevented, skipping intro'));
-
-  $('skipIntro').classList.remove('hidden');
-  $('skipIntro').onclick=finish;
-  caption(COPY.intro.line1);
-
-  // Change caption halfway through
-  const t2=setTimeout(()=>{ caption(COPY.intro.line2); }, 3500);
-  // Auto-finish when video ends or after 8 seconds
-  const DURATION=8;
-  let finished=false, t0=null;
-  const update=(dt,t)=>{
-    if(t0===null)t0=t;
-    const elapsed=t-t0;
-    if(!finished && (vid.ended || elapsed/1000>=DURATION)){ finished=true; finish(); }
-  };
-
-  setActive(GAME_STATES.EARTH_INTRO,{
-    update,
-    dispose:()=>{
-      vid.pause(); vid.classList.add('hidden');
-      $('skipIntro').classList.add('hidden');
-      clearTimeout(t2);
-    }
+  setActive(GAME_STATES.EARTH_INTRO, {});
+  active.dispose = playIntro({
+    video: $('introVideo'), root: $('title'), playButton: $('playIntro'),
+    skipButton: $('skipIntro'), beginButton: $('beginBtn'), status: $('introStatus'),
+    reducedMotion,
+    onFinish: () => { Audio.init(); Analytics.track('intro_completed'); go(GAME_STATES.MAP); }
   });
 }
-// helper: approximate CA position on the globe surface given current rotation
-function caToSurface(rotY){
-  // CA sits around longitude -120°, latitude +37°; place a point and rotate with earth
-  const lat=37*Math.PI/180, lon=(-120*Math.PI/180);
-  const R=31;
-  let x=R*Math.cos(lat)*Math.sin(lon+ (rotY));
-  let y=R*Math.sin(lat);
-  let z=R*Math.cos(lat)*Math.cos(lon+ (rotY));
-  return new THREE.Vector3(x,y,z);
-}
-function makeEarthTexture(){
-  const c=document.createElement('canvas'); c.width=1024; c.height=512; const x=c.getContext('2d');
-  // ocean
-  const g=x.createLinearGradient(0,0,0,512); g.addColorStop(0,'#0b3a6b'); g.addColorStop(0.5,'#0f5aa0'); g.addColorStop(1,'#0b3a6b');
-  x.fillStyle=g; x.fillRect(0,0,1024,512);
-  // stylized landmasses (green blobs) — not geographically exact
-  x.fillStyle='#2f8a43';
-  const blobs=[[180,190,120,80],[230,250,80,60],[430,140,90,60],[520,220,120,110],[560,360,70,90],[720,180,150,80],[800,300,90,70],[300,120,70,40],[860,150,60,40]];
-  blobs.forEach(([bx,by,bw,bh])=>{ x.beginPath(); x.ellipse(bx,by,bw,bh,Math.random(),0,Math.PI*2); x.fill(); });
-  // North America / west coast area + a gold California highlight
-  x.fillStyle='#3fa055'; x.beginPath(); x.ellipse(210,200,110,90,0.2,0,Math.PI*2); x.fill();
-  x.fillStyle='#f5b21e'; x.beginPath(); x.ellipse(150,210,14,26,0.3,0,Math.PI*2); x.fill();
-  // ice caps
-  x.fillStyle='rgba(240,248,255,.85)'; x.fillRect(0,0,1024,26); x.fillRect(0,486,1024,26);
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
-}
 
-function finishIntro(){
-  if(sessionStorage) sessionStorage.setItem('rcm_introSeen','1');
-  Analytics.track('intro_completed');
-  // Grab whatever frame is showing right now (natural end, timeout, or Skip)
-  // so the map opens on a still of this same footage. Skip this if the
-  // player skipped very early (still shows Earth from far away, before the
-  // zoom reaches California) — a half-zoomed frame looks worse than the
-  // regular illustrated map, so fall back to that instead.
-  const vid=$('introVideo');
-  const zoomedInEnough = vid.ended || (vid.duration && vid.currentTime/vid.duration>0.6) || vid.currentTime>3.5;
-  if(zoomedInEnough) capturedMapBg = captureVideoFrame(vid) || capturedMapBg;
-  $('introReduced').classList.add('hidden');
-  $('skipIntro').classList.add('hidden');
-  caption('');
-  go(GAME_STATES.MAP,{fromIntro:true});
-}
-$('skipIntro').addEventListener('click',()=>{ Analytics.track('intro_skipped'); });
-
-/* ---------------- CALIFORNIA MAP ---------------- */
-function enterMap(opts={}){
+function enterMap(){
   Analytics.track('map_opened');
-  const scene=new THREE.Scene();
-  // If we captured a still from the intro video, use it as a photoreal
-  // backdrop and skip the cartoon terrain (sea/CA-blob/mountains) so the
-  // destination pins float over real California footage instead — this is
-  // what the player just flew into, not a separate illustrated map.
-  const usePhotoBg = !!capturedMapBg;
-  if(usePhotoBg){
-    const tex=new THREE.TextureLoader().load(capturedMapBg);
-    tex.colorSpace=THREE.SRGBColorSpace;
-    scene.background=tex;
-  } else {
-    scene.background=new THREE.Color(0x8fd3f4);
-    scene.fog=new THREE.Fog(0x8fd3f4,60,160);
-  }
-  scene.add(new THREE.HemisphereLight(0xeaf6ff,0x6f9f5f,1.1));
-  const sun=new THREE.DirectionalLight(0xfff3d6,1.9); sun.position.set(30,60,20);
-  if(effectiveQuality()==='high'){ sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-40;sun.shadow.camera.right=40;sun.shadow.camera.top=40;sun.shadow.camera.bottom=-40; sun.shadow.camera.far=160; }
-  scene.add(sun);
-
-  if(!usePhotoBg){
-    // sea plane
-    const sea=new THREE.Mesh(new THREE.PlaneGeometry(300,300), B.lamb(0x4aa3d8)); sea.rotation.x=-Math.PI/2; sea.position.y=-0.4; sea.receiveShadow=true; scene.add(sea);
-
-    // California extruded shape
-    const shape=new THREE.Shape();
-    CA_OUTLINE.forEach(([nx,ny],i)=>{ const px=(nx-0.5)*CA_W, py=(ny-0.5)*CA_H; if(i===0)shape.moveTo(px,py); else shape.lineTo(px,py); });
-    shape.closePath();
-    const geo=new THREE.ExtrudeGeometry(shape,{depth:1.6,bevelEnabled:true,bevelThickness:0.3,bevelSize:0.3,bevelSegments:1});
-    const caTop=new THREE.Mesh(geo,B.lamb(0x74b552)); caTop.rotation.x=-Math.PI/2; caTop.position.y=0; caTop.castShadow=true; caTop.receiveShadow=true; scene.add(caTop);
-    // subtle mountains along the east
-    for(let i=0;i<10;i++){ const {x,z}=caToWorld(0.6+Math.random()*0.25,0.4+Math.random()*0.5); const mtn=new THREE.Mesh(new THREE.ConeGeometry(1.1+Math.random(),2+Math.random()*2,5),B.lamb(0x8a7d5a)); mtn.position.set(x,1.6,z); mtn.castShadow=true; scene.add(mtn); }
-  }
-
-  // markers — sized generously (both visually and for hit-testing) since
-  // these sit over a photo backdrop now and need to read clearly at any
-  // terrain color, and be easy to tap directly on a phone screen.
-  function pinBadge(col){
-    const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d');
-    x.beginPath(); x.arc(64,64,56,0,Math.PI*2);
-    x.fillStyle='rgba(255,255,255,0.97)'; x.fill();
-    x.lineWidth=8; x.strokeStyle=col; x.stroke();
-    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
-    return new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
-  }
-  const markers=[]; const markerHitList=[];
-  LOCATIONS.forEach(loc=>{
-    const {x,z}=caToWorld(loc.map[0],loc.map[1]);
-    const g=new THREE.Group(); g.position.set(x,1.7,z);
-    const unlocked=Progress.isUnlocked(loc.id), done=Progress.isLocationDone(loc.id);
-    const col = done?0x2a9c53 : unlocked?loc.color : 0x9e9e9e;
-    const colHex = '#'+col.toString(16).padStart(6,'0');
-    // white "badge" backing makes the pin readable against any patch of the
-    // photo (ocean, forest, farmland all have different colors/contrast)
-    const badge=pinBadge(colHex); badge.scale.set(4.1,4.1,1); badge.position.y=0.1; g.add(badge);
-    const icon=B.emojiSprite(done?'✅':unlocked?'📍':'🔒',2.7); icon.position.y=0.14; g.add(icon);
-    const label=B.labelSprite(`${loc.order}. ${loc.title.replace('WHERE ','').replace(/^(.{22}).+/,'$1…')}`,1.2); label.position.y=3.35; g.add(label);
-    const ring=new THREE.Mesh(new THREE.RingGeometry(2.1,2.6,28),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.7,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=-1.4; g.add(ring);
-    // generous invisible tap target — much larger than the visible badge so
-    // fingers/imprecise clicks near the pin still register
-    const hitArea=new THREE.Mesh(new THREE.CircleGeometry(3.6,20),new THREE.MeshBasicMaterial({visible:false}));
-    hitArea.rotation.x=-Math.PI/2; hitArea.position.y=0.1; g.add(hitArea);
-    g.userData={type:'marker',loc,unlocked,done,ring,pin:badge,baseY:1.7};
-    scene.add(g); markers.push(g); markerHitList.push(g);
+  setActive(GAME_STATES.MAP, {});
+  active.dispose = renderJourneyMap($('journeyMap'), {
+    onEnter: onMarker,
+    onReplay: () => go(GAME_STATES.EARTH_INTRO),
+    onComplete: () => go(GAME_STATES.COMPLETION)
   });
-
-  // route lines between stops (draw when unlocked)
-  const routeGroup=new THREE.Group(); scene.add(routeGroup);
-  function drawRoute(a,b,colored){
-    const A=caToWorld(a.map[0],a.map[1]), Bp=caToWorld(b.map[0],b.map[1]);
-    const pts=[new THREE.Vector3(A.x,1.8,A.z),new THREE.Vector3(Bp.x,1.8,Bp.z)];
-    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({color:colored?0xf5b21e:0xbbbbbb,dashSize:0.8,gapSize:0.5,linewidth:2}));
-    line.computeLineDistances(); routeGroup.add(line);
-    return {A,Bp};
-  }
-  const seg1=drawRoute(LOCATIONS[0],LOCATIONS[1],Progress.isLocationDone('farm'));
-  const seg2=drawRoute(LOCATIONS[1],LOCATIONS[2],Progress.isLocationDone('processor'));
-
-  // truck sprite (animates along a route when a location was just completed)
-  const truck=B.emojiSprite('🚚',2.2); truck.visible=false; scene.add(truck);
-  let truckAnim=null;
-  if(opts.justCompleted){
-    let seg=null;
-    if(opts.justCompleted==='farm') seg=seg1;
-    if(opts.justCompleted==='processor') seg=seg2;
-    if(seg){ truck.visible=true; truckAnim={seg,t:0}; }
-  }
-
-  // camera — gentle 2.5D orbit above CA
-  const camDist=42, camHeight=40; let orbit=0.2;
-  camera.position.set(Math.sin(orbit)*camDist,camHeight,Math.cos(orbit)*camDist+8);
-  camera.lookAt(0,0,0); camera.rotation.z=0;
-
-  // map-side control buttons injected into HUD region as extra chips
-  ensureMapButtons();
-  buildMapNav();
-
-  const update=(dt,t)=>{
-    orbit+=dt*0.03; if(orbit>0.6)orbit=0.6; // ease to a slight angle then stop drifting far
-    camera.position.x=Math.sin(0.28)*camDist; camera.position.z=Math.cos(0.28)*camDist+8; camera.position.y=camHeight;
-    camera.lookAt(0,-2,-2);
-    markers.forEach((m,i)=>{ m.position.y=m.userData.baseY+Math.sin(t*2+i)*0.18; if(m.userData.unlocked&&!m.userData.done){ const s=1+Math.sin(t*3+i)*0.08; m.userData.ring.scale.setScalar(s);} });
-    if(truckAnim){ truckAnim.t=Math.min(1,truckAnim.t+dt*0.4); const s=truckAnim.seg; truck.position.set(s.A.x+(s.Bp.x-s.A.x)*truckAnim.t,2.6,s.A.z+(s.Bp.z-s.A.z)*truckAnim.t); if(truckAnim.t>=1){truck.visible=false; truckAnim=null;} }
-  };
-  setActive(GAME_STATES.MAP,{scene,update,dispose:()=>{ removeMapButtons(); }});
-
-  // store marker hit list for click handling
-  active.markerHitList=markerHitList;
-
-  // Recap / completion trigger
-  if(Progress.allDone() && !sessionStorage.getItem('rcm_recapDone') ){
-    setTimeout(()=>playRecap(markers,{seg1,seg2},truck),700);
-  }
   updateHUD();
 }
 
-function tryMapClick(cx,cy){
-  if(active.id!==GAME_STATES.MAP || !active.markerHitList) return;
-  const hits=ray(cx,cy,active.markerHitList);
-  for(const h of hits){ const o=resolveTarget(h.object); if(o&&o.userData.type==='marker'){ onMarker(o.userData.loc); return; } }
-}
-function onMarker(loc){
-  Audio.click();
-  if(!Progress.isUnlocked(loc.id)){
-    const need = loc.id==='processor'?'Finish the Dairy Farm first.':'Finish Processing & Packaging first.';
-    toast('🔒 '+need); return;
-  }
+async function onMarker(loc){
+  if(!Progress.isUnlocked(loc.id)) return;
+  Audio.init(); Audio.click();
+  const origin = active;
+  $('engineStatus').textContent = 'Preparing your destination…';
+  const ready = await engineReady;
+  $('engineStatus').textContent = '';
+  if(active !== origin) return; // navigation changed while the engine loaded
+  if(!ready || !webglOK){ enterFallback(); return; }
   go(loc.id==='farm'?GAME_STATES.FARM:loc.id==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET);
 }
-
-// extra map buttons (Replay Intro, Free Explore)
-function ensureMapButtons(){
-  removeMapButtons();
-  const grp=$('hud').querySelector('.group:last-child');
-  const replay=el('button','hbtn map-extra','🎬 <span class="lbl">Replay Intro</span>'); replay.id='btnReplayIntro'; replay.title='Replay Intro'; replay.setAttribute('aria-label','Replay Intro');
-  replay.onclick=()=>{ Audio.click(); go(GAME_STATES.EARTH_INTRO); };
-  grp.appendChild(replay);
-  if(Progress.allDone()){
-    const fx=el('button','hbtn map-extra','🧭 <span class="lbl">Free Explore</span>'); fx.id='btnFreeExplore'; fx.title='Free Explore'; fx.setAttribute('aria-label','Free Explore');
-    fx.onclick=()=>{ Audio.click(); openModal('🧭 Free Explore','Revisit any destination',body=>{
-      body.appendChild(el('p',null,'You’ve completed the journey! Revisit any destination to explore or replay its lessons.'));
-      const row=el('div','btnrow'); row.style.justifyContent='center';
-      LOCATIONS.forEach(l=>{ const b=el('button','btn btn-ghost',`${l.badge.emoji} ${l.title.replace('WHERE ','')}`); b.onclick=()=>{ closeModal(); onMarker(l); }; row.appendChild(b); });
-      body.appendChild(row);
-    }); };
-    grp.appendChild(fx);
-  }
-}
-function removeMapButtons(){ document.querySelectorAll('.map-extra').forEach(b=>b.remove()); $('mapNav').innerHTML=''; }
-
-// Big tap-target destination bar so the map is fully navigable without hitting a 3D pin.
-function buildMapNav(){
-  const nav=$('mapNav'); nav.innerHTML='';
-  LOCATIONS.forEach(loc=>{
-    const unlocked=Progress.isUnlocked(loc.id), done=Progress.isLocationDone(loc.id);
-    const b=el('button','mapnav-btn'+(done?' done':unlocked?'':' locked'));
-    const status = done?'✓ Done' : unlocked?'Tap to enter' : '🔒 Locked';
-    b.innerHTML=`<span class="n">${loc.badge.emoji} Stop ${loc.order}</span><span class="t">${loc.title.replace('WHERE ','').replace('CALIFORNIA DAIRY MEETS ITS CUSTOMERS','MARKET & KITCHEN')}</span><span class="n">${status}</span>`;
-    b.setAttribute('aria-label',`Stop ${loc.order}: ${loc.title}. ${status}`);
-    b.onclick=()=>onMarker(loc);
-    nav.appendChild(b);
-  });
-}
-
-// Final recap animation, then completion screen
-function playRecap(markers,segs,truck){
-  sessionStorage.setItem('rcm_recapDone','1');
-  caption('Here’s the whole journey: farm to processor to market.');
-  toast('🎬 Journey recap');
-  // simple: pulse each marker in order, move truck across both segments, then completion
-  let step=0;
-  const seq=[
-    ()=>flashMarker(markers[0]),
-    ()=>flashMarker(markers[1]),
-    ()=>flashMarker(markers[2]),
-    ()=>{ caption(''); go(GAME_STATES.COMPLETION); }
-  ];
-  const iv=setInterval(()=>{ if(step<seq.length){ seq[step](); step++; } else clearInterval(iv); },1200);
-}
-function flashMarker(m){ if(!m)return; m.userData.ring.material.color.set(0xf5b21e); m.userData.ring.material.opacity=1; setTimeout(()=>{ if(m.userData.ring.material){m.userData.ring.material.opacity=0.7;} },700); }
 
 /* ---------------- LOCATION SCENES ---------------- */
 function enterLocation(locId){
   const loc=LOC_BY_ID[locId];
   Analytics.track('location_started',{location:locId});
   const scene=new THREE.Scene(); scene.background=new THREE.Color(0xbfe3f5); scene.fog=new THREE.Fog(0xcfe8f5,55,130);
-  scene.add(new THREE.HemisphereLight(0xdff1ff,0x7aa85c,1.15));
-  const sun=new THREE.DirectionalLight(0xfff3d6,2.3); sun.position.set(30,55,20);
-  if(effectiveQuality()==='high'){ sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45; sun.shadow.camera.far=160; sun.shadow.bias=-0.0006; }
+  scene.add(new THREE.HemisphereLight(0xdff1ff,0x766449,1.05));
+  const sun=new THREE.DirectionalLight(0xffe4b8,2.6); sun.position.set(-18,30,12);
+  sun.castShadow=effectiveQuality()==='high'; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-36;sun.shadow.camera.right=36;sun.shadow.camera.top=36;sun.shadow.camera.bottom=-36; sun.shadow.camera.far=110; sun.shadow.bias=-0.0003; sun.shadow.normalBias=.03;
   scene.add(sun);
 
   // ground
-  const grass=B.noiseTexture(loc.id==='farm'?'#7fb85a':'#cfd7c8',['#6fae4e','#86c163','#9fb98a'],600); grass.repeat.set(24,24);
+  const grass=B.noiseTexture(loc.id==='farm'?'#929575':'#a5ac9c',loc.id==='farm'?['#8c8b6a','#98977a','#a5a183']:['#a1a899','#abb0a1','#b2b5a8'],600); grass.repeat.set(24,24);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(160,160),B.lamb(0xffffff,{map:grass})); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
   const clickables=[]; const obst=[];
   const addObst=(x,z,r)=>obst.push({x,z,r});
 
   // build themed environment
-  if(locId==='farm')      buildFarm(scene,addObst);
-  if(locId==='processor') buildProcessor(scene,addObst);
-  if(locId==='market')    buildMarket(scene,addObst);
+  if(locId==='farm')      environments.buildFarm(scene,addObst);
+  if(locId==='processor') environments.buildProcessor(scene,addObst);
+  if(locId==='market')    environments.buildMarket(scene,addObst);
+  dressEnvironment(THREE,scene,loc);
+  const environmentLabels=[];
+  scene.traverse(object=>{ if(object.userData.environmentLabel) environmentLabels.push(object); });
+  const labelPosition=new THREE.Vector3();
   const sceneCows = scene.userData.cows || [];
   sceneCows.forEach(c=>{ c.userData.type='cow'; clickables.push(c); addObst(c.position.x,c.position.z,0.9); });
 
@@ -748,9 +559,10 @@ function enterLocation(locId){
   });
   // quiz station (center-back), locked until 3 lessons done
   const quizG=makeBeacon('🧠',0xf5b21e,'Take the Quiz');
-  quizG.position.set(0,-18,0);
+  const [quizX,quizZ]=loc.quizPos || [0,-18];
+  quizG.position.set(quizX,0,quizZ);
   Object.assign(quizG.userData,{type:'station',kind:'quiz'});
-  scene.add(quizG); clickables.push(quizG); addObst(0,-18,0.6);
+  scene.add(quizG); clickables.push(quizG); addObst(quizX,quizZ,0.6);
 
   // collectibles (golden milk drops) — optional
   const drops=[];
@@ -758,7 +570,7 @@ function enterLocation(locId){
   dropSpots.forEach(([dx,dz],i)=>{
     const id=`${locId}.drop${i}`;
     if(Progress.data.collectibles[id]) return;
-    const d=makeDrop(); d.position.set(dx,0.8,dz); d.userData={type:'drop',id}; scene.add(d); clickables.push(d); drops.push(d);
+    const d=makeDrop(); d.scale.setScalar(.65); d.position.set(dx,0.8,dz); d.userData={type:'drop',id}; scene.add(d); clickables.push(d); drops.push(d);
   });
 
   // spawn + bounds — all stations sit at negative Z from spawn, so face yaw:0
@@ -773,18 +585,20 @@ function enterLocation(locId){
     quizG.userData.unlocked=unlocked;
     quizG.userData.doneLoc=Progress.isLocationDone(locId);
     setBeaconLocked(quizG, !(lessonsDone>=loc.lessons.length));
+    const next=loc.lessons.find(lesson=>!Progress.isLessonDone(locId,lesson.id));
+    $('objectivePlace').textContent=`CHAPTER 0${loc.order} · ${DESTINATIONS[locId].title}`;
+    $('objectiveTitle').textContent=next ? next.title : Progress.isLocationDone(locId) ? 'Chapter complete' : 'Ready for your quiz?';
+    $('objectiveProgress').textContent=`${lessonsDone}/${loc.lessons.length} lessons complete`;
+    $('nextLesson').textContent=next ? 'Start next lesson →' : Progress.isLocationDone(locId) ? 'Continue the journey →' : 'Take the quiz →';
+    $('nextLesson').onclick=()=>next ? startLesson(locId,next.id) : Progress.isLocationDone(locId) ? go(GAME_STATES.MAP) : startQuiz(locId);
   };
   refreshStations();
-  setAfterLessonReturn(()=>refreshStations());
 
   // Direction arrow pointing to next destination (first incomplete lesson, or quiz if done)
   // Uses a simple billboard-style sprite that always faces camera
   function makeArrowSprite(){
     const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
-    x.fillStyle='rgba(255, 206, 77, 0.9)'; x.fillRect(0,0,256,256);
-    x.fillStyle='#1a1a1a';
-    x.font='bold 120px Arial'; x.textAlign='center'; x.textBaseline='middle';
-    x.fillText('↓',128,128);
+    x.fillStyle='#e4b45b'; x.beginPath(); x.moveTo(70,85);x.lineTo(186,85);x.lineTo(128,165);x.closePath();x.fill();
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
     const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
     s.scale.set(5,5,1); return s;
@@ -795,25 +609,27 @@ function enterLocation(locId){
   let tipT=0;
   const update=(dt,t)=>{
     if(!modalOpen) updatePlayer(dt);
+    environmentLabels.forEach(label=>{label.getWorldPosition(labelPosition); label.visible=Math.hypot(labelPosition.x-player.x,labelPosition.z-player.z)<10;});
     // animate beacons + drops
-    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=3.2+Math.sin(t*2+i)*0.22;} if(c.userData.ring&&c.userData.pillar&&c.userData.pillar.visible){ c.userData.pillar.material.opacity=0.22+Math.sin(t*3+i)*0.1; } }
-      if(c.userData.type==='drop'){ c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6; if(Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
+    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=2.1+(reducedMotion?0:Math.sin(t*2+i)*0.08);} }
+      if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6;} if(!modalOpen && Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
       // gentle head-graze bob + tail swish so cows read as alive, not static props
-      if(c.userData.type==='cow'){ const tt=t+c.userData.phase; c.userData.head.rotation.x=Math.sin(tt*0.6)*0.14+0.06; c.userData.tail.rotation.x=Math.sin(tt*2.2)*0.3; c.userData.tail.rotation.z=Math.cos(tt*1.4)*0.12; } });
+      if(c.userData.type==='cow'&&!reducedMotion) animateCow(c,t); });
 
     // Update direction arrow to point toward next destination + flash
     if(!modalOpen){
       // Find next destination: first incomplete lesson, or quiz if all lessons done
       let nextDest=null;
       for(const b of beacons){ if(!b.userData.done){ nextDest=b; break; } }
-      if(!nextDest && Progress.locationLessonsDone(locId)>=loc.lessons.length) nextDest=quizG;
+      if(!nextDest && !Progress.isLocationDone(locId) && Progress.locationLessonsDone(locId)>=loc.lessons.length) nextDest=quizG;
+      for(const station of [...beacons,quizG]) station.userData.label.visible=station===nextDest || Math.hypot(station.position.x-player.x,station.position.z-player.z)<7;
 
       if(nextDest){
         // Position arrow above next destination (billboard style, always faces camera)
         dirArrow.position.copy(nextDest.position);
-        dirArrow.position.y=4.5;
+        dirArrow.position.y=3.25;
         // Pulsing scale + opacity for flashing effect
-        const pulse=0.85+Math.sin(t*2.5)*0.35;
+        const pulse=reducedMotion?1.3:1.3+Math.sin(t*2.5)*0.12;
         dirArrow.scale.set(pulse,pulse,1);
         dirArrow.material.opacity=0.85+Math.sin(t*2.5)*0.15;
         dirArrow.visible=true;
@@ -825,14 +641,16 @@ function enterLocation(locId){
   };
 
   setActive(locId==='farm'?GAME_STATES.FARM:locId==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET,{
-    scene,update,dispose:()=>{ setAfterLessonReturn(()=>{}); }
+    scene,update,dispose:()=>{ setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
   });
+  setAfterLessonReturn(refreshStations);
+  document.addEventListener('rcm:progresschange',refreshStations);
   active.clickables=clickables; active.loc=loc; active.beacons=beacons; active.quizG=quizG;
 
   function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} 💧 Golden milk drop!`); } }
   active.collectDrop=collectDrop;
 
-  caption(loc.intro);
+  caption('');
   toast(`${loc.badge.emoji} ${loc.title}`);
 }
 
@@ -847,7 +665,7 @@ function updateLocHint(loc,beacons,quizG){
     hint.classList.add('action');
     if(near.userData.kind==='quiz'){
       if(Progress.isLocationDone(loc.id)){ hint.innerHTML=`✅ Quiz complete — get close to start over`; ready=true; }
-      else if(Progress.locationLessonsDone(loc.id)>=loc.lessons.length){ hint.innerHTML=`🧠 <b>${near.userData.lesson.title}</b> — get closer to start`; ready=true; }
+      else if(Progress.locationLessonsDone(loc.id)>=loc.lessons.length){ hint.innerHTML=`🧠 <b>Take the Quiz</b> — press E or tap to start`; ready=true; }
       else hint.innerHTML=`🔒 Finish all 3 lessons to unlock the quiz (${Progress.locationLessonsDone(loc.id)}/3)`;
     } else {
       const dn=near.userData.done;
@@ -918,282 +736,19 @@ function activateStation(g){
 function makeBeacon(emoji,color,labelText){
   const g=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.5,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=0.06; g.add(ring);
-  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.62,6,12,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.3,depthWrite:false,side:THREE.DoubleSide})); pillar.position.y=3; g.add(pillar);
-  const icon=B.emojiSprite(emoji,2.15); icon.position.y=3.35; g.add(icon);
-  const label=B.labelSprite(labelText,0.95); label.position.y=5.0; g.add(label);
+  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.5,1.4,12,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.16,depthWrite:false,side:THREE.DoubleSide})); pillar.position.y=.7; g.add(pillar);
+  const canvas=document.createElement('canvas'); canvas.width=canvas.height=128;
+  const ctx=canvas.getContext('2d'); ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fillStyle='#193e30';ctx.fill();ctx.strokeStyle='#f4e4ba';ctx.lineWidth=5;ctx.stroke();
+  ctx.fillStyle='#fff9ee';ctx.font='600 52px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(/^\d/.test(labelText)?labelText[0]:'?',64,66);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true}));icon.scale.set(1.35,1.35,1);icon.position.y=2.1;g.add(icon);
+  const label=B.labelSprite(labelText,0.85); label.position.y=3.85; g.add(label);
   g.userData={ring,pillar,icon,label};
   return g;
 }
 function setBeaconDone(g,done,color){ g.userData.ring.material.color.set(done?0x9e9e9e:color); g.userData.ring.material.opacity=done?0.4:0.85; g.userData.pillar.visible=!done; }
 function setBeaconLocked(g,locked){ g.userData.pillar.visible=!locked; g.userData.ring.material.color.set(locked?0x9e9e9e:0xf5b21e); g.userData.ring.material.opacity=locked?0.4:0.85; g.userData.icon.material.opacity=locked?0.5:1; g.userData.icon.material.transparent=true; }
 function makeDrop(){ const g=new THREE.Group(); const m=B.lamb(0xf5b21e,{emissive:0x7a5600,emissiveIntensity:0.4}); const ball=new THREE.Mesh(new THREE.SphereGeometry(0.32,12,10),m); const tip=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.45,12),m); tip.position.y=0.42; g.add(ball); g.add(tip); return g; }
-
-/* ---- location environment builders (low-poly, themed) ---- */
-function buildFarm(scene,addObst){
-  const {box,cyl,ball,lamb,labelSprite}=B;
-  // modern free-stall barn (open sides, light roof) — not a red barn
-  const barn=new THREE.Group();
-  const post=lamb(0xcfd3d6);
-  for(const px of [-6,-2,2,6]) for(const pz of [-4,4]) barn.add(cyl(0.18,0.2,4.4,post,px,2.2,pz,8));
-  const roof=box(15,0.3,10,lamb(0xe2e6e9),0,4.5,0); roof.rotation.x=0.04; barn.add(roof);
-  // ridge vents (ventilation)
-  barn.add(box(15,0.5,0.8,lamb(0xf2f4f6),0,4.9,0));
-  // fans
-  for(const fx of [-5,0,5]){ const f=cyl(0.7,0.7,0.2,lamb(0x333333),fx,3.6,-4.1,10); f.rotation.x=Math.PI/2; barn.add(f);}
-  barn.position.set(-14,0,-2); scene.add(barn); addObst(-14,-2,6);
-  scene.add(withLabel(labelSprite('Ventilated Barn',1),-14,5.6,-2));
-
-  // feed & water lane
-  const feed=box(6,0.5,1.2,lamb(0x8a6a44),-14,0.35,4); scene.add(feed);
-  const trough=box(4,0.6,1,lamb(0x8d9aa5),-14,0.4,6); scene.add(trough);
-  const water=new THREE.Mesh(new THREE.PlaneGeometry(3.6,0.8),lamb(0x4aa3d8)); water.rotation.x=-Math.PI/2; water.position.set(-14,0.68,6); scene.add(water);
-
-  // milking area + bulk tank (milk house)
-  const mh=new THREE.Group();
-  mh.add(box(6,3,5,lamb(0xe8ece0),0,1.5,0));
-  const tank=new THREE.Group(); const steel=lamb(0xd9e2e8); const body=cyl(1,1,3,steel,0,0,0,18); body.rotation.z=Math.PI/2; tank.add(body); tank.add(ball(1,steel,1.5,0,0)); tank.add(ball(1,steel,-1.5,0,0)); tank.position.set(0,2,0); mh.add(tank);
-  mh.position.set(8,0,-2); scene.add(mh); addObst(8,-2,3.4);
-
-  // refrigerated tanker
-  const tanker=makeTanker(); tanker.position.set(16,0,4); tanker.rotation.y=-0.4; scene.add(tanker); addObst(16,4,2.4);
-  scene.add(withLabel(labelSprite('Refrigerated Tanker',1),16,3.4,4));
-
-  // solar panels
-  const solar=new THREE.Group(); for(let i=0;i<3;i++){ const p=box(2.4,0.1,1.4,lamb(0x1b2a4a),i*2.7,1.2,0); p.rotation.x=-0.5; solar.add(p); solar.add(cyl(0.06,0.06,1.1,lamb(0x888),i*2.7,0.55,0.3,6)); } solar.position.set(-22,0,8); scene.add(solar);
-  scene.add(withLabel(labelSprite('Solar',0.8),-19.5,2.2,8));
-
-  // manure/renewable-energy digester dome
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(2,16,10,0,Math.PI*2,0,Math.PI/2),lamb(0x2e5e3e)); dome.position.set(-22,0,-8); dome.castShadow=true; scene.add(dome); addObst(-22,-8,2.2);
-  scene.add(withLabel(labelSprite('Renewable Energy',0.9),-22,2.6,-8));
-
-  // feed crops (rows) + a couple cows
-  for(let r=0;r<5;r++) for(let c=0;c<8;c++){ const crop=cyl(0.05,0.05,0.5+Math.random()*0.3,lamb(0x6fae2e),18+c*0.6,0.3,-12+r*0.7,4,false); scene.add(crop); }
-  addFarmCows(scene);
-}
-function addFarmCows(scene){
-  const cows=[];
-  for(let i=0;i<4;i++){ const c=makeCow(1,i!==2); c.position.set(-10+i*2.2,0,-8); c.rotation.y=Math.PI/2; scene.add(c); cows.push(c); }
-  // Photographic cutouts add a credible visual anchor while the lightweight
-  // procedural herd continues to supply animation and collision geometry.
-  const cowTexture=new THREE.TextureLoader().load('assets/characters/holstein-cow.png');
-  cowTexture.colorSpace=THREE.SRGBColorSpace;
-  for(const [x,z,scale] of [[-15,-7,1],[-18,-10,.82]]){
-    const cow=new THREE.Sprite(new THREE.SpriteMaterial({map:cowTexture,transparent:true,alphaTest:.08}));
-    cow.scale.set(5.8*scale,3.9*scale,1);
-    cow.position.set(x,1.95*scale,z);
-    cow.userData.type='cow';
-    scene.add(cow); cows.push(cow);
-  }
-  // make cows clickable for a moo
-  cows.forEach(c=>{ c.userData.type='cow'; });
-  // enterLocation merges these into the location's clickables after setActive.
-  scene.userData.cows=cows;
-}
-function makeCow(scale=1,spotted=true){
-  const {box,rbox,cyl,ball,lamb}=B;
-  const g=new THREE.Group();
-  const hideMat=new THREE.MeshLambertMaterial({map:B.cowTexture(spotted)});
-  const dark=lamb(0x201f1c), pink=lamb(0xe8a8a8), horn=lamb(0xe8dfc8);
-
-  // body — bigger barrel proportions read more clearly as "cow" at a distance
-  const bodyMesh=new THREE.Mesh(new THREE.CapsuleGeometry(0.68,1.55,4,10),hideMat);
-  bodyMesh.rotation.z=Math.PI/2; bodyMesh.position.y=1.28; bodyMesh.castShadow=true; bodyMesh.receiveShadow=true;
-  g.add(bodyMesh);
-
-  // head — rounded box (RoundedBoxGeometry) instead of a hard cube, with a
-  // clearly separated dark snout, visible ears, and small polled-breed horns.
-  const head=new THREE.Group(); head.position.set(1.38,1.78,0);
-  head.add(rbox(0.72,0.66,0.58,hideMat,0,0,0,0.1));
-  head.add(rbox(0.4,0.32,0.42,pink,0.44,-0.16,0,0.08));
-  head.add(ball(0.045,dark,0.62,-0.1,0.13,false));
-  head.add(ball(0.045,dark,0.62,-0.1,-0.13,false));
-  for(const s of [1,-1]) head.add(ball(0.055,dark,0.3,0.05,s*0.24,false));
-  for(const s of [1,-1]){
-    const ear=rbox(0.3,0.16,0.2,hideMat,-0.02,0.22,s*0.42,0.05,false);
-    ear.rotation.z=s*0.5; ear.rotation.y=s*0.3; head.add(ear);
-  }
-  for(const s of [1,-1]) head.add(cyl(0.02,0.05,0.16,horn,0.05,0.42,s*0.22,6,false));
-  g.add(head);
-
-  for(const [lx,lz] of [[0.72,0.32],[0.72,-0.32],[-0.72,0.32],[-0.72,-0.32]]) g.add(cyl(0.11,0.13,0.95,dark,lx,0.48,lz,8));
-  g.add(ball(0.34,pink,-0.55,0.78,0,false));
-
-  // tail — animated in updateCows for a gentle swish
-  const tail=new THREE.Group(); tail.position.set(-1.5,1.7,0);
-  tail.add(cyl(0.035,0.05,0.85,dark,0,-0.4,0,6,false));
-  tail.add(ball(0.08,dark,0,-0.82,0,false));
-  g.add(tail);
-
-  g.scale.setScalar(scale*1.12);
-  g.userData={type:'cow',head,tail,phase:Math.random()*9};
-  return g;
-}
-function makeTanker(){
-  const {box,cyl,ball,lamb}=B; const g=new THREE.Group(); const steel=lamb(0xe3eaee), dark=lamb(0x2b2b2b);
-  g.add(box(1.8,1.7,2,lamb(0x1f6fb2),0,1.3,2.8));
-  const tk=cyl(1.1,1.1,4.6,steel,0,1.8,-0.6,18); tk.rotation.x=Math.PI/2; g.add(tk);
-  g.add(ball(1.1,steel,0,1.8,1.7)); g.add(ball(1.1,steel,0,1.8,-2.9));
-  g.add(box(2.2,0.4,5.4,dark,0,0.6,-0.2));
-  for(const zz of [2.4,-1,-2.4]) for(const s of [1,-1]){ const w=cyl(0.5,0.5,0.35,dark,s*1,0.5,zz,12); w.rotation.z=Math.PI/2; g.add(w);}
-  return g;
-}
-function withLabel(sprite,x,y,z){ sprite.position.set(x,y,z); return sprite; }
-
-function buildProcessor(scene,addObst){
-  const {box,rbox,cyl,ball,lamb,basic,labelSprite}=B;
-  // clean modern facility shell (visitor-safe walkway implied)
-  const bldg=new THREE.Group();
-  bldg.add(box(24,7,16,lamb(0xeef1f4),0,3.5,-6));
-  bldg.add(box(24.4,0.4,16.4,lamb(0xcfd6dc),0,7.1,-6));
-  bldg.position.set(0,0,0); scene.add(bldg); addObst(0,-12,12);
-
-  // ---- street-facing facade (the wall the player spawns looking at) ----
-  const wallZ=2.06; // just proud of the front wall at z=2
-  const facade=new THREE.Group();
-  const glass=new THREE.MeshPhongMaterial({color:0x8fd0e6,transparent:true,opacity:0.55,shininess:90});
-  const frameM=lamb(0xffffff), accent=lamb(0x1a7a3c), steel=lamb(0xb7c2cc);
-  // corner pilasters give the wall real architectural edges instead of a flat slab
-  for(const px of [-11.4,11.4]) facade.add(rbox(1.2,7,1.2,lamb(0xd7dee4),px,3.5,wallZ-0.5,0.15));
-  // ribbon of tinted windows with white mullion frames
-  for(const wx of [-8.4,-4.6,4.6,8.4]){
-    facade.add(rbox(2.6,3,0.14,frameM,wx,4.3,wallZ,0.06));
-    facade.add(box(2.3,2.7,0.05,glass,wx,4.3,wallZ+0.08,false));
-    facade.add(box(2.6,0.1,0.1,frameM,wx,4.3,wallZ+0.08,false));
-  }
-  // entrance: glass double doors + canopy + signage
-  facade.add(rbox(2.4,3.4,0.12,frameM,0,2,wallZ,0.06));
-  facade.add(box(1,3,0.06,glass,-0.55,1.9,wallZ+0.08,false));
-  facade.add(box(1,3,0.06,glass,0.55,1.9,wallZ+0.08,false));
-  const canopy=rbox(4.6,0.22,1.6,accent,0,3.9,wallZ+0.9,0.06); facade.add(canopy);
-  for(const px of [-2,2]) facade.add(cyl(0.07,0.07,3.79,steel,px,1.895,wallZ+1.55,8,false));
-  facade.add(withLabel(labelSprite('PROCESSING & PACKAGING',1.3),0,5.4,wallZ+0.9));
-  // exterior pipe run along the base — visible plant character, not just a wall
-  for(const py of [0.9,1.3]){ const pipe=cyl(0.09,0.09,20,steel,0,py,wallZ-0.35,8,false); pipe.rotation.z=Math.PI/2; facade.add(pipe); }
-  facade.add(cyl(0.16,0.16,2.2,steel,-9.5,1.6,wallZ-0.35,10,false));
-  // roof-mounted equipment breaks up the flat roofline silhouette
-  for(const rx of [-6,0,6]){
-    facade.add(box(1.4,0.8,1.4,lamb(0xc7ced3),rx,7.5,-8,false));
-    const fan=cyl(0.5,0.5,0.08,lamb(0x7f8a92),rx,7.95,-8,14,false); fan.rotation.x=Math.PI/2; facade.add(fan);
-  }
-  scene.add(facade);
-
-  // receiving bay + tanker
-  const tanker=makeTanker(); tanker.position.set(-16,0,6); tanker.rotation.y=0.5; scene.add(tanker); addObst(-16,6,2.4);
-  scene.add(withLabel(labelSprite('Receiving Bay',1),-16,3.4,6));
-  // stainless tanks + pipes
-  for(let i=0;i<4;i++){ const t=cyl(1,1,4,lamb(0xd7dee4),-8+i*2.4,2,-4,16); scene.add(t); }
-  scene.add(withLabel(labelSprite('Stainless Tanks',0.9),-5,4.6,-4));
-  // pipes
-  for(let i=0;i<4;i++){ const p=box(8,0.15,0.15,lamb(0xb7c2cc),-2,3.4+i*0.3,-2); scene.add(p); }
-  // cheese line: block, cutter, shredder, packaging
-  const line=new THREE.Group();
-  line.add(box(0.9,0.9,0.9,lamb(0xf3d98a),0,1,0));   // cheese block
-  line.add(box(1.2,1.4,1.2,lamb(0x9fb4c4),2.4,0.9,0)); // shredder
-  line.add(box(1.4,1,1,lamb(0xcfd6dc),4.8,0.7,0));   // packager
-  line.position.set(6,0,-4); scene.add(line);
-  scene.add(withLabel(labelSprite('Cheese & Shred Line',0.9),8.4,3,-4));
-  // consumer vs foodservice packaging stacks
-  const cons=box(1,0.6,0.7,lamb(0x2a9c53),12,0.6,-2); scene.add(cons);
-  const food=box(1.6,1,1.2,lamb(0xf5b21e),14,0.9,-2); scene.add(food);
-  scene.add(withLabel(labelSprite('Consumer + Foodservice',0.9),13,2.4,-2));
-  // refrigerated storage + shipping dock
-  scene.add(withLabel(labelSprite('Cold Storage',0.9),-10,3,-10));
-  const dock=box(6,1,4,lamb(0x9aa7b0),12,0.5,8); scene.add(dock); addObst(12,8,3);
-  scene.add(withLabel(labelSprite('Shipping Dock',0.9),12,2.4,8));
-}
-function buildMarket(scene,addObst){
-  const {box,rbox,cyl,ball,lamb,labelSprite}=B;
-  const glass=new THREE.MeshPhongMaterial({color:0x9fe0ea,transparent:true,opacity:0.5,shininess:90});
-  const steamGlass=new THREE.MeshPhongMaterial({color:0xffe0b0,transparent:true,opacity:0.35,shininess:60});
-  const frameM=lamb(0xffffff);
-
-  // grocery side (left)
-  const grocery=new THREE.Group();
-  grocery.add(box(12,6,10,lamb(0xf3efe3),0,3,-6));
-  // dairy case
-  for(let i=0;i<3;i++){ const c=box(3,2.2,1.2,lamb(0xbfe0ea),-3+i*3,1.1,-1); grocery.add(c); grocery.add(box(3,0.1,1.2,lamb(0xffffff),-3+i*3,2.25,-1)); }
-  grocery.position.set(-12,0,0); scene.add(grocery); addObst(-12,-6,8.6);
-  scene.add(withLabel(labelSprite('Grocery Dairy Aisle',1),-12,4.4,-1));
-
-  // grocery street-facing storefront (this is what the player actually spawns
-  // looking toward — was previously a flat undecorated wall)
-  {
-    const gz=-0.92, gx=-12;
-    const f=new THREE.Group();
-    for(const px of [gx-6.4,gx+6.4]) f.add(rbox(0.8,6,0.8,lamb(0xe2dcc8),px,3,gz-0.4,0.1));
-    f.add(rbox(9,3.4,0.14,frameM,gx,3.1,gz,0.06));
-    f.add(box(8.6,3,0.05,glass,gx,3.1,gz+0.08,false));
-    for(const lx of [-3,-1,1,3]) f.add(box(0.1,3,0.06,frameM,gx+lx,3.1,gz+0.1,false));
-    f.add(rbox(1.8,3,0.1,frameM,gx,1.6,gz,0.06));
-    f.add(box(0.85,2.7,0.05,glass,gx-0.42,1.5,gz+0.08,false));
-    f.add(box(0.85,2.7,0.05,glass,gx+0.42,1.5,gz+0.08,false));
-    const awning=rbox(9.6,0.2,1.1,lamb(0x1a7a3c),gx,5,gz+0.55,0.05); f.add(awning);
-    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0x1a7a3c),gx-7.2+i*2.88,4.9,gz+0.55,false));
-    f.add(withLabel(labelSprite('MARKET',1.3),gx,5.9,gz+0.6));
-    // planter box + small produce color pop out front for street character
-    const planter=box(2.4,0.5,0.6,lamb(0x7a5a3a),gx,0.25,gz+1.3); f.add(planter);
-    const leafM=lamb(0x3e8a3e);
-    for(let i=0;i<5;i++) f.add(ball(0.22,i%2?leafM:lamb(0xd94f4f),gx-1+i*0.5,0.55,gz+1.3,false));
-    scene.add(f);
-  }
-
-  // restaurant / commercial kitchen (right)
-  const kitchen=new THREE.Group();
-  kitchen.add(box(12,6,10,lamb(0xe7ede9),0,3,-6));
-  // stainless counters + range
-  kitchen.add(box(6,1,1.4,lamb(0xcfd6dc),0,1,-1));
-  kitchen.add(box(2,1,1.4,lamb(0x333333),3.5,1,-1));
-  kitchen.position.set(12,0,0); scene.add(kitchen); addObst(12,-6,8.6);
-  scene.add(withLabel(labelSprite('Commercial Kitchen',1),12,4.4,-1));
-
-  // kitchen street-facing facade — warm awning + steamy glass + roof exhaust
-  // hood so it reads as "restaurant," distinct from the grocery storefront
-  {
-    const kz=-0.92, kx=12;
-    const f=new THREE.Group();
-    for(const px of [kx-6.4,kx+6.4]) f.add(rbox(0.8,6,0.8,lamb(0xe2dcc8),px,3,kz-0.4,0.1));
-    f.add(rbox(9,3.4,0.14,frameM,kx,3.1,kz,0.06));
-    f.add(box(8.6,3,0.05,steamGlass,kx,3.1,kz+0.08,false));
-    for(const lx of [-3,-1,1,3]) f.add(box(0.1,3,0.06,frameM,kx+lx,3.1,kz+0.1,false));
-    f.add(rbox(1.8,3,0.1,lamb(0x4a2f1c),kx,1.6,kz,0.06));
-    const awning=rbox(9.6,0.2,1.1,lamb(0xb8481f),kx,5,kz+0.55,0.05); f.add(awning);
-    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0xb8481f),kx-7.2+i*2.88,4.9,kz+0.55,false));
-    f.add(withLabel(labelSprite('KITCHEN',1.3),kx,5.9,kz+0.6));
-    // roof exhaust hood stack signals "commercial kitchen" from a glance
-    f.add(cyl(0.28,0.28,2,lamb(0xb7c2cc),kx-4,7,-8,10,false));
-    f.add(cyl(0.4,0.34,0.35,lamb(0x8d9aa5),kx-4,8.1,-8,10,false));
-    scene.add(f);
-  }
-
-  // small bistro table + umbrella in the plaza between the two storefronts —
-  // a cheap, high-impact prop that visually bridges grocery and restaurant
-  {
-    const t=new THREE.Group();
-    t.add(cyl(0.06,0.06,1.0,lamb(0x3a3a3a),0,0.5,0,8));
-    t.add(cyl(0.55,0.55,0.06,lamb(0xf5f0e6),0,1.02,0,16));
-    t.add(cyl(0.04,0.04,1.4,lamb(0xd9d2c0),0,1.7,0,8,false));
-    const canopy=new THREE.Mesh(new THREE.ConeGeometry(1.1,0.5,10),lamb(0xf5b21e)); canopy.position.y=2.15; canopy.castShadow=true; t.add(canopy);
-    t.position.set(0,0,3);
-    scene.add(t); addObst(0,3,1.1);
-  }
-
-  // receiving dock between
-  const dock=box(5,1,3,lamb(0x9aa7b0),12,0.5,8); scene.add(dock); addObst(12,8,3);
-  scene.add(withLabel(labelSprite('Restaurant Receiving',0.9),12,2.4,8));
-  // refrigerated storage
-  scene.add(withLabel(labelSprite('Refrigerated Storage',0.9),0,3,-12));
-  const cold=box(6,4,4,lamb(0xcfe3ea),0,2,-12); scene.add(cold); addObst(0,-12,3.5);
-  // chef character (simple)
-  const chef=makeChef(); chef.position.set(9,0,2); scene.add(chef);
-  // packages consumer + foodservice
-  scene.add(withLabel(labelSprite('Consumer + Foodservice Packages',0.8),0,2.2,4));
-}
-function makeChef(){ const {box,cyl,ball,lamb}=B; const g=new THREE.Group(); g.add(cyl(0.4,0.5,1.4,lamb(0xffffff),0,0.9,0,10)); g.add(ball(0.35,lamb(0xe8b98f),0,1.9,0)); g.add(cyl(0.36,0.36,0.4,lamb(0xffffff),0,2.3,0,12)); g.add(ball(0.34,lamb(0xffffff),0,2.6,0,false)); return g; }
-
-/* register cows/scene extra clickables after location active is set:
-   buildFarm pushes into active.clickables directly if present. To be safe we
-   also add scene cows here in enterLocation via traversal — handled by tryClick
-   using active.clickables which farm builder appended to. */
 
 /* ---------------- COMPLETION ---------------- */
 function enterCompletion(){
@@ -1210,7 +765,7 @@ function enterCompletion(){
   $('complete').classList.remove('hidden');
 }
 $('cMap').onclick=()=>{ $('complete').classList.add('hidden'); go(GAME_STATES.MAP); };
-$('cReplay').onclick=()=>{ confirmDialog('Play again?','This resets your progress and starts a fresh journey.',()=>{ Progress.reset(); sessionStorage.removeItem('rcm_recapDone'); $('complete').classList.add('hidden'); go(GAME_STATES.MAP); },'Start over','Cancel'); };
+$('cReplay').onclick=()=>{ confirmDialog('Play again?','This resets your progress and starts a fresh journey.',()=>{ Progress.reset(); go(GAME_STATES.EARTH_INTRO); },'Start over','Cancel'); };
 $('cProducts').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'products'}); window.open(EXTERNAL_LINKS.products,'_blank','noopener'); };
 $('cFoodservice').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'foodservice'}); window.open(EXTERNAL_LINKS.foodservice,'_blank','noopener'); };
 
@@ -1218,6 +773,11 @@ $('cFoodservice').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'foo
    11. FALLBACK (no-WebGL) — same educational content, DOM only
 ============================================================================ */
 function enterFallback(){
+  webglOK=false;
+  setActive('FALLBACK',{});
+  for(const id of ['hud','hint','caption','joy','lookJoy','touchAct','objective','complete']) $(id).classList.add('hidden');
+  document.body.classList.remove('touch-controls-active');
+  document.body.dataset.screen='FALLBACK';
   Analytics.track('fallback_shown');
   $('boot').classList.add('hidden'); $('title').classList.add('hidden'); $('hud').classList.add('hidden');
   const root=$('fallback'); root.classList.remove('hidden');
@@ -1275,7 +835,7 @@ function confirmDialogFallback(){ if(confirm('Reset all progress on this device?
    12. BOOT
 ============================================================================ */
 // HUD buttons
-$('btnMap').onclick=()=>{ if(webglOK){ Audio.click(); go(GAME_STATES.MAP);} };
+$('btnMap').onclick=()=>{ Audio.click(); go(GAME_STATES.MAP); };
 $('btnSteps').onclick=showStepsMenu;
 $('btnHelp').onclick=showHelp;
 $('btnReset').onclick=()=>{ Audio.click(); if(isLocationState()){ resetPlayer(); toast('Position reset'); } else { toast('Nothing to reset here'); } };
@@ -1288,7 +848,7 @@ $('qualitySeg').querySelectorAll('button').forEach(b=>{
   b.setAttribute('aria-pressed',selected?'true':'false');
   b.onclick=()=>{
     quality=b.dataset.q;
-    localStorage.setItem('rcm_quality',quality);
+    writePreference('rcm_quality',quality);
     $('qualitySeg').querySelectorAll('button').forEach(x=>{
       x.classList.toggle('on',x===b);
       x.setAttribute('aria-pressed',x===b?'true':'false');
@@ -1297,17 +857,6 @@ $('qualitySeg').querySelectorAll('button').forEach(b=>{
     toast(`Graphics: ${quality==='perf'?'Performance':quality[0].toUpperCase()+quality.slice(1)}`);
   };
 });
-
-// BEGIN
-$('beginBtn').onclick=async ()=>{
-  Audio.init(); Audio.click();
-  $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
-  $('title').classList.add('hidden');
-  if(!webglOK){ enterFallback(); return; }
-  // Don't force intro to replay within the same session
-  if(sessionStorage.getItem('rcm_introSeen')==='1'){ go(GAME_STATES.MAP); }
-  else { go(GAME_STATES.EARTH_INTRO); }
-};
 
 function showResumeBanner(){
   const hasProgress = Progress.data.points>0 || Progress.lessonsDoneCount()>0;
@@ -1323,22 +872,33 @@ async function boot(){
   validateLessonContent(LOCATIONS);
   showResumeBanner();
   updateHUD();
-  const ok=await initThree();
+  go(GAME_STATES.EARTH_INTRO);
+  $('boot').classList.add('hidden');
+  // The film and chapter selector remain usable while the engine loads.
+  let timeout;
+  engineReady=Promise.race([initThree(), new Promise(resolve=>{ timeout=setTimeout(()=>resolve(false),12000); })]);
+  const ok=await engineReady;
+  clearTimeout(timeout);
   if(!ok){
-    // WebGL failed → fallback path, but keep the title so user still chooses BEGIN
     webglOK=false;
-    $('boot').classList.add('hidden');
-    // title BEGIN will route to fallback
     return;
   }
   B=makeBuilders();
+  environments=createEnvironmentBuilders(THREE,B);
   attachCanvasInput();
   // single animation loop
   const clock=new THREE.Clock();
   renderer.setAnimationLoop(()=>{
     const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
-    if(active.update) active.update(dt,t);
-    if(active.scene && renderer) renderer.render(active.scene,camera);
+    try {
+      // The world is paused behind lesson dialogs: no wasted GPU work, hidden
+      // rewards, or movement while a learner is reading.
+      if(active.update && !modalOpen) active.update(dt,t);
+      if(active.scene && renderer && !modalOpen) renderer.render(active.scene,camera);
+    } catch(error) {
+      console.error('The 3D scene stopped; switching to the accessible journey', error);
+      enterFallback();
+    }
   });
   $('boot').classList.add('hidden');
   // sound button initial label
@@ -1348,6 +908,7 @@ async function boot(){
 // debug hooks for automated testing / QA
 window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
 window.__RCM_DEBUG = false;
+window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio()});
 
 configureLessonRenderer({ openModal, closeModal, fireConfetti, navigate: go });
 

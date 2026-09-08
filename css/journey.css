@@ -1,0 +1,80 @@
+/* The film and field guide share a quiet, editorial visual language. */
+.eyebrow{font-size:11px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;line-height:1.5}
+#introVideo{position:fixed;inset:0;z-index:24;width:100%;height:100%;object-fit:cover;background:#101c23}
+#title.cinematic{z-index:25;align-items:center;padding:clamp(24px,6vw,96px);color:#fff;background:linear-gradient(90deg,rgba(5,17,20,.88),rgba(5,17,20,.38) 58%,rgba(5,17,20,.05));pointer-events:none}
+#title .intro-copy{width:min(620px,100%);pointer-events:auto}
+#title .logo{width:118px;margin:0 0 32px;filter:drop-shadow(0 2px 10px rgba(0,0,0,.25))}
+#title h1{font-size:clamp(48px,6.3vw,94px);font-weight:400;line-height:1.02;letter-spacing:-.045em;color:#fff;margin:16px 0 24px;text-shadow:0 2px 24px #07111b44}
+#title .subtitle{font-size:clamp(15px,1.5vw,18px);line-height:1.65;color:#f1f3ef;margin:0 0 26px}
+#title .btnrow{justify-content:flex-start;gap:12px}
+#beginBtn{padding:16px 24px;min-height:52px;font-size:16px}
+.film-toggle{color:#fff;background:#ffffff12;border:1px solid #ffffff65}
+.film-toggle:hover{background:#ffffff26}
+#introStatus{font-size:13px;color:#e0e6df;min-height:20px;margin:20px 0 8px}
+.intro-meta{font-size:11px;color:#d0d9d1;letter-spacing:.06em}
+#skipIntro{z-index:26;right:24px;bottom:24px;background:#0a191de0;border:1px solid #ffffff55;color:#fff;font-size:12px}
+#title #resumeBanner{background:#0b2019c9;color:#fff;border:1px solid #ffffff33;font-size:13px;text-align:left;margin-bottom:18px}
+#journeyMap{position:fixed;inset:0;z-index:20;overflow:auto;padding:100px clamp(20px,5vw,80px) 28px;color:#f4f0e6;background:linear-gradient(105deg,#091d19f5,#091d19d9 48%,#091d1999),url('../assets/environments/california-route.jpg') center/cover}
+.journey-heading{max-width:760px;margin-bottom:32px}
+.journey-heading .eyebrow{color:#e4bd76;margin:0 0 12px}
+.journey-heading h1{font-family:Georgia,serif;font-size:clamp(32px,4vw,58px);font-weight:400;line-height:1.05;letter-spacing:-.035em;margin:0 0 16px}
+.journey-heading>p:not(.eyebrow){font-size:14px;line-height:1.6;color:#cedbd2}
+.journey-replay{border:0;background:none;color:#e4bd76;padding:8px 0;cursor:pointer;font-size:13px;margin-right:24px;min-height:44px}
+.journey-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1400px}
+.journey-card{min-width:0;border:1px solid #ffffff30;border-radius:12px;overflow:hidden;background:#f4f0e6;color:#17251e;box-shadow:0 12px 36px #0002}
+.journey-card>img{width:100%;height:clamp(130px,15vw,220px);object-fit:cover;display:block}
+.journey-card.locked>img{filter:saturate(.4)}
+.journey-card-body{padding:20px}
+.journey-card .eyebrow{font-size:10px;letter-spacing:.08em;color:#24583f;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin:0 0 12px}
+.journey-card.locked .eyebrow{color:#616963}
+.journey-card h2{font-family:Georgia,serif;font-size:clamp(22px,2vw,30px);font-weight:400;line-height:1.15;min-height:2.3em;margin:0 0 10px}
+.journey-card p{font-size:13px;line-height:1.5}
+.journey-card .journey-topics{font-size:11px;color:#536357;min-height:3em}
+.journey-card .btn{width:100%;min-height:48px;font-size:13px;text-align:left;justify-content:space-between;white-space:normal}
+.journey-card .btn:disabled{opacity:1;color:#5c655e;background:#e2e4de;border:1px solid #c8cec8;cursor:not-allowed}
+.journey-progress{display:block;font-size:11px;color:#57665b;margin-top:12px}
+.journey-footer{max-width:1400px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:10px;color:#c8d4c9;margin-top:24px;line-height:1.6}
+#engineStatus:empty{display:none}
+#engineStatus{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:90;background:#132c22;color:#fff;padding:16px 24px;border-radius:8px;box-shadow:var(--shadow)}
+#objective{position:fixed;top:80px;left:20px;z-index:29;width:290px;padding:18px;border-radius:10px;background:#f4f0e6f2;box-shadow:0 8px 30px #10251a20;border:1px solid #ffffff80}
+#objective .eyebrow{margin:0 0 9px;font-size:10px;color:#43634d}
+#objective h2{font-family:Georgia,serif;font-size:23px;line-height:1.15;margin:0 0 10px;font-weight:400}
+#objectiveProgress{display:block;font-size:11px;color:#4b6352;margin-bottom:12px}
+#nextLesson{width:100%;font-size:13px;min-height:44px}
+#graphicsSettings{margin-top:18px}
+#graphicsSettings:not(.hidden){display:block}
+body:has(#modal:not(.hidden)) #objective,body:has(#modal:not(.hidden)) #hint,body:has(#modal:not(.hidden)) #caption{visibility:hidden}
+#worldCanvas{position:fixed;inset:0;touch-action:none}
+#hint{pointer-events:none;font-size:12px;max-width:600px}
+.hbtn{min-height:44px}
+@media(max-width:760px){
+  #journeyMap{padding-top:126px}
+  .journey-cards{grid-template-columns:1fr;gap:20px}
+  .journey-card>img{height:170px}
+  .journey-card h2{min-height:0}
+  .journey-card .journey-topics{min-height:0}
+  .journey-heading h1{font-size:38px}
+  #objective{top:122px;left:12px;width:230px;padding:12px}
+  #objective h2{font-size:18px}
+  #objective .eyebrow{font-size:9px;margin-bottom:5px}
+  #objectiveProgress{margin-bottom:8px}
+  #title.cinematic{align-items:center;padding:28px 24px 88px;background:linear-gradient(90deg,#051114e8,#05111477)}
+  #title .logo{width:96px;margin-bottom:18px}
+  #title h1{font-size:54px}
+  #title .subtitle br{display:none}
+  #hud{gap:6px;left:12px;right:12px;top:12px}
+  #hud .group{gap:5px}
+  .chip{font-size:11px;padding:6px 9px}
+  #hint{font-size:11px;width:85vw}
+  body.touch-controls-active #hint{bottom:245px}
+  body.touch-controls-active #caption{display:none}
+}
+@media(max-height:650px) and (min-width:761px){
+  #journeyMap{padding-top:84px}
+  .journey-heading{margin-bottom:18px}
+  .journey-heading h1{font-size:34px}
+  .journey-heading h1 br{display:none}
+  .journey-heading>p:not(.eyebrow){display:none}
+  #title .logo{margin-bottom:10px;width:90px}
+  #title h1{font-size:54px;margin:10px 0 14px}
+}
