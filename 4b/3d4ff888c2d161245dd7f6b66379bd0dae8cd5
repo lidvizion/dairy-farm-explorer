@@ -1,0 +1,127 @@
+js/scenes/animation.js
+  s_909789c82eccc1::t_ee87166f231f74 1-10
+js/core/audio.js
+  s_909789c82eccc1::t_ddbdb550857a76 1,5,27
+index.html
+  s_909789c82eccc1::t_a627d057a92e97 382
+  s_909789c82eccc1::t_9db904091f1c1a 220,484
+  s_909789c82eccc1::t_25ae9fb3819c3b 381,411-412,414-416,418-420,422-423,428,446-460,530-536
+  s_909789c82eccc1::t_2905d91042b77f 525-526
+js/config/content.js
+  s_909789c82eccc1::t_c571de8ee4167f 78-80,126,166-168,213,303,314
+  s_909789c82eccc1::t_9f577e9da19097 64-65,152-153,248
+  s_909789c82eccc1::t_9db904091f1c1a 10,183,185,267
+  s_909789c82eccc1::t_8c1f4e44fcb2c9 124,127,130,212,215,218,310,313,316
+.gitignore
+  s_909789c82eccc1::t_9f577e9da19097 8-9
+  s_909789c82eccc1::t_a691dc60ebc533 15
+tests/animation.test.js
+  s_909789c82eccc1::t_51d182fcae78e0 1-13
+package.json
+  s_909789c82eccc1::t_a691dc60ebc533 8
+  s_909789c82eccc1::t_2905d91042b77f 7,14
+  s_909789c82eccc1::t_9f577e9da19097 6,9-10
+  s_909789c82eccc1::t_d6ab4b8b556658 11-13
+tests/progress.test.js
+  s_909789c82eccc1::t_885077e510bd61 33-57
+playwright.config.js
+  s_909789c82eccc1::t_51d182fcae78e0 1-15
+js/lessons/renderer.js
+  s_909789c82eccc1::t_9f577e9da19097 25,27,163,214
+  s_909789c82eccc1::t_bc82380bc7c0ec 5-7,28,33-38,44-45,51-54,60-61,72
+  s_909789c82eccc1::t_a1aea24a43bce8 223
+  s_909789c82eccc1::t_f522ba43c44238 81,83-84,93,95,99,103,108,119-120,127,134-137,140,152,155-156,164,180-181,183-184,186,190-191
+  s_909789c82eccc1::t_b6536a00c27557 89
+  s_909789c82eccc1::t_426b5a544f93f1 215-216,218,221-222,224-254,256-260,262,265,267-277
+scripts/package-site.mjs
+  s_909789c82eccc1::t_a691dc60ebc533 1-7
+js/config/learning-experience.js
+  s_909789c82eccc1::t_c571de8ee4167f 26
+  s_909789c82eccc1::t_a938b5f4230fd1 1-25,27-58
+js/scenes/location-environments.js
+  s_909789c82eccc1::t_4bbd68ed3edb87 1-46,48-100,102-256
+  s_909789c82eccc1::t_b0062b78c481b9 47,101
+scripts/serve.mjs
+  s_909789c82eccc1::t_51d182fcae78e0 1-13,15-34
+  s_909789c82eccc1::t_2905d91042b77f 14
+css/journey.css
+  s_909789c82eccc1::t_25ae9fb3819c3b 1-80
+js/core/progress.js
+  s_909789c82eccc1::t_9f577e9da19097 62
+js/app.js
+  s_909789c82eccc1::t_dcc6a65b957e8f 481-483,487-492,496,498-502,507-515
+  s_909789c82eccc1::t_f79f0c3a97e465 894-897
+  s_909789c82eccc1::t_9348bc3c6fc451 45-46,382
+  s_909789c82eccc1::t_b0062b78c481b9 541-543,612
+  s_909789c82eccc1::t_c571de8ee4167f 48,66
+  s_909789c82eccc1::t_ddbdb550857a76 8,11-13,214,230,239-245,273,373,384-385,390,417,440,449-451,462-464,468,475-478,562-563,565,588-593,617,624-625,632,644,646-647,668,768,776-780,838,851,875-881,893,898-901
+  s_909789c82eccc1::t_bc82380bc7c0ec 44,65
+  s_909789c82eccc1::t_9d426935a6ed63 911
+  s_909789c82eccc1::t_9db904091f1c1a 43,64,93-97
+  s_909789c82eccc1::t_9f577e9da19097 26,47,67-68,76-84,99,152,161-164,448,466,615,653
+  s_909789c82eccc1::t_d3d955e67a8a43 9-10,236-237,344,524-526,530,537-540,573,601,614,630,739-745,887
+js/ui/journey-map.js
+  s_909789c82eccc1::t_ee87166f231f74 1-46
+.github/workflows/deploy-pages.yml
+  s_909789c82eccc1::t_a691dc60ebc533 6-7,14-34,36-37,41-44,51,61
+README.md
+  s_909789c82eccc1::t_a691dc60ebc533 26-29,33,35-40,50-53,55-59,65-67,78,97-107,111-113,134-138,144-146,154,174-177,198-219,228,231-234
+js/scenes/environment-detail.js
+  s_909789c82eccc1::t_d3d955e67a8a43 1-52
+css/learning.css
+  s_909789c82eccc1::t_c571de8ee4167f 3-4
+  s_909789c82eccc1::t_a627d057a92e97 1-2,5-20,22-26,28-117,120,122-123,125-130,132-145
+  s_909789c82eccc1::t_347907581fe851 21,27,118-119,121,124,131
+scripts/vendor.mjs
+  s_909789c82eccc1::t_2905d91042b77f 1-14
+js/ui/intro.js
+  s_909789c82eccc1::t_ee87166f231f74 1-54
+LEARNING-QA.md
+  s_909789c82eccc1::t_a619966160d85c 1-68,74-103
+  s_909789c82eccc1::t_7a3be7dbe1508f 69-73
+tests/content.test.js
+  s_909789c82eccc1::t_b6536a00c27557 1-28
+js/core/preferences.js
+  s_909789c82eccc1::t_ee87166f231f74 1-8
+tests/browser/journey.spec.js
+  s_909789c82eccc1::t_c285e955bf03bc 2,24
+  s_909789c82eccc1::t_a10b0236970414 27,29,31-36,40-49,55-58,63-66,69-75,85-92,128
+  s_909789c82eccc1::t_c571de8ee4167f 94,182
+  s_909789c82eccc1::t_9348bc3c6fc451 139
+  s_909789c82eccc1::t_c0c8ea056f864d 199-259
+  s_909789c82eccc1::t_f79f0c3a97e465 6,118
+  s_909789c82eccc1::t_51d182fcae78e0 1,3,5,7-23,25-26,28,30,37-39,50-54,59-62,67-68,76-84,93,95-117,119-127,129-138,140-181,183-187,189-198
+  s_909789c82eccc1::t_2905d91042b77f 4,188
+js/lessons/presentation.js
+  s_909789c82eccc1::t_a938b5f4230fd1 1-13,15-25,27-36
+  s_909789c82eccc1::t_a1aea24a43bce8 14,26
+js/lessons/validate-content.js
+  s_909789c82eccc1::t_b6536a00c27557 2,6-25,27-30
+  s_909789c82eccc1::t_a1aea24a43bce8 26
+js/lessons/milk-route.js
+  s_909789c82eccc1::t_bc82380bc7c0ec 1-78
+package-lock.json
+  s_909789c82eccc1::t_de7e180dda76a1 1-66
+vendor/three/LICENSE
+  s_909789c82eccc1::t_f3d0871643aca6 1-21
+vendor/three/addons/geometries/RoundedBoxGeometry.js
+  s_909789c82eccc1::t_8664f92cc4fbbb 1-155
+vendor/three/three.module.min.js
+  s_909789c82eccc1::t_dc14c7842f04e3 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "4b3d4ff888c2d161245dd7f6b66379bd0dae8cd5",
+  "prompts": {},
+  "sessions": {
+    "s_909789c82eccc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07dab-58fd-7eb1-9fb1-aa95620299b8",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
