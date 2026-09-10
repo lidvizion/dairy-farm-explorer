@@ -143,3 +143,35 @@
   #modalBody>p,#modalBody>ul,#modalBody>.btnrow,#modalBody>h3,#modalBody>#graphicsSettings{margin:16px}
 }
 @media(prefers-reduced-motion:reduce){.flowing .route-step{animation:none}.branch-step{animation:none}}
+
+.leaderboard{margin:16px auto;padding:16px;background:var(--cream);border:1px solid #d6d9c8;border-radius:10px;color:var(--ink);text-align:left;max-width:600px;min-width:0}
+.leaderboard h3{font-family:Georgia,serif;font-size:25px;font-weight:400;margin:0 0 8px}
+.leaderboard p{font-size:12px;line-height:1.5}
+.leaderboard-form{display:grid;gap:10px}
+.leaderboard-form label{font-size:14px;font-weight:700}
+.leaderboard-form input{width:100%;min-width:0;border:1px solid #84977c;border-radius:7px;padding:12px;font:inherit;font-size:16px;background:white;color:var(--ink)}
+.leaderboard-form .btn{justify-content:center;white-space:normal;padding:12px}
+.leaderboard-form [role=alert]{color:#9d2929;margin:0}
+.leaderboard-list{list-style:none;padding:0;margin:12px 0 0}
+.leaderboard-list li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:6px;padding:10px 6px;border-top:1px solid #d6d9c8;font-size:13px}
+.leaderboard-name{overflow-wrap:anywhere}
+.leaderboard-list small{grid-column:2 / -1;color:#536357}
+.leaderboard-list .current-player{background:#e4efdc;border-left:3px solid var(--green)}
+#modal{padding:calc(12px + var(--safe-top)) calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(12px + var(--safe-left))}
+#modalCard{max-height:calc(100vh - 24px - var(--safe-top) - var(--safe-bottom));max-height:calc(100dvh - 24px - var(--safe-top) - var(--safe-bottom))}
+button,.pick,.quiz-opt,.match-item,.pkg,#touchAct{touch-action:manipulation}
+@media(max-width:420px){
+  .match-cols{grid-template-columns:1fr}
+  .match-item{font-size:13px;min-height:52px}
+  .pkg-grid,.milk-route{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .route-step{font-size:12px;min-height:100px;padding:10px}
+  .route-choices .pick{font-size:12px}
+}
+@media(max-height:500px) and (orientation:landscape){
+  .learning-layout{grid-template-columns:1fr}
+  .learning-media{display:none}
+  .milk-route{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .route-step{min-height:80px;font-size:12px}
+  .match-cols{grid-template-columns:1fr}
+  .match-item{min-height:48px;font-size:13px}
+}

@@ -10,7 +10,7 @@ export const DESTINATIONS = {
 
 // A responsive, keyboard-accessible chapter selector. The route is illustrative,
 // not a set of real farm addresses. No WebGL or video-frame capture dependency.
-export function renderJourneyMap(root, { onEnter, onReplay, onComplete }) {
+export function renderJourneyMap(root, { onEnter, onReplay, onComplete, onLeaderboard }) {
   root.replaceChildren();
   root.classList.remove('hidden');
   const heading = el('header', 'journey-heading');
@@ -18,6 +18,8 @@ export function renderJourneyMap(root, { onEnter, onReplay, onComplete }) {
   const replay = el('button', 'journey-replay', '↺ Replay the opening film');
   replay.onclick = onReplay;
   heading.append(replay);
+  const board=el('button','btn btn-ghost','Leaderboard'); board.onclick=onLeaderboard; heading.append(board);
+  const jump=el('button','journey-replay','Choose a destination'); jump.onclick=()=>cards.scrollIntoView({block:'start',behavior:'smooth'}); heading.append(jump);
   if (Progress.allDone()) {
     const certificate = el('button', 'btn btn-sun', 'View your certificate');
     certificate.onclick = onComplete;
@@ -40,7 +42,7 @@ export function renderJourneyMap(root, { onEnter, onReplay, onComplete }) {
     const progress = el('span', 'journey-progress', `${Progress.locationLessonsDone(loc.id)}/${loc.lessons.length} lessons`);
     content.append(button, progress); card.append(img, content); cards.append(card);
   });
-  const footer = el('footer', 'journey-footer', '<span>Illustrative locations · Progress saved on this device</span><span>Map imagery: Google Earth · Landsat / Copernicus · Data SIO, NOAA</span>');
+  const footer = el('footer', 'journey-footer', `<span>Illustrative locations · ${Progress.persistenceAvailable ? 'Progress saved on this device' : 'Progress kept for this session only'}</span><span>Map imagery: Google Earth · Landsat / Copernicus · Data SIO, NOAA</span>`);
   root.append(heading, cards, footer);
   return () => { root.classList.add('hidden'); root.replaceChildren(); };
 }

@@ -178,6 +178,7 @@ test('first chapter renders continuously; movement, reset, quality and quiz prox
   await page.evaluate(() => { const q=window.__game.quizG(); window.__game.setPlayerPos(q.position.x,q.position.z+3); });
   await expect(page.locator('#hint')).toContainText('Take the Quiz');
   expect(await page.evaluate(() => window.__game.quizG().position.y)).toBe(0);
+  await page.locator('#worldCanvas').focus();
   await page.keyboard.press('KeyE');
   await expect(page.locator('#modalTitle')).toContainText('Field check');
   expect(errors).toEqual([]);

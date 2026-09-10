@@ -1,3 +1,4 @@
+import { renderLeaderboard } from '../ui/leaderboard.js';
 import { BRAND_ASSETS, GAME_STATES, LOC_BY_ID, SCORING } from '../config/content.js';
 import { Analytics, Progress } from '../core/progress.js';
 import { Audio } from '../core/audio.js';
@@ -267,11 +268,12 @@ export function startQuiz(locId){
     body.replaceChildren();Audio.fanfare();
     const summary=el('section','quiz-results');
     summary.innerHTML='<p class="eyebrow">CHAPTER COMPLETE</p><div class="result-badge" aria-hidden="true">'+loc.badge.emoji+'</div><h2>Badge earned: '+loc.badge.name+'!</h2><p>'+correctCount+' of '+questions.length+' answers right on the first try.</p>';
+    const board=el('section'); summary.append(board); renderLeaderboard(board,{offerSubmission:true});
     summary.appendChild(el('h3',null,'Your field notes'));
     const notes=el('ul','result-notes');loc.lessons.forEach(lesson=>notes.appendChild(el('li',null,LEARNING_EXPERIENCES[lesson.id].takeaway)));summary.append(notes);
     summary.appendChild(el('p',null,loc.completeMsg));
     const row=el('div','btnrow activity-actions'), next=el('button','btn btn-primary','Continue to the map 🗺️');
-    next.onclick=()=>{closeModal();navigate(GAME_STATES.MAP,{justCompleted:locId});};
+    next.onclick=()=>{closeModal({restoreFocus:false});navigate(GAME_STATES.MAP,{justCompleted:locId});};
     row.append(next);summary.append(row);body.append(summary);$('modalCard').scrollTop=0;
     next.focus({preventScroll:true});
     if(isNew) toast('+'+SCORING.location+' ⭐ Location complete!');

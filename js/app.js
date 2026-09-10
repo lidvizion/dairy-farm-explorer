@@ -1,5 +1,7 @@
+import { moveVector } from './core/movement.js';
 import { GAME_STATES, BRAND_ASSETS, EXTERNAL_LINKS, SCORING, COPY, LOCATIONS, LOC_BY_ID } from './config/content.js';
 import { Analytics, Progress } from './core/progress.js';
+import { renderLeaderboard } from './ui/leaderboard.js';
 import { Audio } from './core/audio.js';
 import { $, el, toast, caption } from './ui/dom.js';
 import { validateLessonContent } from './lessons/validate-content.js';
@@ -21,6 +23,14 @@ function updateHUD(){
   $('hudBadge').textContent = Progress.badgeCount();
 }
 document.addEventListener('rcm:progresschange', updateHUD);
+let persistenceNoticeShown=false;
+function showPersistenceNotice(){
+  // A toast behind the lesson overlay would be missed; defer until it closes.
+  if(modalOpen)return;
+  if(persistenceNoticeShown)return; persistenceNoticeShown=true;
+  toast('Device storage is unavailable. Progress is kept only for this session.');
+}
+document.addEventListener('rcm:storageunavailable',showPersistenceNotice);
 
 let modalOpen=false;
 let modalReturnFocus=null;
@@ -46,7 +56,8 @@ function openModal(title, sub, bodyBuilder){
   settings.classList.add('hidden'); document.body.appendChild(settings);
   if(!modalOpen) modalReturnFocus=document.activeElement;
   for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct']) $(id).inert=true;
-  modalOpen=true; keys.clear();
+  modalOpen=true; resetInput();
+  if(renderer)renderer.domElement.inert=true;
   $('modalTitle').innerHTML = title;
   $('modalSub').textContent = sub||'';
   const body=$('modalBody'); body.innerHTML='';
@@ -60,26 +71,30 @@ function openModal(title, sub, bodyBuilder){
   modalScrollObserver=new MutationObserver(()=>requestAnimationFrame(checkModalScroll));
   modalScrollObserver.observe(body,{childList:true,subtree:true});
 }
-function closeModal(){
+function closeModal({restoreFocus=true}={}){
+  resetInput();
   stopConfetti();
   document.dispatchEvent(new Event('rcm:modalclose'));
   for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct']) $(id).inert=false;
   $('graphicsSettings').classList.add('hidden');
   document.body.appendChild($('graphicsSettings'));
   $('modal').classList.add('hidden'); modalOpen=false;
+  if(!Progress.persistenceAvailable)showPersistenceNotice();
+  if(renderer)renderer.domElement.inert=!isLocationState();
   $('scrollHint').classList.add('hidden');
   if(modalScrollObserver){ modalScrollObserver.disconnect(); modalScrollObserver=null; }
   // Backing out of a lesson/quiz via the X (or any other close path) should
   // never leave that lesson's caption text stuck on screen, overlapping the
   // movement hint underneath it.
   caption('');
-  if(modalReturnFocus?.isConnected) modalReturnFocus.focus({preventScroll:true});
+  if(restoreFocus && modalReturnFocus?.isConnected) modalReturnFocus.focus({preventScroll:true});
 }
 document.addEventListener('keydown', e=>{
-  if(!modalOpen || e.key!=='Tab') return;
-  const focusable=[...$('modal').querySelectorAll('button:not(:disabled),a[href],input,[tabindex="0"]')].filter(node=>node.getClientRects().length);
+  const dialog=modalOpen ? $('modal') : !$('complete').classList.contains('hidden') ? $('complete') : null;
+  if(!dialog || e.key!=='Tab') return;
+  const focusable=[...dialog.querySelectorAll('button:not(:disabled),a[href],input,[tabindex="0"]')].filter(node=>node.getClientRects().length);
   const first=focusable[0], last=focusable.at(-1);
-  if(e.shiftKey && (document.activeElement===first || ! $('modal').contains(document.activeElement))){e.preventDefault();last?.focus();}
+  if(e.shiftKey && (document.activeElement===first || !focusable.includes(document.activeElement))){e.preventDefault();last?.focus();}
   else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}
 });
 $('modalCard').addEventListener('scroll',checkModalScroll);
@@ -201,7 +216,7 @@ function showStepsMenu(){
     list.appendChild(q);
     body.appendChild(list);
     const row=el('div','btnrow');
-    const back=el('button','btn btn-ghost','🗺️ Back to map'); back.onclick=()=>{ closeModal(); go(GAME_STATES.MAP); };
+    const back=el('button','btn btn-ghost','🗺️ Back to map'); back.onclick=()=>{ closeModal({restoreFocus:false}); go(GAME_STATES.MAP); };
     const close=el('button','btn btn-primary','Keep exploring'); close.onclick=closeModal;
     row.append(back,close); body.appendChild(row);
   });
@@ -218,54 +233,143 @@ function effectiveQuality(){
   return determineQuality(quality);
 }
 
+let engineTask=null, lostDestination=null, resizeRAF=0;
+let resizeCount=0;
 async function initThree(){
-  try{ THREE = await import('three'); }
-  catch(e){ webglOK=false; return false; }
-  // RoundedBoxGeometry (official three.js addon) softens hard box edges into a
-  // polished, toy-like silhouette for cows, buildings, and packages. Optional:
-  // the game still works with sharp-cornered boxes if the addon fails to load.
-  try{ ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
-  catch(e){ RoundedBoxGeometry=null; }
-  try{
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    const maxPR = effectiveQuality()==='high' ? 2 : 1.5;
-    renderer.setPixelRatio(Math.min(devicePixelRatio, maxPR));
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.shadowMap.enabled = effectiveQuality()==='high';
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    document.body.insertBefore(renderer.domElement, document.body.firstChild);
-    renderer.domElement.id = 'worldCanvas';
-    renderer.domElement.setAttribute('aria-label', 'Interactive 3D destination. Use WASD to move, drag to look, or use Next lesson.');
-    renderer.domElement.addEventListener('webglcontextlost', e => {
-      e.preventDefault();
-      webglOK=false;
-      if(isLocationState()) enterFallback();
-    });
-    camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 2000);
-    camera.rotation.order='YXZ';
-    addEventListener('resize', ()=>{
-      if(!renderer) return;
-      camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth,innerHeight);
-    });
+  try {
+    THREE = await import('three');
+    try { ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
+    catch { RoundedBoxGeometry=null; }
+    if(!camera){
+      camera=new THREE.PerspectiveCamera(70,1,0.1,2000);
+      camera.rotation.order='YXZ';
+    }
+    createRenderer();
+    B=makeBuilders();
+    environments=createEnvironmentBuilders(THREE,B);
+    webglOK=true;
+    startRenderLoop();
     return true;
-  }catch(e){ webglOK=false; return false; }
+  } catch {
+    webglOK=false;
+    renderer?.setAnimationLoop(null);
+    return false;
+  }
 }
 
-function applyRendererQuality(){
-  if(!renderer) return;
+function createRenderer(){
   const high=effectiveQuality()==='high';
-  renderer.setPixelRatio(Math.min(devicePixelRatio,high?2:1.5));
-  renderer.shadowMap.enabled=high;
-  renderer.shadowMap.needsUpdate=true;
-  renderer.setSize(innerWidth,innerHeight);
-  if(active?.scene){
-    active.scene.traverse(object=>{
-      if(object.isDirectionalLight||object.isSpotLight) object.castShadow=high;
-    });
+  const next=new THREE.WebGLRenderer({antialias:high});
+  const previous=renderer;
+  renderer=next;
+  next.setPixelRatio(Math.min(devicePixelRatio,high?2:1));
+  next.shadowMap.enabled=high;
+  next.shadowMap.type=THREE.PCFSoftShadowMap;
+  next.toneMapping=THREE.ACESFilmicToneMapping;
+  next.toneMappingExposure=1.15;
+  const canvas=next.domElement;
+  canvas.id='worldCanvas';
+  canvas.tabIndex=0;
+  canvas.inert=modalOpen || !isLocationState();
+  canvas.setAttribute('aria-label','Interactive 3D destination. Use WASD to move, drag to look, or use Next lesson.');
+  canvas.addEventListener('webglcontextlost',e=>{
+    e.preventDefault();
+    if(renderer!==next)return;
+    lostDestination=isLocationState()?active.id:null;
+    webglOK=false; next.setAnimationLoop(null); resetInput();
+    if(lostDestination){
+      if(modalOpen)closeModal({restoreFocus:false});
+      enterFallback();
+    }
+  });
+  canvas.addEventListener('webglcontextrestored',()=>{
+    if(renderer!==next)return;
+    try {
+      webglOK=true;
+      resizeWorldNow();
+      startRenderLoop();
+      const destination=lostDestination; lostDestination=null;
+      // Rebuild the disposed destination with fresh GPU resources. Do not interrupt
+      // a learner who has already opened a fallback lesson during restoration.
+      if(destination && active.id==='FALLBACK' && !modalOpen)go(destination);
+      else if(active.id==='FALLBACK' && !modalOpen)renderFallback();
+    } catch {
+      webglOK=false; next.setAnimationLoop(null);
+      if(!modalOpen)enterFallback();
+    }
+  });
+  document.body.prepend(canvas);
+  attachCanvasInput();
+  resizeWorldNow();
+  if(previous){previous.setAnimationLoop(null);previous.dispose();previous.forceContextLoss();previous.domElement.remove();}
+}
+
+// Keep one initialization in flight. A slow load can complete normally, including
+// after the player chooses the text-friendly lessons; no abandoned timeout canvas.
+function startEngine(){
+  if(engineTask)return engineTask;
+  engineTask=initThree().then(ok=>{
+    if(ok && active.id==='FALLBACK' && !modalOpen)renderFallback();
+    return ok;
+  }).finally(()=>{engineTask=null;});
+  engineReady=engineTask;
+  return engineTask;
+}
+
+function startRenderLoop(){
+  const clock=new THREE.Clock();
+  renderer.setAnimationLoop(()=>{
+    const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
+    try {
+      if(active.update && !modalOpen)active.update(dt,t);
+      if(active.scene && !modalOpen && webglOK)renderer.render(active.scene,camera);
+    } catch(error) {
+      console.error('The 3D scene stopped; switching to the accessible journey',error);
+      renderer.setAnimationLoop(null); enterFallback();
+    }
+  });
+}
+
+function resizeWorld(){
+  if(resizeRAF)return;
+  resizeRAF=requestAnimationFrame(()=>{resizeRAF=0;resizeWorldNow();});
+}
+function resizeWorldNow(){
+  if(!renderer || !camera)return;
+  const width=window.visualViewport?.width || innerWidth, height=window.visualViewport?.height || innerHeight;
+  const ratio=renderer.getPixelRatio(), canvas=renderer.domElement;
+  if(camera.aspect!==width/height){camera.aspect=width/height;camera.updateProjectionMatrix();}
+  if(canvas.width!==Math.floor(width*ratio) || canvas.height!==Math.floor(height*ratio)){
+    renderer.setSize(width,height); resizeCount++;
+  } else {
+    canvas.style.width=`${width}px`;canvas.style.height=`${height}px`;
   }
+  if(modalOpen)checkModalScroll();
+}
+addEventListener('resize',resizeWorld);
+window.visualViewport?.addEventListener('resize',resizeWorld);
+
+function applyRendererQuality(){
+  if(!renderer || !webglOK)return;
+  const high=effectiveQuality()==='high';
+  try {
+    if(renderer.getContext().getContextAttributes().antialias!==high){
+      resetInput();createRenderer();startRenderLoop();
+    } else {
+      const ratio=Math.min(devicePixelRatio,high?2:1);
+      if(renderer.getPixelRatio()!==ratio)renderer.setPixelRatio(ratio);
+    }
+    renderer.shadowMap.enabled=high;
+    renderer.shadowMap.needsUpdate=true;
+    resizeWorld();
+    active.scene?.traverse(object=>{
+      if(object.isDirectionalLight||object.isSpotLight){
+        object.castShadow=high;
+        object.shadow.map?.dispose();object.shadow.map=null;
+        object.shadow.mapSize.set(high?1024:512,high?1024:512);
+      }
+    });
+  } catch { if(modalOpen)closeModal({restoreFocus:false});enterFallback(); }
 }
 
 // Deep-dispose a scene's geometry, materials, textures.
@@ -362,8 +466,8 @@ function updatePlayer(dt){
   fx+=joyVec.x; fz+=joyVec.y;
   const m=Math.hypot(fx,fz); if(m>1){fx/=m;fz/=m;}
   const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight'))?10:6;
-  const sin=Math.sin(player.yaw),cos=Math.cos(player.yaw);
-  const vx=(fx*cos-fz*sin)*speed, vz=(fx*-sin-fz*cos)*speed*-1;
+  const direction=moveVector(fx,fz,player.yaw);
+  const vx=direction.x*speed, vz=direction.z*speed;
   player.x+=vx*dt; player.z+=vz*dt;
   const R=0.55;
   for(const o of curOBST){ const dx=player.x-o.x,dz=player.z-o.z,rr=o.r+R,d2=dx*dx+dz*dz; if(d2<rr*rr&&d2>1e-4){const d=Math.sqrt(d2),p=(rr-d)/d; player.x+=dx*p; player.z+=dz*p;} }
@@ -379,7 +483,7 @@ function updatePlayer(dt){
 const keys=new Set();
 addEventListener('keydown',e=>{
   if(modalOpen){ if(e.code==='Escape')closeModal(); return; }
-  if(e.target.closest('input,textarea,select')) return;
+  if(e.target.closest('button,a,input,textarea,select,[contenteditable]')) return;
   if(e.code==='Escape'){ if(isLocationState()) go(GAME_STATES.MAP); return; }
   if(!isLocationState()) return;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
@@ -387,7 +491,10 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyE') interactNearest();
 });
 addEventListener('keyup',e=>keys.delete(e.code));
-addEventListener('blur',()=>{ keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0; lookId=null; });
+const stickResets=[];
+function resetInput(){ keys.clear(); lookId=null; stickResets.forEach(reset=>reset()); }
+addEventListener('blur',resetInput);
+document.addEventListener('visibilitychange',()=>{if(document.hidden) resetInput();});
 
 const joyVec={x:0,y:0}, lookVec={x:0,y:0};
 let downX=0,downY=0,downT=0,lastX=0,lastY=0,movedFar=false;
@@ -396,10 +503,12 @@ let downX=0,downY=0,downT=0,lastX=0,lastY=0,movedFar=false;
 function makeStick(elId, knobId, vec){
   const stick=$(elId), knob=$(knobId); let id=null;
   function set(e){ const r=stick.getBoundingClientRect(); let dx=(e.clientX-(r.left+r.width/2))/(r.width/2), dy=(e.clientY-(r.top+r.height/2))/(r.height/2); const m=Math.hypot(dx,dy); if(m>1){dx/=m;dy/=m;} vec.x=dx; vec.y=dy; knob.style.left=`${50+dx*34}%`; knob.style.top=`${50+dy*34}%`; }
-  function end(e){ if(e.pointerId===id){ id=null; vec.x=vec.y=0; knob.style.left='50%'; knob.style.top='50%'; } }
-  stick.addEventListener('pointerdown',e=>{ id=e.pointerId; stick.setPointerCapture(e.pointerId); e.preventDefault(); set(e); });
+  function reset(){ const previous=id; id=null; vec.x=vec.y=0; knob.style.left='50%'; knob.style.top='50%'; if(previous!==null && stick.hasPointerCapture(previous)) stick.releasePointerCapture(previous); }
+  stickResets.push(reset);
+  function end(e){ if(e.pointerId===id) reset(); }
+  stick.addEventListener('pointerdown',e=>{ if(id!==null || modalOpen)return; id=e.pointerId; stick.setPointerCapture(e.pointerId); e.preventDefault(); set(e); });
   stick.addEventListener('pointermove',e=>{ if(e.pointerId===id) set(e); });
-  stick.addEventListener('pointerup',end); stick.addEventListener('pointercancel',end);
+  stick.addEventListener('pointerup',end); stick.addEventListener('pointercancel',end); stick.addEventListener('lostpointercapture',end);
 }
 makeStick('joy','joyKnob',joyVec);      // left  = move
 makeStick('lookJoy','lookKnob',lookVec); // right = look
@@ -409,12 +518,12 @@ $('touchAct').addEventListener('click',()=>{ if(!modalOpen) interactNearest(); }
 /* pointer look + tap-to-interact on canvas (attached after renderer exists) */
 function attachCanvasInput(){
   const cv=renderer.domElement;
-  cv.addEventListener('pointerdown',e=>{ if(modalOpen||!isLocationState())return; lookId=e.pointerId; downX=lastX=e.clientX; downY=lastY=e.clientY; downT=performance.now(); movedFar=false; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointerdown',e=>{ if(lookId!==null||modalOpen||!isLocationState())return; cv.focus({preventScroll:true}); lookId=e.pointerId; downX=lastX=e.clientX; downY=lastY=e.clientY; downT=performance.now(); movedFar=false; cv.setPointerCapture(e.pointerId); });
   cv.addEventListener('pointermove',e=>{ if(e.pointerId!==lookId||modalOpen)return; const dx=e.clientX-lastX,dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; if(Math.hypot(e.clientX-downX,e.clientY-downY)>7)movedFar=true; player.yaw-=dx*0.0045; player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch-dy*0.0045)); });
   cv.addEventListener('pointerup',e=>{ if(e.pointerId!==lookId)return; lookId=null; if(!modalOpen&&!movedFar&&performance.now()-downT<450) tryClick(e.clientX,e.clientY); });
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   // map clicks (markers)
-  cv.addEventListener('pointercancel',()=>{lookId=null;});
+  for(const type of ['pointercancel','lostpointercapture']) cv.addEventListener(type,e=>{if(e.pointerId===lookId)lookId=null;});
 }
 
 const raycaster = { r:null, ndc:null };
@@ -435,6 +544,10 @@ function setActive(id,{scene=null,update=null,dispose=null}){
 
 // central navigation
 function go(stateId, opts={}){
+  resetInput();
+  if(modalOpen) closeModal({restoreFocus:false});
+  for(const id of ['hud','title','journeyMap','objective','fallback','joy','lookJoy','touchAct'])$(id).inert=false;
+  if(stateId!==GAME_STATES.COMPLETION) $('completionBoard')?.replaceChildren();
   // In no-WebGL mode, all map/location navigation resolves to the DOM fallback
   // hub (completion is a DOM screen and still works).
   if(!webglOK && [GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId)){
@@ -450,6 +563,7 @@ function go(stateId, opts={}){
   $('complete').classList.add('hidden');
   $('btnMap').classList.toggle('hidden',onMap);
   const inLoc=[GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId);
+  if(renderer)renderer.domElement.inert=!inLoc;
   // Joysticks visible on all platforms (desktop gets arrow labels; mobile uses touch).
   // This helps players discover the movement and look controls without guessing.
   $('joy').classList.toggle('hidden',!inLoc);
@@ -491,17 +605,22 @@ function enterEarthIntro(){
     reducedMotion,
     onFinish: () => { Audio.init(); Analytics.track('intro_completed'); go(GAME_STATES.MAP); }
   });
+  focusHeading($('title').querySelector('h1'));
 }
 
 function enterMap(){
   Analytics.track('map_opened');
   setActive(GAME_STATES.MAP, {});
-  active.dispose = renderJourneyMap($('journeyMap'), {
+  const disposeMap = renderJourneyMap($('journeyMap'), {
     onEnter: onMarker,
+    onLeaderboard:()=>openModal('Leaderboard','The California field guide',body=>renderLeaderboard(body)),
     onReplay: () => go(GAME_STATES.EARTH_INTRO),
     onComplete: () => go(GAME_STATES.COMPLETION)
   });
+  $('journeyMap').prepend($('hud'));
+  active.dispose=()=>{document.body.appendChild($('hud'));disposeMap();};
   updateHUD();
+  focusHeading($('journeyMap').querySelector('h1'));
 }
 
 async function onMarker(loc){
@@ -509,7 +628,14 @@ async function onMarker(loc){
   Audio.init(); Audio.click();
   const origin = active;
   $('engineStatus').textContent = 'Preparing your destination…';
+  const slowTimer=setTimeout(()=>{
+    if(active!==origin)return;
+    const status=$('engineStatus'); status.textContent='3D is taking longer to load. ';
+    const fallback=el('button','btn btn-ghost','Use text-friendly lessons');
+    fallback.onclick=()=>{status.replaceChildren();enterFallback();};status.append(fallback);
+  },12000);
   const ready = await engineReady;
+  clearTimeout(slowTimer);
   $('engineStatus').textContent = '';
   if(active !== origin) return; // navigation changed while the engine loaded
   if(!ready || !webglOK){ enterFallback(); return; }
@@ -521,9 +647,11 @@ function enterLocation(locId){
   const loc=LOC_BY_ID[locId];
   Analytics.track('location_started',{location:locId});
   const scene=new THREE.Scene(); scene.background=new THREE.Color(0xbfe3f5); scene.fog=new THREE.Fog(0xcfe8f5,55,130);
-  scene.add(new THREE.HemisphereLight(0xdff1ff,0x766449,1.05));
+  // Non-shadowed sky and bounce light keep foliage and sheltered surfaces readable.
+  scene.add(new THREE.HemisphereLight(0xe4f2ff,0xb0a080,1.6));
+  scene.add(new THREE.AmbientLight(0xfff1d6,0.65));
   const sun=new THREE.DirectionalLight(0xffe4b8,2.6); sun.position.set(-18,30,12);
-  sun.castShadow=effectiveQuality()==='high'; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-36;sun.shadow.camera.right=36;sun.shadow.camera.top=36;sun.shadow.camera.bottom=-36; sun.shadow.camera.far=110; sun.shadow.bias=-0.0003; sun.shadow.normalBias=.03;
+  sun.castShadow=effectiveQuality()==='high'; sun.shadow.mapSize.set(effectiveQuality()==='high'?1024:512,effectiveQuality()==='high'?1024:512); sun.shadow.camera.left=-36;sun.shadow.camera.right=36;sun.shadow.camera.top=36;sun.shadow.camera.bottom=-36; sun.shadow.camera.far=110; sun.shadow.bias=-0.0003; sun.shadow.normalBias=.03;
   scene.add(sun);
 
   // ground
@@ -652,6 +780,7 @@ function enterLocation(locId){
 
   caption('');
   toast(`${loc.badge.emoji} ${loc.title}`);
+  focusHeading($('objectiveTitle'));
 }
 
 function updateLocHint(loc,beacons,quizG){
@@ -751,7 +880,11 @@ function setBeaconLocked(g,locked){ g.userData.pillar.visible=!locked; g.userDat
 function makeDrop(){ const g=new THREE.Group(); const m=B.lamb(0xf5b21e,{emissive:0x7a5600,emissiveIntensity:0.4}); const ball=new THREE.Mesh(new THREE.SphereGeometry(0.32,12,10),m); const tip=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.45,12),m); tip.position.y=0.42; g.add(ball); g.add(tip); return g; }
 
 /* ---------------- COMPLETION ---------------- */
+function focusHeading(heading){ if(!heading)return; heading.tabIndex=-1; heading.focus({preventScroll:true}); }
 function enterCompletion(){
+  if(modalOpen)closeModal({restoreFocus:false});
+  resetInput();
+  if(renderer)renderer.domElement.inert=true;
   Analytics.track('game_completed',{points:Progress.data.points});
   setActive(GAME_STATES.COMPLETION,{});
   $('hud').classList.add('hidden'); $('hint').classList.add('hidden'); $('joy').classList.add('hidden'); $('touchAct').classList.add('hidden');
@@ -762,7 +895,13 @@ function enterCompletion(){
   $('cFirst').textContent=Progress.data.quizFirstTry;
   const br=$('cBadges'); br.innerHTML='';
   LOCATIONS.forEach(l=>{ if(Progress.data.badges[l.id]){ const c=el('div','badge-chip',`<span class="em">${l.badge.emoji}</span><span>${l.badge.name}</span>`); br.appendChild(c);} });
+  for(const id of ['hud','title','journeyMap','objective','fallback','joy','lookJoy','touchAct'])$(id).inert=true;
+  for(const id of ['objective','lookJoy','caption'])$(id).classList.add('hidden');
   $('complete').classList.remove('hidden');
+  let board=$('completionBoard');
+  if(!board){board=document.createElement('section');board.id='completionBoard';$('cBadges').after(board);}
+  renderLeaderboard(board,{offerSubmission:Progress.badgeCount()>0});
+  focusHeading($('completeTitle'));
 }
 $('cMap').onclick=()=>{ $('complete').classList.add('hidden'); go(GAME_STATES.MAP); };
 $('cReplay').onclick=()=>{ confirmDialog('Play again?','This resets your progress and starts a fresh journey.',()=>{ Progress.reset(); go(GAME_STATES.EARTH_INTRO); },'Start over','Cancel'); };
@@ -774,6 +913,9 @@ $('cFoodservice').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'foo
 ============================================================================ */
 function enterFallback(){
   webglOK=false;
+  if(renderer)renderer.domElement.inert=true;
+  renderer?.setAnimationLoop(null);
+  resetInput();
   setActive('FALLBACK',{});
   for(const id of ['hud','hint','caption','joy','lookJoy','touchAct','objective','complete']) $(id).classList.add('hidden');
   document.body.classList.remove('touch-controls-active');
@@ -782,6 +924,7 @@ function enterFallback(){
   $('boot').classList.add('hidden'); $('title').classList.add('hidden'); $('hud').classList.add('hidden');
   const root=$('fallback'); root.classList.remove('hidden');
   renderFallback();
+  focusHeading(root.querySelector('h1'));
 }
 function renderFallback(){
   const root=$('fallback');
@@ -793,6 +936,17 @@ function renderFallback(){
     <p>${COPY.title.split(':')[1]||''}</p>
     <p style="font-size:12.5px;color:#789;">Text-friendly version — the same lessons, quizzes, and certificate, without 3D.</p>`;
   wrap.appendChild(head);
+  const retry=el('button','btn btn-primary',webglOK?'Return to 3D':'Retry 3D');
+  const retryStatus=el('p');retryStatus.setAttribute('role','status');
+  retry.onclick=async()=>{
+    retry.disabled=true;retryStatus.textContent='Preparing 3D. You can continue with the lessons while it loads.';
+    const origin=active;
+    const ok=webglOK || await startEngine();
+    if(active!==origin || modalOpen)return;
+    if(ok)go(lostDestination || GAME_STATES.MAP);
+    else {retry.disabled=false;retryStatus.textContent='3D is still unavailable. Try again or continue with the lessons.';}
+  };
+  head.append(retry,retryStatus);
   // progress bar
   const prog=el('div','chip-grid'); prog.style.justifyContent='center';
   prog.innerHTML=`<div class="chip">⭐ ${Progress.data.points}</div><div class="chip">📍 ${Progress.locationsDoneCount()}/3</div><div class="chip">📘 ${Progress.lessonsDoneCount()}/9</div><div class="chip">🏅 ${Progress.badgeCount()}/3</div>`;
@@ -864,42 +1018,19 @@ function showResumeBanner(){
   if(!hasProgress){ banner.classList.add('hidden'); return; }
   banner.classList.remove('hidden');
   banner.innerHTML = `Welcome back! You've saved ⭐ ${Progress.data.points} points, `
-    + `📘 ${Progress.lessonsDoneCount()}/9 lessons, and 🏅 ${Progress.badgeCount()}/3 badges on this device.`;
+    + `📘 ${Progress.lessonsDoneCount()}/9 lessons, and 🏅 ${Progress.badgeCount()}/3 badges ${Progress.persistenceAvailable ? 'on this device.' : 'for this session only.'}`;
   $('beginBtn').textContent = 'CONTINUE THE CALIFORNIA JOURNEY';
 }
 
 async function boot(){
   validateLessonContent(LOCATIONS);
   showResumeBanner();
+  if(!Progress.persistenceAvailable)showPersistenceNotice();
   updateHUD();
   go(GAME_STATES.EARTH_INTRO);
   $('boot').classList.add('hidden');
-  // The film and chapter selector remain usable while the engine loads.
-  let timeout;
-  engineReady=Promise.race([initThree(), new Promise(resolve=>{ timeout=setTimeout(()=>resolve(false),12000); })]);
-  const ok=await engineReady;
-  clearTimeout(timeout);
-  if(!ok){
-    webglOK=false;
-    return;
-  }
-  B=makeBuilders();
-  environments=createEnvironmentBuilders(THREE,B);
-  attachCanvasInput();
-  // single animation loop
-  const clock=new THREE.Clock();
-  renderer.setAnimationLoop(()=>{
-    const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
-    try {
-      // The world is paused behind lesson dialogs: no wasted GPU work, hidden
-      // rewards, or movement while a learner is reading.
-      if(active.update && !modalOpen) active.update(dt,t);
-      if(active.scene && renderer && !modalOpen) renderer.render(active.scene,camera);
-    } catch(error) {
-      console.error('The 3D scene stopped; switching to the accessible journey', error);
-      enterFallback();
-    }
-  });
+  // Initialization continues even on a slow connection; the map stays usable.
+  await startEngine();
   $('boot').classList.add('hidden');
   // sound button initial label
   $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
@@ -908,7 +1039,7 @@ async function boot(){
 // debug hooks for automated testing / QA
 window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
 window.__RCM_DEBUG = false;
-window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio()});
+window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio(), antialias:renderer?.getContext().getContextAttributes()?.antialias, resizeCount, aspect:camera?.aspect});
 
 configureLessonRenderer({ openModal, closeModal, fireConfetti, navigate: go });
 

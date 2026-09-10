@@ -1,3 +1,4 @@
+import { validateProgress, lessonIds, locationIds, questionIds, collectibleIds } from './validate-progress.js';
 import { LOCATIONS, LOC_BY_ID, SCORING } from '../config/content.js';
 
 // A deliberately local analytics adapter. A host can attach a sink later;
@@ -17,40 +18,38 @@ export const Analytics = (() => {
 const STORE_KEY = 'rcm_journey_v1';
 const Storage = {
   load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (_) { return null; } },
-  save(data) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (_) {} },
+  save(data) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); return true; } catch (_) { return false; } },
   clear() { try { localStorage.removeItem(STORE_KEY); } catch (_) {} }
 };
 
 export const Progress = (() => {
   const fresh = () => ({ points: 0, lessons: {}, locations: {}, badges: {}, collectibles: {}, quizAwards: {}, quizFirstTry: 0 });
-  const saved = Storage.load() || {};
-  let data = {
-    ...fresh(),
-    ...saved,
-    lessons: { ...(saved.lessons || {}) },
-    locations: { ...(saved.locations || {}) },
-    badges: { ...(saved.badges || {}) },
-    collectibles: { ...(saved.collectibles || {}) },
-    quizAwards: { ...(saved.quizAwards || {}) }
-  };
+  let data = validateProgress(Storage.load());
+  let persistenceAvailable = Storage.save(data);
+  let noticeSent = false;
   const persist = () => {
-    Storage.save(data);
+    persistenceAvailable = Storage.save(data);
+    if (!persistenceAvailable && !noticeSent) {
+      noticeSent = true;
+      document.dispatchEvent(new Event('rcm:storageunavailable'));
+    }
     document.dispatchEvent(new Event('rcm:progresschange'));
   };
 
   return {
     get data() { return data; },
+    get persistenceAvailable() { return persistenceAvailable; },
     reset() { data = fresh(); persist(); Storage.clear(); },
     lessonKey(loc, lesson) { return `${loc}.${lesson}`; },
-    isLessonDone(loc, lesson) { return !!data.lessons[`${loc}.${lesson}`]; },
-    isLocationDone(loc) { return !!data.locations[loc]; },
-    lessonsDoneCount() { return Object.keys(data.lessons).length; },
-    locationsDoneCount() { return Object.keys(data.locations).length; },
-    badgeCount() { return Object.keys(data.badges).length; },
-    locationLessonsDone(loc) { return LOC_BY_ID[loc].lessons.filter(lesson => data.lessons[`${loc}.${lesson.id}`]).length; },
+    isLessonDone(loc, lesson) { return lessonIds.includes(`${loc}.${lesson}`) && data.lessons[`${loc}.${lesson}`] === true; },
+    isLocationDone(loc) { return locationIds.includes(loc) && data.locations[loc] === true && data.badges[loc] === true; },
+    lessonsDoneCount() { return lessonIds.filter(id => data.lessons[id] === true).length; },
+    locationsDoneCount() { return locationIds.filter(id => data.locations[id] === true && data.badges[id] === true).length; },
+    badgeCount() { return locationIds.filter(id => data.badges[id] === true && data.locations[id] === true).length; },
+    locationLessonsDone(loc) { return LOC_BY_ID[loc].lessons.filter(lesson => data.lessons[`${loc}.${lesson.id}`] === true).length; },
     completeLesson(loc, lesson) {
       const key = `${loc}.${lesson}`;
-      if (data.lessons[key]) return false;
+      if (!lessonIds.includes(key) || data.lessons[key]) return false;
       data.lessons[key] = true;
       data.points += SCORING.lesson;
       persist();
@@ -59,7 +58,7 @@ export const Progress = (() => {
     },
     addQuizPoints(location, question, points, firstTry) {
       const key = `${location}.${question}`;
-      if (data.quizAwards[key] || data.locations[location]) return false;
+      if (!questionIds.includes(key) || ![SCORING.quizFirst, SCORING.quizLater].includes(points) || data.quizAwards[key] || data.locations[location]) return false;
       data.quizAwards[key] = true;
       data.points += points;
       if (firstTry) data.quizFirstTry++;
@@ -67,7 +66,7 @@ export const Progress = (() => {
       return true;
     },
     completeLocation(loc) {
-      if (data.locations[loc]) return false;
+      if (!locationIds.includes(loc) || data.locations[loc]) return false;
       data.locations[loc] = true;
       data.badges[loc] = true;
       data.points += SCORING.location;
@@ -76,7 +75,7 @@ export const Progress = (() => {
       return true;
     },
     collect(id) {
-      if (data.collectibles[id]) return false;
+      if (!collectibleIds.includes(id) || data.collectibles[id]) return false;
       data.collectibles[id] = true;
       data.points += SCORING.collectible;
       persist();
@@ -84,10 +83,10 @@ export const Progress = (() => {
     },
     isUnlocked(loc) {
       if (loc === 'farm') return true;
-      if (loc === 'processor') return !!data.locations.farm;
-      if (loc === 'market') return !!data.locations.processor;
+      if (loc === 'processor') return this.isLocationDone('farm');
+      if (loc === 'market') return this.isLocationDone('processor');
       return false;
     },
-    allDone() { return LOCATIONS.every(location => data.locations[location.id]); }
+    allDone() { return LOCATIONS.every(location => this.isLocationDone(location.id)); }
   };
 })();
