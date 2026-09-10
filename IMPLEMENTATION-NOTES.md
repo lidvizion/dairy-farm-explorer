@@ -100,7 +100,7 @@ then stopped. No CI settings or test thresholds were changed.
 
 No git commands, external network requests, asset imports, dependencies or vendor edits were used.
 Terra's supplied asset leads, exact acceptance gates and future integration seam
-are appended to QUESTIONS-FOR-AMEYA.md. The next useful steps are a Sol movement
+are appended to OPEN-DECISIONS.md. The next useful steps are a Sol movement
 and placement audit, actual phone testing, and human conversion/inspection of a
 single candidate cow before considering any runtime loader.
 
@@ -234,7 +234,7 @@ certification. Browser emulation is Chromium on both desktop and touch projects,
 not physical iPhone Safari. The workflow has not been run remotely or deployed
 during this task, and no git commands were used. `verify-vendor.mjs` compares
 shipped files to installed upstream bytes; CI's repository diff remains a
-separate check for Ameya/CI.
+separate check in CI.
 
 ## Remaining weak spots
 
@@ -246,5 +246,5 @@ is intentionally sparse and needs listening on phone speakers.
 
 Physical mid-range Android/iOS testing, screen-reader testing, asset-rights and
 brand signoff, learner observation and the actual Digi Dash embedding contract
-remain outstanding. QUESTIONS-FOR-AMEYA.md gives options and recommendations;
+remain outstanding. OPEN-DECISIONS.md gives options and recommendations;
 no approval was inferred and no spending or publishing occurred.

@@ -1,4 +1,4 @@
-# Decisions for Ameya
+# Open decisions
 
 September 9, 2026. None of these blocked the implementation. No credentials,
 paid services, git commands, publishing or external messages were used.
