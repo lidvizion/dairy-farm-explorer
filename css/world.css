@@ -1,0 +1,38 @@
+/* Hands-on demonstrations retain the live world and use native, reachable controls. */
+#objective{background:linear-gradient(#f8f3e8,#f8f3e8);border-bottom:3px solid #c9d3bc}
+#objective::after{content:'';position:absolute;bottom:-3px;left:0;height:3px;width:var(--chapter-progress,0%);background:#326c51;border-radius:3px}
+.world-launch{width:100%;min-height:44px;margin-top:8px;font-size:12px;color:#234d39;background:#e6e9d9;border:1px solid #c4ceb9}
+body.in-world-lab #objective,body.in-world-lab #hud,body.in-world-lab .stick,body.in-world-lab #touchAct,body.in-world-lab #hint,body.in-world-lab #caption{visibility:hidden}
+body.in-world-lab #toasts{visibility:hidden}
+#worldLab[hidden]{display:none}
+#worldLab{position:fixed;z-index:40;bottom:calc(20px + var(--safe-bottom));left:50%;transform:translateX(-50%);width:min(680px,calc(100% - 24px - var(--safe-left) - var(--safe-right)));max-height:45dvh;overflow:auto;padding:20px 24px;color:#183b2d;background:#faf5e9f7;border:1px solid #fff;border-radius:16px;box-shadow:0 16px 50px #142c3a30;touch-action:pan-y}
+.lab-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.lab-heading .eyebrow{font-size:10px;color:#5a6d4d;margin:0 0 7px}
+.lab-heading h2{font:400 28px/1.15 Georgia,serif;margin:0}
+.lab-close{flex:none;width:44px;height:44px;border:1px solid #bbc8b3;border-radius:50%;background:transparent;color:#234d39;font-size:28px;cursor:pointer}
+#labStatus{font-size:14px;line-height:1.5;margin:12px 0;min-height:3em}
+.lab-actions{display:flex;gap:8px}
+.lab-actions button{flex:1;min-height:48px;padding:9px 12px;border:1px solid #24533e;background:#24533e;color:#fffaf0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;line-height:1.25;cursor:pointer}
+.lab-actions button[data-done="true"]{background:#e2e9d5;color:#183b2d;border-color:#92a782}
+.lab-actions button[data-done="true"]::before{content:'✓ ';font-weight:bold}
+.lab-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:11px}
+.lab-footer button{background:transparent;border:0;color:#234d39;text-decoration:underline;min-height:44px;cursor:pointer;font-size:12px}
+#labProgress{margin-right:auto}
+#worldLab button:focus-visible{outline:3px solid #b4791a;outline-offset:3px}
+@media(max-width:760px){
+  #worldLab{padding:14px;bottom:calc(12px + var(--safe-bottom));max-height:46dvh}
+  .lab-heading h2{font-size:22px}
+  #labStatus{font-size:12px;margin:8px 0}
+  .lab-actions{gap:6px}
+  .lab-actions button{padding:8px 5px;font-size:11px}
+  .lab-footer{gap:6px;margin-top:4px}
+  .world-launch{margin-top:6px;font-size:11px}
+}
+@media(max-height:500px) and (orientation:landscape){
+  #worldLab{left:auto;right:calc(12px + var(--safe-right));top:calc(12px + var(--safe-top));bottom:calc(12px + var(--safe-bottom));transform:none;width:320px;max-height:none;padding:12px}
+  .lab-heading h2{font-size:20px}
+  #labStatus{font-size:12px;min-height:0}
+  .lab-actions{flex-wrap:wrap}
+  .lab-actions button{font-size:11px;min-height:44px}
+  .world-launch{min-height:36px;margin-top:4px}
+}

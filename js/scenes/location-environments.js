@@ -11,20 +11,39 @@ function buildFarm(scene,addObst){
   // ridge vents (ventilation)
   barn.add(box(15,0.5,0.8,lamb(0xf2f4f6),0,4.9,0));
   // fans
-  for(const fx of [-5,0,5]){ const f=cyl(0.7,0.7,0.2,lamb(0x333333),fx,3.6,-4.1,10); f.rotation.x=Math.PI/2; barn.add(f);}
+  for(const fx of [-5,0,5]){
+    // Light housing and visible blades distinguish ventilation fans from black discs.
+    const fan=new THREE.Group();
+    const housing=cyl(.7,.7,.2,lamb(0x9aaea6),0,0,0,12); housing.rotation.x=Math.PI/2; fan.add(housing);
+    for(let i=0;i<4;i++){
+      const blade=box(.16,1.1,.06,lamb(0xe4e9da),0,0,.14,false); blade.rotation.z=i*Math.PI/4; fan.add(blade);
+    }
+    fan.add(ball(.14,lamb(0x547568),0,0,.2,false));
+    fan.position.set(fx,3.6,-4.1); barn.add(fan);
+  }
   barn.position.set(-14,0,-2); scene.add(barn); addObst(-14,-2,6);
   scene.add(withLabel(labelSprite('Ventilated Barn',1),-14,5.6,-2));
 
   // feed & water lane
   const feed=box(6,0.5,1.2,lamb(0x8a6a44),-14,0.35,4); scene.add(feed);
-  const trough=box(4,0.6,1,lamb(0x8d9aa5),-14,0.4,6); scene.add(trough);
-  const water=new THREE.Mesh(new THREE.PlaneGeometry(3.6,0.8),lamb(0x4aa3d8)); water.rotation.x=-Math.PI/2; water.position.set(-14,0.68,6); scene.add(water);
+  const trough=new THREE.Group(), troughMat=lamb(0x8d9aa5);
+  trough.add(box(4,.12,1,troughMat,0,.06,0));
+  for(const z of [-.45,.45])trough.add(box(4,.6,.1,troughMat,0,.3,z));
+  for(const x of [-1.95,1.95])trough.add(box(.1,.6,.8,troughMat,x,.3,0));
+  trough.position.set(-14,0,6);scene.add(trough);
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(3.6,0.8),lamb(0x4aa3d8)); water.rotation.x=-Math.PI/2; water.position.set(-14,0.5,6); scene.add(water);
 
   // milking area + bulk tank (milk house)
   const mh=new THREE.Group();
-  mh.add(box(6,3,5,lamb(0xe8ece0),0,1.5,0));
+  // Open milk-house shelter: tank visible, slab clear of the visitor paths.
+  mh.add(box(6,0.16,4.5,lamb(0xc5bcaa),0,0.08,0));
+  for(const x of [-2.8,2.8]) for(const z of [-2,2]) mh.add(cyl(.12,.12,3.5,post,x,1.83,z,8));
+  mh.add(box(6.5,.22,5,lamb(0x54765b),0,3.65,0));
+  mh.add(box(5.8,2.7,.18,lamb(0xe8ece0),0,1.5,-2.1));
+  for(const x of [-1.2,1.2]) mh.add(box(.2,.85,1.5,post,x,.58,0));
   const tank=new THREE.Group(); const steel=lamb(0xd9e2e8); const body=cyl(1,1,3,steel,0,0,0,18); body.rotation.z=Math.PI/2; tank.add(body); tank.add(ball(1,steel,1.5,0,0)); tank.add(ball(1,steel,-1.5,0,0)); tank.position.set(0,2,0); mh.add(tank);
-  mh.position.set(8,0,-2); scene.add(mh); addObst(8,-2,3.4);
+  mh.position.set(17,0,-3); scene.add(mh); addObst(17,-3,3.4);
+  scene.add(withLabel(labelSprite('Milk House',1),17,4.4,-3));
 
   // refrigerated tanker
   const tanker=makeTanker(); tanker.position.set(16,0,4); tanker.rotation.y=-0.4; scene.add(tanker); addObst(16,4,2.4);
@@ -129,8 +148,8 @@ function buildProcessor(scene,addObst){
   for(const px of [-2,2]) facade.add(cyl(0.07,0.07,3.79,steel,px,1.895,wallZ+1.55,8,false));
   facade.add(withLabel(labelSprite('PROCESSING & PACKAGING',1.3),0,5.4,wallZ+0.9));
   // exterior pipe run along the base — visible plant character, not just a wall
-  for(const py of [0.9,1.3]){ const pipe=cyl(0.09,0.09,20,steel,0,py,wallZ-0.35,8,false); pipe.rotation.z=Math.PI/2; facade.add(pipe); }
-  facade.add(cyl(0.16,0.16,2.2,steel,-9.5,1.6,wallZ-0.35,10,false));
+  for(const py of [0.9,1.3]) for(const px of [-6,6]){ const pipe=cyl(0.09,0.09,8,steel,px,py,wallZ+0.2,8,false); pipe.rotation.z=Math.PI/2; facade.add(pipe); }
+  facade.add(cyl(0.16,0.16,2.2,steel,-9.5,1.6,wallZ+0.2,10,false));
   // roof-mounted equipment breaks up the flat roofline silhouette
   for(const rx of [-6,0,6]){
     facade.add(box(1.4,0.8,1.4,lamb(0xc7ced3),rx,7.5,-8,false));
@@ -141,25 +160,18 @@ function buildProcessor(scene,addObst){
   // receiving bay + tanker
   const tanker=makeTanker(); tanker.position.set(-16,0,6); tanker.rotation.y=0.5; scene.add(tanker); addObst(-16,6,2.4);
   scene.add(withLabel(labelSprite('Receiving Bay',1),-16,3.4,6));
-  // stainless tanks + pipes
-  for(let i=0;i<4;i++){ const t=cyl(1,1,4,lamb(0xd7dee4),-8+i*2.4,2,-4,16); scene.add(t); }
-  scene.add(withLabel(labelSprite('Stainless Tanks',0.9),-5,4.6,-4));
-  // pipes
-  for(let i=0;i<4;i++){ const p=box(8,0.15,0.15,lamb(0xb7c2cc),-2,3.4+i*0.3,-2); scene.add(p); }
-  // cheese line: block, cutter, shredder, packaging
-  const line=new THREE.Group();
-  line.add(box(0.9,0.9,0.9,lamb(0xf3d98a),0,1,0));   // cheese block
-  line.add(box(1.2,1.4,1.2,lamb(0x9fb4c4),2.4,0.9,0)); // shredder
-  line.add(box(1.4,1,1,lamb(0xcfd6dc),4.8,0.7,0));   // packager
-  line.position.set(6,0,-4); scene.add(line);
-  scene.add(withLabel(labelSprite('Cheese & Shred Line',0.9),8.4,3,-4));
+  // Equipment inside the opaque building is omitted: visitors use the exterior stations.
   // consumer vs foodservice packaging stacks
-  const cons=box(1,0.6,0.7,lamb(0x2a9c53),12,0.6,-2); scene.add(cons);
-  const food=box(1.6,1,1.2,lamb(0xf5b21e),14,0.9,-2); scene.add(food);
+  const cons=box(1,0.6,0.7,lamb(0x2a9c53),13,0.3,-2); scene.add(cons);
+  const food=box(1.6,1,1.2,lamb(0xf5b21e),15,0.5,-2); scene.add(food);
   scene.add(withLabel(labelSprite('Consumer + Foodservice',0.9),13,2.4,-2));
   // refrigerated storage + shipping dock
   scene.add(withLabel(labelSprite('Cold Storage',0.9),-10,3,-10));
   const dock=box(6,1,4,lamb(0x9aa7b0),12,0.5,8); scene.add(dock); addObst(12,8,3);
+  // Timber decking, a cream edge stripe and access steps read as a loading platform.
+  for(let i=0;i<7;i++) scene.add(box(.08,.025,2.8,lamb(0x75664f),9.6+i*.75,1.02,8,false));
+  scene.add(box(5,.12,.12,lamb(0xf3e7c6),12,.9,9.52));
+  for(let i=0;i<3;i++) scene.add(box(1.8,.25*(i+1),.5,lamb(0xb8ab94),12,.125*(i+1),11-i*.5));
   scene.add(withLabel(labelSprite('Shipping Dock',0.9),12,2.4,8));
 }
 function buildMarket(scene,addObst){
@@ -172,7 +184,7 @@ function buildMarket(scene,addObst){
   const grocery=new THREE.Group();
   grocery.add(box(12,6,10,lamb(0xf3efe3),0,3,-6));
   // dairy case
-  for(let i=0;i<3;i++){ const c=box(3,2.2,1.2,lamb(0xbfe0ea),-3+i*3,1.1,-1); grocery.add(c); grocery.add(box(3,0.1,1.2,lamb(0xffffff),-3+i*3,2.25,-1)); }
+  // Interior fixtures belong in a future accessible interior, not through this facade.
   grocery.position.set(-12,0,0); scene.add(grocery); addObst(-12,-6,8.6);
   scene.add(withLabel(labelSprite('Grocery Dairy Aisle',1),-12,4.4,-1));
 
@@ -185,11 +197,11 @@ function buildMarket(scene,addObst){
     f.add(rbox(9,3.4,0.14,frameM,gx,3.1,gz,0.06));
     f.add(box(8.6,3,0.05,glass,gx,3.1,gz+0.08,false));
     for(const lx of [-3,-1,1,3]) f.add(box(0.1,3,0.06,frameM,gx+lx,3.1,gz+0.1,false));
-    f.add(rbox(1.8,3,0.1,frameM,gx,1.6,gz,0.06));
-    f.add(box(0.85,2.7,0.05,glass,gx-0.42,1.5,gz+0.08,false));
-    f.add(box(0.85,2.7,0.05,glass,gx+0.42,1.5,gz+0.08,false));
+    f.add(rbox(1.8,3,0.1,frameM,gx,1.6,gz+.18,0.06));
+    f.add(box(0.82,2.7,0.05,glass,gx-0.46,1.5,gz+0.26,false));
+    f.add(box(0.82,2.7,0.05,glass,gx+0.46,1.5,gz+0.26,false));
     const awning=rbox(9.6,0.2,1.1,lamb(0x1a7a3c),gx,5,gz+0.55,0.05); f.add(awning);
-    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0x1a7a3c),gx-7.2+i*2.88,4.9,gz+0.55,false));
+    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0x1a7a3c),gx-4+i*1.6,5.13,gz+0.55,false));
     f.add(withLabel(labelSprite('MARKET',1.3),gx,5.9,gz+0.6));
     // planter box + small produce color pop out front for street character
     const planter=box(2.4,0.5,0.6,lamb(0x7a5a3a),gx,0.25,gz+1.3); f.add(planter);
@@ -202,8 +214,7 @@ function buildMarket(scene,addObst){
   const kitchen=new THREE.Group();
   kitchen.add(box(12,6,10,lamb(0xe7ede9),0,3,-6));
   // stainless counters + range
-  kitchen.add(box(6,1,1.4,lamb(0xcfd6dc),0,1,-1));
-  kitchen.add(box(2,1,1.4,lamb(0x333333),3.5,1,-1));
+  // Opaque exterior shell: no intersecting interior counters.
   kitchen.position.set(12,0,0); scene.add(kitchen); addObst(12,-6,8.6);
   scene.add(withLabel(labelSprite('Commercial Kitchen',1),12,4.4,-1));
 
@@ -216,9 +227,9 @@ function buildMarket(scene,addObst){
     f.add(rbox(9,3.4,0.14,frameM,kx,3.1,kz,0.06));
     f.add(box(8.6,3,0.05,steamGlass,kx,3.1,kz+0.08,false));
     for(const lx of [-3,-1,1,3]) f.add(box(0.1,3,0.06,frameM,kx+lx,3.1,kz+0.1,false));
-    f.add(rbox(1.8,3,0.1,lamb(0x4a2f1c),kx,1.6,kz,0.06));
+    f.add(rbox(1.8,3,0.1,lamb(0x4a2f1c),kx,1.6,kz+.18,0.06));
     const awning=rbox(9.6,0.2,1.1,lamb(0xb8481f),kx,5,kz+0.55,0.05); f.add(awning);
-    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0xb8481f),kx-7.2+i*2.88,4.9,kz+0.55,false));
+    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0xb8481f),kx-4+i*1.6,5.13,kz+0.55,false));
     f.add(withLabel(labelSprite('KITCHEN',1.3),kx,5.9,kz+0.6));
     // roof exhaust hood stack signals "commercial kitchen" from a glance
     f.add(cyl(0.28,0.28,2,lamb(0xb7c2cc),kx-4,7,-8,10,false));
@@ -234,23 +245,30 @@ function buildMarket(scene,addObst){
     t.add(cyl(0.55,0.55,0.06,lamb(0xf5f0e6),0,1.02,0,16));
     t.add(cyl(0.04,0.04,1.4,lamb(0xd9d2c0),0,1.7,0,8,false));
     const canopy=new THREE.Mesh(new THREE.ConeGeometry(1.1,0.5,10),lamb(0xf5b21e)); canopy.position.y=2.15; canopy.castShadow=true; t.add(canopy);
-    t.position.set(0,0,3);
-    scene.add(t); addObst(0,3,1.1);
+    t.position.set(-2,0,3);
+    scene.add(t); addObst(-2,3,1.1);
   }
 
   // receiving dock between
   const dock=box(5,1,3,lamb(0x9aa7b0),12,0.5,8); scene.add(dock); addObst(12,8,3);
+  // Timber decking, a cream edge stripe and access steps read as a loading platform.
+  for(let i=0;i<7;i++) scene.add(box(.08,.025,2.8,lamb(0x75664f),9.6+i*.75,1.02,8,false));
+  scene.add(box(5,.12,.12,lamb(0xf3e7c6),12,.9,9.52));
+  for(let i=0;i<3;i++) scene.add(box(1.8,.25*(i+1),.5,lamb(0xb8ab94),12,.125*(i+1),11-i*.5));
   scene.add(withLabel(labelSprite('Restaurant Receiving',0.9),12,2.4,8));
   // refrigerated storage
   scene.add(withLabel(labelSprite('Refrigerated Storage',0.9),0,3,-12));
   const cold=box(6,4,4,lamb(0xcfe3ea),0,2,-12); scene.add(cold); addObst(0,-12,3.5);
+  scene.add(box(2.4,3.2,.12,lamb(0xf1f3e9),0,1.65,-9.92));
+  scene.add(box(.12,.7,.15,lamb(0x456256),.85,1.6,-9.8));
+  scene.add(box(6.3,.2,4.3,lamb(0x54765b),0,4.1,-12));
+  for(const x of [-2.4,2.4]) for(const y of [1,1.3,1.6]) scene.add(box(.65,.07,.08,lamb(0x64808b),x,y,-9.94,false));
   // chef character (simple)
   const chef=makeChef(); chef.position.set(9,0,2); scene.add(chef);
-  // packages consumer + foodservice
-  scene.add(withLabel(labelSprite('Consumer + Foodservice Packages',0.8),0,2.2,4));
+  // Keep the central visitor path and its optional milk drop clear of furniture.
 }
 function makeChef(){ const {box,cyl,ball,lamb}=B; const g=new THREE.Group(); g.add(cyl(0.4,0.5,1.4,lamb(0xffffff),0,0.9,0,10)); g.add(ball(0.35,lamb(0xe8b98f),0,1.9,0)); g.add(cyl(0.36,0.36,0.4,lamb(0xffffff),0,2.3,0,12)); g.add(ball(0.34,lamb(0xffffff),0,2.6,0,false)); return g; }
 
 
-return { buildFarm, buildProcessor, buildMarket };
+return { buildFarm, buildProcessor, buildMarket, makeCow };
 }
