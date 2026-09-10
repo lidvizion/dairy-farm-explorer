@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support.js';
 async function map(page){await page.goto('/');await page.locator('#beginBtn').click();await expect(page.locator('#journeyMap')).toBeVisible();}
 async function farm(page){await map(page);await page.locator('[data-location="farm"] button').click();await expect(page.locator('#objective')).toBeVisible();}
 test('Space activates focused scene buttons; navigation and certificate own focus',async({page})=>{
@@ -32,7 +32,7 @@ test('context loss stops rendering; restore rebuilds the scene; retry replaces a
   await page.waitForTimeout(100);expect(await page.evaluate(()=>window.__game.renderInfo().frame)).toBe(frame);
   await page.evaluate(()=>window.lossExtension.restoreContext());
   await expect(page.locator('#objective')).toBeVisible();await expect(page.locator('#fallback')).toBeHidden();
-  await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().frame)).toBeGreaterThan(frame);
+  await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().frame),{timeout:30000}).toBeGreaterThan(frame);
   await page.evaluate(()=>{
     window.oldCanvas=document.getElementById('worldCanvas');
     window.oldCanvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext();

@@ -30,3 +30,4 @@ logs/
 # Temp files
 *.tmp
 .cache/
+test-results-throttled/

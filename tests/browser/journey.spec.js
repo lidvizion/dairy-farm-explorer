@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, waitForFrames } from './support.js';
 import { LOCATIONS, GAME_STATES } from '../../js/config/content.js';
 
 // Exercise exactly the same self-hosted engine that ships in production.
@@ -158,8 +158,7 @@ test('all nine lessons, quiz retries, navigation, persistence, completion and re
 test('first chapter renders continuously; movement, reset, quality and quiz proximity work', async ({ page }) => {
   const errors = observeErrors(page);
   await openMap(page); await enter(page, 'farm');
-  const before = await page.evaluate(() => window.__game.renderInfo().frame);
-  await expect.poll(() => page.evaluate(() => window.__game.renderInfo().frame)).toBeGreaterThan(before + 5);
+  await waitForFrames(page,6);
   await page.locator('#worldCanvas').click({ position: { x: 360, y: 350 } });
   const start = await page.evaluate(() => window.__game.player.z);
   await page.keyboard.down('KeyW');
@@ -210,8 +209,7 @@ test('cooling can pause and closing it never awards a lesson in the background',
   await expect(page.getByRole('button',{name:'Continue',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Close',exact:true}).click();
   // Enough animation frames pass to prove a discarded completion cannot fire.
-  const frame=await page.evaluate(()=>window.__game.renderInfo().frame);
-  await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().frame)).toBeGreaterThan(frame+10);
+  await waitForFrames(page,11);
   expect(await page.evaluate(()=>window.__game.Progress.isLessonDone('farm','milking'))).toBe(false);
   await page.getByRole('button',{name:'Steps',exact:true}).click();
   await page.getByRole('button',{name:/2. Milking & Cooling/}).click();
