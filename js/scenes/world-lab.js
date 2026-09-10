@@ -9,18 +9,20 @@ export function createLabVisual(THREE, scene, id, B, makeCow) {
   const { box, cyl, ball, lamb } = B;
   const cream = lamb(0xf6edda), wood = lamb(0x88664b), green = lamb(0x326c51);
   const blue = lamb(0x65bbcf), steel = lamb(0xb8cacb), gold = lamb(0xe8b657);
-  root.add(cyl(5.3, 5.6, .35, cream, 0, .12, 0, 48));
-  root.add(cyl(5.6, 5.6, .12, green, 0, -.08, 0, 48));
+  root.add(cyl(5.3, 5.6, .35, cream, 0, .225, 0, 48));
+  root.add(cyl(5.6, 5.6, .12, green, 0, .06, 0, 48));
   const pieces = {};
   const sign = (text, x, y, z, size = .65) => {
     const sprite = B.labelSprite(text, size); sprite.position.set(x, y, z); root.add(sprite); return sprite;
   };
   if (id === 'farm') {
-    root.add(box(6.7, .08, 4, lamb(0x8a9c67), 0, .34, 0));
+    root.add(box(6.7, .08, 4, lamb(0x8a9c67), 0, .45, 0));
     for (const x of [-3, 0, 3]) root.add(box(.14, 1, .14, wood, x, .9, -2));
     for (const y of [.65, 1.2]) root.add(box(6.2, .12, .12, wood, 0, y, -2));
-    const cow = makeCow(.72); cow.position.set(-.6, .28, .2); root.add(cow);
-    root.add(box(2.2, .48, 1, steel, 1.6, .6, 1.5));
+    const cow = makeCow(.72); cow.position.set(-.6, .49, .2); root.add(cow);
+    root.add(box(2.2,.08,1,steel,1.6,.44,1.5));
+    for(const z of [1.05,1.95])root.add(box(2.2,.48,.1,steel,1.6,.68,z));
+    for(const x of [.55,2.65])root.add(box(.1,.48,.8,steel,x,.68,1.5));
     pieces.water = box(1.96, .06, .8, blue, 1.6, .82, 1.5); root.add(pieces.water);
     pieces.shade = new THREE.Group();
     for (const x of [-2.5, 1.5]) for (const z of [-1.5, 1]) pieces.shade.add(cyl(.06, .06, 2.8, wood, x, 1.7, z, 7));

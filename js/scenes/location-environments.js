@@ -26,8 +26,12 @@ function buildFarm(scene,addObst){
 
   // feed & water lane
   const feed=box(6,0.5,1.2,lamb(0x8a6a44),-14,0.35,4); scene.add(feed);
-  const trough=box(4,0.6,1,lamb(0x8d9aa5),-14,0.4,6); scene.add(trough);
-  const water=new THREE.Mesh(new THREE.PlaneGeometry(3.6,0.8),lamb(0x4aa3d8)); water.rotation.x=-Math.PI/2; water.position.set(-14,0.68,6); scene.add(water);
+  const trough=new THREE.Group(), troughMat=lamb(0x8d9aa5);
+  trough.add(box(4,.12,1,troughMat,0,.06,0));
+  for(const z of [-.45,.45])trough.add(box(4,.6,.1,troughMat,0,.3,z));
+  for(const x of [-1.95,1.95])trough.add(box(.1,.6,.8,troughMat,x,.3,0));
+  trough.position.set(-14,0,6);scene.add(trough);
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(3.6,0.8),lamb(0x4aa3d8)); water.rotation.x=-Math.PI/2; water.position.set(-14,0.5,6); scene.add(water);
 
   // milking area + bulk tank (milk house)
   const mh=new THREE.Group();
@@ -158,8 +162,8 @@ function buildProcessor(scene,addObst){
   scene.add(withLabel(labelSprite('Receiving Bay',1),-16,3.4,6));
   // Equipment inside the opaque building is omitted: visitors use the exterior stations.
   // consumer vs foodservice packaging stacks
-  const cons=box(1,0.6,0.7,lamb(0x2a9c53),12,0.6,-2); scene.add(cons);
-  const food=box(1.6,1,1.2,lamb(0xf5b21e),14,0.9,-2); scene.add(food);
+  const cons=box(1,0.6,0.7,lamb(0x2a9c53),13,0.3,-2); scene.add(cons);
+  const food=box(1.6,1,1.2,lamb(0xf5b21e),15,0.5,-2); scene.add(food);
   scene.add(withLabel(labelSprite('Consumer + Foodservice',0.9),13,2.4,-2));
   // refrigerated storage + shipping dock
   scene.add(withLabel(labelSprite('Cold Storage',0.9),-10,3,-10));
@@ -180,7 +184,7 @@ function buildMarket(scene,addObst){
   const grocery=new THREE.Group();
   grocery.add(box(12,6,10,lamb(0xf3efe3),0,3,-6));
   // dairy case
-  for(let i=0;i<3;i++){ const c=box(3,2.2,1.2,lamb(0xbfe0ea),-3+i*3,1.1,-1); grocery.add(c); grocery.add(box(3,0.1,1.2,lamb(0xffffff),-3+i*3,2.25,-1)); }
+  // Interior fixtures belong in a future accessible interior, not through this facade.
   grocery.position.set(-12,0,0); scene.add(grocery); addObst(-12,-6,8.6);
   scene.add(withLabel(labelSprite('Grocery Dairy Aisle',1),-12,4.4,-1));
 
@@ -193,11 +197,11 @@ function buildMarket(scene,addObst){
     f.add(rbox(9,3.4,0.14,frameM,gx,3.1,gz,0.06));
     f.add(box(8.6,3,0.05,glass,gx,3.1,gz+0.08,false));
     for(const lx of [-3,-1,1,3]) f.add(box(0.1,3,0.06,frameM,gx+lx,3.1,gz+0.1,false));
-    f.add(rbox(1.8,3,0.1,frameM,gx,1.6,gz,0.06));
-    f.add(box(0.85,2.7,0.05,glass,gx-0.42,1.5,gz+0.08,false));
-    f.add(box(0.85,2.7,0.05,glass,gx+0.42,1.5,gz+0.08,false));
+    f.add(rbox(1.8,3,0.1,frameM,gx,1.6,gz+.18,0.06));
+    f.add(box(0.82,2.7,0.05,glass,gx-0.46,1.5,gz+0.26,false));
+    f.add(box(0.82,2.7,0.05,glass,gx+0.46,1.5,gz+0.26,false));
     const awning=rbox(9.6,0.2,1.1,lamb(0x1a7a3c),gx,5,gz+0.55,0.05); f.add(awning);
-    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0x1a7a3c),gx-7.2+i*2.88,4.9,gz+0.55,false));
+    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0x1a7a3c),gx-4+i*1.6,5.13,gz+0.55,false));
     f.add(withLabel(labelSprite('MARKET',1.3),gx,5.9,gz+0.6));
     // planter box + small produce color pop out front for street character
     const planter=box(2.4,0.5,0.6,lamb(0x7a5a3a),gx,0.25,gz+1.3); f.add(planter);
@@ -210,8 +214,7 @@ function buildMarket(scene,addObst){
   const kitchen=new THREE.Group();
   kitchen.add(box(12,6,10,lamb(0xe7ede9),0,3,-6));
   // stainless counters + range
-  kitchen.add(box(6,1,1.4,lamb(0xcfd6dc),0,1,-1));
-  kitchen.add(box(2,1,1.4,lamb(0x333333),3.5,1,-1));
+  // Opaque exterior shell: no intersecting interior counters.
   kitchen.position.set(12,0,0); scene.add(kitchen); addObst(12,-6,8.6);
   scene.add(withLabel(labelSprite('Commercial Kitchen',1),12,4.4,-1));
 
@@ -224,9 +227,9 @@ function buildMarket(scene,addObst){
     f.add(rbox(9,3.4,0.14,frameM,kx,3.1,kz,0.06));
     f.add(box(8.6,3,0.05,steamGlass,kx,3.1,kz+0.08,false));
     for(const lx of [-3,-1,1,3]) f.add(box(0.1,3,0.06,frameM,kx+lx,3.1,kz+0.1,false));
-    f.add(rbox(1.8,3,0.1,lamb(0x4a2f1c),kx,1.6,kz,0.06));
+    f.add(rbox(1.8,3,0.1,lamb(0x4a2f1c),kx,1.6,kz+.18,0.06));
     const awning=rbox(9.6,0.2,1.1,lamb(0xb8481f),kx,5,kz+0.55,0.05); f.add(awning);
-    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0xb8481f),kx-7.2+i*2.88,4.9,kz+0.55,false));
+    for(let i=0;i<6;i++) f.add(box(1.6,0.05,1.1,lamb(i%2?0xffffff:0xb8481f),kx-4+i*1.6,5.13,kz+0.55,false));
     f.add(withLabel(labelSprite('KITCHEN',1.3),kx,5.9,kz+0.6));
     // roof exhaust hood stack signals "commercial kitchen" from a glance
     f.add(cyl(0.28,0.28,2,lamb(0xb7c2cc),kx-4,7,-8,10,false));

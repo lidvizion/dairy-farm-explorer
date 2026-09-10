@@ -93,3 +93,42 @@ audio behavior. Also run a short screen-reader and first-time learner session.
 **Meanwhile:** retained conservative mobile quality, batched immutable scenery,
 added deterministic draw-call/resource regression checks and responsive demos.
 The test suite's “mobile” project is touch Chromium, not real iOS Safari.
+
+
+## September 10 asset research handoff (supplied by Terra)
+
+These are leads, not approved or integrated assets. Terra reported CC0,
+commercial use allowed and no attribution requirement:
+
+- [Quaternius Farm Animal Pack](https://quaternius.com/packs/farmanimal.html):
+  CC0 1.0, seven animated animals including a cow; FBX/OBJ/Blend, requiring a
+  Blender GLB export. Triangle counts, texture sizes, breed/colour, file weight
+  and rig structure are unpublished and must be inspected.
+- [Quaternius Farm Buildings Pack](https://quaternius.com/packs/farmbuildings.html):
+  CC0, 13 untextured buildings; a promising style match for barns, fences and shelters.
+- Quaternius Sushi Restaurant Kit: CC0, native glTF. Consider selected generic
+  props only, not the entire restaurant kit.
+
+Rejected leads: the Sketchfab CC-BY-SA cow (copyleft unacceptable for this brand
+project), the 13.3k-triangle CC-BY cow turret (wrong subject), and Kenney cows
+(the researched assets were 2D).
+
+**Human next step:** download and preserve licence evidence, convert selected
+assets in Blender, decimate, and inspect the result (or arrange a Meshy job).
+No conversion pipeline is available here. Cow acceptance ceiling: 6k triangles,
+no texture above 1K; selected lazy-loaded GLBs together below 1 MB Brotli.
+These are gates, not estimates of what an uninspected pack will weigh.
+
+**Integration seam:** retain `makeCow(scale, spotted)` and its procedural fallback;
+normalize an approved cow to the same ground origin, +X forward and dimensions.
+Only attach the existing head/tail animation adapter when those nodes are verified.
+Keep `createLabVisual` root/sync/update and educational state independent of models.
+A future asset manifest should record local path, author/licence evidence, measured
+triangles, texture sizes, bounds, rig mapping and raw/Brotli bytes. Add a same-origin
+lazy loader with scene-exit cancellation/disposal only once real approved files exist.
+No assets, loader, placeholder URL, network request or new dependency was added.
+
+**Next review:** a Sol adversarial movement/placement audit would be useful after
+this patch, especially close approaches at storefront corners and sign rear faces.
+Physical Android and iPhone/Safari testing remains more valuable than more asset
+research until the cow conversion pipeline has an owner.

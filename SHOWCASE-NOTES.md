@@ -1,3 +1,111 @@
+# September 10, 2026: fixed signs and geometry clearance
+
+## Changes and verified causes
+
+- Station planks were already fixed, but their number and title were camera-facing
+  sprites. Replaced both with text baked into one 1024 x 704 canvas atlas per
+  destination. Each board has separate front/back text planes so the reverse is
+  readable, not mirrored. Boards face the path from the arrival point (0, 8),
+  retain their yaw throughout exploration and have a 0.85 collision footprint.
+  Titles stay on the plank instead of appearing/disappearing overhead. Environment
+  and demonstration labels are fixed text boards too; their visibility-controlled
+  backing geometry stays out of static batching. Only the transient next-stop
+  arrow remains a camera-facing sprite. Steps/objective controls remain the
+  accessible alternative when a physical board is edge-on.
+- **All three scenes:** the three visitor-path planes overlapped at y=.025.
+  They now occupy .030/.042/.054 layers; the station overlay is at .085 with
+  depth writes disabled. This removes coplanar path junctions and gives rings
+  clearance above paving, paths and contact patches without logarithmic depth
+  or arbitrary polygon offsets.
+- **Processor and market:** rounded facade frames were corrupted by batching.
+  The pinned RoundedBoxGeometry inherits type `BoxGeometry` and unit-box
+  parameters, although its vertices contain the actual rounded dimensions.
+  Treating it as an ordinary scalable cube replaced frames with protruding unit
+  boxes. Only genuine BoxGeometry instances now take that conversion path;
+  rounded meshes retain their vertices. This was a geometry-conversion bug,
+  not evidence of stale culling bounds.
+- **Processor:** a radius-12 circle at (0,-12) failed to cover a building spanning
+  x=-12..12 and z=-14..2, allowing entry through the front and corners. Both farm
+  and processor tanker radius-2.4 circles also missed their long ends. Added
+  eye-height solid footprints from the original scenery, before batching, expanded
+  by the player's .55 radius. These complement existing navigation circles.
+  Cow footprints include head/tail extents with a small animation allowance.
+  Clearance is conservative for rotated shapes; this is not a physics engine.
+- **Camera:** kept near=.1 (already below the .55 player radius); reduced far
+  from 2000 to 180, beyond the 145-unit full-fog distance. Closing the uncovered
+  collision gaps is what prevents entering walls. No logarithmic depth buffer.
+- **Farm:** the outdoor trough's water at .68 was hidden below its solid .7 top.
+  Rebuilt it as a basin with side walls and inset water. The demonstration had
+  the same solid-box water problem, a base below ground and hooves below its
+  grass pad. Opened that basin, raised the stage base and seated the cow on the
+  pad. The demo cow was not intersecting the trough, and the station boards were
+  not reaching the shelter roof; those were checked rather than assumed.
+- **Processor:** moved the consumer package off the building's side wall and
+  seated both package stacks on the ground.
+- **Market:** awning strips extended outside their 9.6-unit canopies (centres
+  spanned 14.4 units); spaced them within the canopy and put them above its top.
+  Moved door frames forward of the ribbon-window backing; separated grocery
+  door glass from the coplanar ribbon glass and from its overlapping twin pane.
+  Removed inaccessible dairy cases and kitchen counters that straddled opaque
+  facade walls. Existing market/building exteriors remain illustrative facades.
+- **Optional drops:** farm/market drops inside building collision zones and the
+  farm tanker's footprint were moved into reachable visitor space. IDs and
+  reward deduplication are unchanged.
+
+## Culling, budgets and checks
+
+Batch spheres already recomputed after setting instance matrices. A new unit
+regression verifies every vertex of distant, rotated, scaled boxes lies inside
+its batch sphere; another protects rounded facade geometry. Tree/hill instance
+spheres now compute explicitly at assembly, rather than relying on the renderer's
+lazy computation. No confirmed stale-bound regression was found.
+
+The atlas adds no download and replaces eight station textures with one shared
+texture per destination. Its uncompressed RGBA base level is 2.75 MiB (about
+3.67 MiB with mipmaps). Keeping rounded geometry intact restores its actual
+triangle cost; draw and resource checks must be read against the measurements
+below, not the older corrupted-frame baseline.
+
+New browser checks sample twelve viewpoints around the first sign in each scene,
+assert fixed front/back transforms, capture cardinal views, and physically walk
+into the processor front wall. This is an automated orbit/clearance check, not
+physical-device playtesting. Existing tests cover all lessons, portrait and short
+landscape, keyboard, reduced motion, context loss and repeat visits.
+
+Final local verification: `npm.cmd test` **30 passed**; `npm.cmd run test:browser`
+**52 passed** (desktop and touch Chromium). Vendor byte verification, static
+packaging/verification and the packaged project-prefix smoke all passed. The
+package contains 52 runtime files, 10,228,145 bytes. No development files ship.
+Screenshots were inspected for sign front/rear/side views in all destinations,
+mobile portrait and the farm demonstration; portrait/short-landscape layout
+checks and screenshots also ran in the existing suite.
+
+Measured touch Chromium Performance-mode workload:
+
+| Destination | Spawn calls | Spawn triangles | Demo calls | Demo triangles | Repeat geometries/textures |
+|---|---:|---:|---:|---:|---:|
+| Farm | 67 | 35,802 | 186 | 57,276 | 63 / 5 |
+| Processor | 43 | 28,114 | 109 | 34,012 | 40 / 4 |
+| Market | 49 | 28,228 | 121 | 35,330 | 45 / 3 |
+
+Geometry and texture counts matched on the second complete visit cycle. All
+existing budgets passed without relaxing thresholds. Mobile auto quality remains
+pixel ratio <=1 with no realtime shadows. These are workload measurements,
+not real-device FPS or Safari certification.
+
+The first complete browser run stalled during Windows server teardown after all
+52 cases passed. Repeating the full suite against the existing local server
+finished cleanly with exit code 0 (52 passed, 6.7 minutes); the owned server was
+then stopped. No CI settings or test thresholds were changed.
+
+No git commands, external network requests, asset imports, dependencies or vendor edits were used.
+Terra's supplied asset leads, exact acceptance gates and future integration seam
+are appended to QUESTIONS-FOR-AMEYA.md. The next useful steps are a Sol movement
+and placement audit, actual phone testing, and human conversion/inspection of a
+single candidate cow before considering any runtime loader.
+
+---
+
 # Showcase review — September 9, 2026
 
 The direction is a playable California field guide: a warm, illustrative world

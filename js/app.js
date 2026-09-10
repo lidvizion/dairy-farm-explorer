@@ -1,3 +1,5 @@
+import { collectSolidBounds, resolveSolids } from './core/clearance.js';
+import { makeTrailSigns, fixedLabel } from './scenes/trail-signs.js';
 import { moveVector } from './core/movement.js';
 import { GAME_STATES, BRAND_ASSETS, EXTERNAL_LINKS, SCORING, COPY, LOCATIONS, LOC_BY_ID } from './config/content.js';
 import { Analytics, Progress } from './core/progress.js';
@@ -245,7 +247,7 @@ async function initThree(){
     try { ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
     catch { RoundedBoxGeometry=null; }
     if(!camera){
-      camera=new THREE.PerspectiveCamera(70,1,0.1,2000);
+      camera=new THREE.PerspectiveCamera(70,1,0.1,180);
       camera.rotation.order='YXZ';
     }
     createRenderer();
@@ -412,17 +414,7 @@ function makeBuilders(){
     const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true})); s.scale.set(scale,scale,1); return s;
   }
   function labelSprite(text,scale=1){
-    // Auto-shrinks the font so long labels ("Consumer + Foodservice Packages")
-    // fit inside the pill instead of clipping off the canvas edge.
-    const c=document.createElement('canvas'); c.width=512; c.height=128; const x=c.getContext('2d');
-    x.fillStyle='rgba(11,94,42,.92)'; roundRect(x,6,30,500,68,20); x.fill();
-    x.fillStyle='#fff'; x.textAlign='center'; x.textBaseline='middle';
-    const maxTextWidth=460; let fontSize=40;
-    x.font=`700 ${fontSize}px Segoe UI, sans-serif`;
-    while(fontSize>18 && x.measureText(text).width>maxTextWidth){ fontSize-=2; x.font=`700 ${fontSize}px Segoe UI, sans-serif`; }
-    x.fillText(text,256,64);
-    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
-    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true})); s.scale.set(4*scale,1*scale,1); return s;
+    return fixedLabel(THREE,text,scale);
   }
   function roundRect(x,rx,ry,w,h,r){ x.beginPath(); x.moveTo(rx+r,ry); x.arcTo(rx+w,ry,rx+w,ry+h,r); x.arcTo(rx+w,ry+h,rx,ry+h,r); x.arcTo(rx,ry+h,rx,ry,r); x.arcTo(rx,ry,rx+w,ry,r); x.closePath(); }
   function noiseTexture(base,fleck,count,size=128){
@@ -454,6 +446,7 @@ let B=null, environments=null; // builders (set after THREE loads)
 
 // ---- First-person controller (shared by location scenes) ----
 const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0};
+let curSolids=[];
 let curOBST=[], curBounds={minX:-40,maxX:40,minZ:-40,maxZ:40}, curSpawn={x:0,z:0,yaw:0};
 function resetPlayer(){ player.x=curSpawn.x; player.z=curSpawn.z; player.yaw=curSpawn.yaw; player.pitch=0; if(camera){camera.position.set(player.x,player.eye,player.z); camera.rotation.y=player.yaw; camera.rotation.x=0;} }
 
@@ -476,6 +469,7 @@ function updatePlayer(dt){
   player.x+=vx*dt; player.z+=vz*dt;
   const R=0.55;
   for(const o of curOBST){ const dx=player.x-o.x,dz=player.z-o.z,rr=o.r+R,d2=dx*dx+dz*dz; if(d2<rr*rr&&d2>1e-4){const d=Math.sqrt(d2),p=(rr-d)/d; player.x+=dx*p; player.z+=dz*p;} }
+  resolveSolids(player,curSolids,R);
   player.x=Math.max(curBounds.minX,Math.min(curBounds.maxX,player.x));
   player.z=Math.max(curBounds.minZ,Math.min(curBounds.maxZ,player.z));
   const moving=m>0.1; player.bob+=dt*(moving?speed*1.4:0);
@@ -673,6 +667,7 @@ function enterLocation(locId){
   if(locId==='market')    environments.buildMarket(scene,addObst);
   dressEnvironment(THREE,scene,loc);
   addPlaceDetails(THREE,scene,loc,B);
+  curSolids=collectSolidBounds(THREE,scene);
   scene.userData.batchedDrawCalls = batchScenery(THREE,scene);
   const labVisual = createLabVisual(THREE,scene,locId,B,environments.makeCow);
   let worldLab = null, trailGuide = null;
@@ -680,31 +675,39 @@ function enterLocation(locId){
   scene.traverse(object=>{ if(object.userData.environmentLabel) environmentLabels.push(object); });
   const labelPosition=new THREE.Vector3();
   const sceneCows = scene.userData.cows || [];
-  sceneCows.forEach(c=>{ c.userData.type='cow'; clickables.push(c); addObst(c.position.x,c.position.z,0.9); });
+  sceneCows.forEach(c=>{
+    c.userData.type='cow'; clickables.push(c);
+    const b=new THREE.Box3().setFromObject(c);
+    curSolids.push({minX:b.min.x-.15,maxX:b.max.x+.15,minZ:b.min.z-.15,maxZ:b.max.z+.15});
+  });
 
   // lesson stations (beacons) arranged in an arc in front of spawn
   // (a location can override this — see market's stationPos — when the
   // generic arc would land a beacon inside a building's collision zone)
+  const signFactory=makeTrailSigns(THREE,B,[...loc.lessons.map((lesson,i)=>`${i+1}. ${lesson.title}`),'Take the Quiz']);
   const stationPos=loc.stationPos || [[-10,-6],[0,-11],[10,-6]];
   const beacons=[];
   loc.lessons.forEach((lesson,i)=>{
     const [sx,sz]=stationPos[i];
     const done=Progress.isLessonDone(locId,lesson.id);
-    const g=makeBeacon(lesson.icon, done?0x9e9e9e:loc.color, `${i+1}. ${lesson.title}`);
+    const g=signFactory(i,done?0x9e9e9e:loc.color);
     g.position.set(sx,0,sz);
+    g.rotation.y=Math.atan2(-sx,8-sz);
     Object.assign(g.userData,{type:'station',kind:'lesson',lesson,idx:i,done});
-    scene.add(g); clickables.push(g); beacons.push(g); addObst(sx,sz,0.6);
+    scene.add(g); clickables.push(g); beacons.push(g); addObst(sx,sz,0.85);
   });
   // quiz station (center-back), locked until 3 lessons done
-  const quizG=makeBeacon('🧠',0xf5b21e,'Take the Quiz');
+  const quizG=signFactory(3,0xf5b21e);
   const [quizX,quizZ]=loc.quizPos || [0,-18];
   quizG.position.set(quizX,0,quizZ);
+  quizG.rotation.y=Math.atan2(-quizX,8-quizZ);
   Object.assign(quizG.userData,{type:'station',kind:'quiz'});
-  scene.add(quizG); clickables.push(quizG); addObst(quizX,quizZ,0.6);
+  scene.add(quizG); clickables.push(quizG); addObst(quizX,quizZ,0.85);
 
   // collectibles (golden milk drops) — optional
   const drops=[];
-  const dropSpots=[[-14,2],[14,2],[0,4]];
+  const dropSpots=locId==='farm'?[[-10,7],[12,2],[0,4]]
+    :locId==='market'?[[-12,5],[16,5],[0,4]]:[[-12,10],[14,2],[0,4]];
   dropSpots.forEach(([dx,dz],i)=>{
     const id=`${locId}.drop${i}`;
     if(Progress.data.collectibles[id]) return;
@@ -753,7 +756,7 @@ function enterLocation(locId){
     trailGuide?.update();
     environmentLabels.forEach(label=>{label.getWorldPosition(labelPosition); label.visible=Math.hypot(labelPosition.x-player.x,labelPosition.z-player.z)<10;});
     // animate beacons + drops
-    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=1.65;} }
+    clickables.forEach((c,i)=>{
       if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6;} if(!modalOpen && Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
       // gentle head-graze bob + tail swish so cows read as alive, not static props
       if(c.userData.type==='cow'&&!reducedMotion) animateCow(c,t); });
@@ -764,7 +767,7 @@ function enterLocation(locId){
       let nextDest=null;
       for(const b of beacons){ if(!b.userData.done){ nextDest=b; break; } }
       if(!nextDest && !Progress.isLocationDone(locId) && Progress.locationLessonsDone(locId)>=loc.lessons.length) nextDest=quizG;
-      for(const station of [...beacons,quizG]) station.userData.label.visible=station===nextDest || Math.hypot(station.position.x-player.x,station.position.z-player.z)<7;
+      // Physical sign faces remain visible from both approaches.
 
       if(nextDest){
         // Position arrow above next destination (billboard style, always faces camera)
@@ -882,21 +885,6 @@ function activateStation(g){
 }
 
 /* ---- beacon + drop factories ---- */
-function makeBeacon(emoji,color,labelText){
-  const g=new THREE.Group();
-  const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.5,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=0.06; g.add(ring);
-  const pillar=B.box(.12,1.55,.12,B.lamb(0x856c4d),0,.8,0); g.add(pillar);
-  const board=B.box(1.6,1.25,.14,B.lamb(0x234d39),0,1.65,-.06); g.add(board);
-  g.add(B.box(1.75,.1,.24,B.lamb(0xe2be76),0,2.32,-.06));
-  const canvas=document.createElement('canvas'); canvas.width=canvas.height=128;
-  const ctx=canvas.getContext('2d'); ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fillStyle='#193e30';ctx.fill();ctx.strokeStyle='#f4e4ba';ctx.lineWidth=5;ctx.stroke();
-  ctx.fillStyle='#fff9ee';ctx.font='600 52px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(/^\d/.test(labelText)?labelText[0]:'?',64,66);
-  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true}));icon.scale.set(1,1,1);icon.position.set(0,1.65,.12);g.add(icon);
-  const label=B.labelSprite(labelText,0.85); label.position.y=2.75; g.add(label);
-  g.userData={ring,pillar,icon,label};
-  return g;
-}
 function setBeaconDone(g,done,color){ g.userData.ring.material.color.set(done?0xe5bb69:color); g.userData.ring.material.opacity=done?1:0.65; }
 function setBeaconLocked(g,locked){ g.userData.ring.material.color.set(locked?0x9e9e9e:0xf5b21e); g.userData.ring.material.opacity=locked?0.4:0.85; g.userData.icon.material.opacity=locked?0.5:1; g.userData.icon.material.transparent=true; }
 function makeDrop(){ const g=new THREE.Group(); const m=B.lamb(0xf5b21e,{emissive:0x7a5600,emissiveIntensity:0.4}); const ball=new THREE.Mesh(new THREE.SphereGeometry(0.32,12,10),m); const tip=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.45,12),m); tip.position.y=0.42; g.add(ball); g.add(tip); return g; }
@@ -1062,7 +1050,7 @@ async function boot(){
 }
 
 // debug hooks for automated testing / QA
-window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
+window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, scene:()=>active.scene, clearance:()=>({near:camera.near,far:camera.far,solids:curSolids}), setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
 window.__RCM_DEBUG = false;
 window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, triangles:renderer?.info.render.triangles||0, geometries:renderer?.info.memory.geometries||0, textures:renderer?.info.memory.textures||0, batchedDrawCalls:active.scene?.userData.batchedDrawCalls||0, labState:active.scene?.children.find(o=>o.userData.labState)?.userData.labState, labVisual:active.worldLab?.inspect(), frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio(), antialias:renderer?.getContext().getContextAttributes()?.antialias, resizeCount, aspect:camera?.aspect});
 

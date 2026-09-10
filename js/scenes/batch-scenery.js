@@ -7,6 +7,9 @@ export function batchScenery(THREE, scene) {
     if (!mesh.isMesh || mesh.isInstancedMesh || Array.isArray(mesh.material)) return;
     for (let node = mesh; node; node = node.parent) if (node.userData.type || node.userData.dynamic) return;
     const m = mesh.material, g = mesh.geometry;
+    // RoundedBoxGeometry inherits type='BoxGeometry' but stores deformed vertices
+    // and unit-box parameters. Replacing it with a scaled cube destroys its shape.
+    if (g.type === 'BoxGeometry' && g.constructor !== THREE.BoxGeometry) return;
     if (m.transparent || m.map || !['BoxGeometry', 'CylinderGeometry', 'SphereGeometry'].includes(g.type)) return;
     const key = JSON.stringify([g.type, g.type === 'BoxGeometry' ? null : g.parameters,
       m.type, m.color.getHex(), m.emissive?.getHex(), m.emissiveIntensity,
