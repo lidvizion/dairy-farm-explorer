@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, goToScene, waitForFrames } from './support.js';
 import { LOCATIONS } from '../../js/config/content.js';
 async function map(page){await page.goto('/');await page.locator('#beginBtn').click();await expect(page.locator('#journeyMap')).toBeVisible();}
 async function farm(page){await map(page);await page.locator('[data-location="farm"] button').click();await expect(page.locator('#objective')).toBeVisible();}
@@ -52,9 +52,9 @@ test('stick ignores a second finger and clears capture, modal and blur input',as
   await page.keyboard.down('w'); await page.locator('#nextLesson').click();
   await page.keyboard.up('w'); await page.getByRole('button',{name:'Close',exact:true}).click();
   const pos=await page.evaluate(()=>window.__game.player.z);
-  await page.waitForTimeout(200); expect(await page.evaluate(()=>window.__game.player.z)).toBe(pos);
+  await waitForFrames(page); expect(await page.evaluate(()=>window.__game.player.z)).toBe(pos);
   await page.keyboard.down('w'); await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
-  const after=await page.evaluate(()=>window.__game.player.z); await page.waitForTimeout(200);
+  const after=await page.evaluate(()=>window.__game.player.z); await waitForFrames(page);
   expect(await page.evaluate(()=>window.__game.player.z)).toBe(after); await page.keyboard.up('w');
 });
 test('badge completion offers a safe name, saves once, and shows the board on map and certificate',async({page})=>{
@@ -80,15 +80,11 @@ test('badge completion offers a safe name, saves once, and shows the board on ma
   await expect(page.locator('#leaderboardName')).toHaveCount(0);
 });
 
-test('all three dressed scenes render with high-quality shadows',async({page})=>{
+for(const [id,state] of [['farm','FARM'],['processor','PROCESSOR'],['market','MARKET']]) test(`${id} dressed scene renders with high-quality shadows`,async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('rcm_quality','high'));
   await farm(page);
-  for(const [id,state] of [['farm','FARM'],['processor','PROCESSOR'],['market','MARKET']]){
-    await page.evaluate(state=>window.__game.go(window.__game.GAME_STATES[state]),state);
-    await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().calls)).toBeGreaterThan(0);
-    expect(await page.evaluate(()=>window.__game.renderInfo().shadows)).toBe(true);
-    const frame=await page.evaluate(()=>window.__game.renderInfo().frame);
-    await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().frame)).toBeGreaterThan(frame+2);
-    await page.screenshot({path:`test-results/scene-${id}-high-${test.info().project.name}.png`});
-  }
+  await goToScene(page,state);
+  expect(await page.evaluate(()=>window.__game.renderInfo().calls)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.__game.renderInfo().shadows)).toBe(true);
+  await page.screenshot({path:`test-results/scene-${id}-high-${test.info().project.name}.png`});
 });

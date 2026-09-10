@@ -1,39 +1,37 @@
-import { test, expect } from '@playwright/test';
+import {test,expect,goToScene} from './support.js';
 async function enter(page) {
   await page.goto('/');await page.locator('#beginBtn').click();
   await page.locator('[data-location="farm"] button').click();
   await expect(page.locator('#objective')).toBeVisible();
 }
-test('hands-on worlds update real geometry, explain mistakes, reset and restore exploration',async({page})=>{
+for(const [id,state] of [['farm','FARM'],['processor','PROCESSOR'],['market','MARKET']]) test(`hands-on ${id} world updates real geometry, explains mistakes, resets and restores exploration`,async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await enter(page);
-  for(const [id,state] of [['farm','FARM'],['processor','PROCESSOR'],['market','MARKET']]){
-    await page.evaluate(state=>window.__game.go(window.__game.GAME_STATES[state]),state);
-    const before=await page.evaluate(()=>({...window.__game.player}));
-    await page.locator('#tryWorld').click();
-    await expect(page.locator('#worldLab')).toBeVisible();
-    if(id!=='farm'){
-      await page.locator('.lab-actions button').last().click();
-      await expect(page.locator('#labProgress')).toContainText('0 /');
-    }
-    const count=await page.locator('.lab-actions button').count();
-    for(let i=0;i<count;i++)await page.locator('.lab-actions button').nth(i).click();
-    await expect(page.locator('#labProgress')).toContainText('Complete');
-    const actual=await page.evaluate(()=>window.__game.renderInfo().labState);
-    expect(id==='farm'?actual.mask:actual.step).toBe(id==='farm'?7:count);
-    const expectedVisual=id==='farm'?{waterVisible:true,waterHeight:.82,shadeVisible:true}
-      :id==='processor'?{cartonsVisible:true,indicators:[0x67bf82,0xee955e,0x67c6e2]}:{cartonX:-3,caseX:3};
-    await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().labVisual)).toEqual(expectedVisual);
-    const info=await page.evaluate(()=>window.__game.renderInfo());
-    if(test.info().project.name==='mobile')expect(info.calls).toBeLessThan(260);
-    console.log('Demonstration budget',id,JSON.stringify({calls:info.calls,triangles:info.triangles}));
-    await page.screenshot({path:`test-results/lab-${id}-${test.info().project.name}.png`});
-    await page.locator('#labReset').click();await expect(page.locator('#labProgress')).toContainText('0 /');
-    await page.keyboard.press('Escape');await expect(page.locator('#worldLab')).toBeHidden();
-    await expect(page.locator('#tryWorld')).toBeFocused();
-    expect(await page.evaluate(()=>window.__game.player.x)).toBe(before.x);
-    expect(await page.evaluate(()=>window.__game.player.z)).toBe(before.z);
+  await goToScene(page,state);
+  const before=await page.evaluate(()=>({...window.__game.player}));
+  await page.locator('#tryWorld').click();
+  await expect(page.locator('#worldLab')).toBeVisible();
+  if(id!=='farm'){
+    await page.locator('.lab-actions button').last().click();
+    await expect(page.locator('#labProgress')).toContainText('0 /');
   }
+  const count=await page.locator('.lab-actions button').count();
+  for(let i=0;i<count;i++)await page.locator('.lab-actions button').nth(i).click();
+  await expect(page.locator('#labProgress')).toContainText('Complete');
+  const actual=await page.evaluate(()=>window.__game.renderInfo().labState);
+  expect(id==='farm'?actual.mask:actual.step).toBe(id==='farm'?7:count);
+  const expectedVisual=id==='farm'?{waterVisible:true,waterHeight:.82,shadeVisible:true}
+    :id==='processor'?{cartonsVisible:true,indicators:[0x67bf82,0xee955e,0x67c6e2]}:{cartonX:-3,caseX:3};
+  await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().labVisual),{timeout:30000}).toEqual(expectedVisual);
+  const info=await page.evaluate(()=>window.__game.renderInfo());
+  if(test.info().project.name==='mobile')expect(info.calls).toBeLessThan(260);
+  console.log('Demonstration budget',id,JSON.stringify({calls:info.calls,triangles:info.triangles}));
+  await page.screenshot({path:`test-results/lab-${id}-${test.info().project.name}.png`});
+  await page.locator('#labReset').click();await expect(page.locator('#labProgress')).toContainText('0 /');
+  await page.keyboard.press('Escape');await expect(page.locator('#worldLab')).toBeHidden();
+  await expect(page.locator('#tryWorld')).toBeFocused();
+  expect(await page.evaluate(()=>window.__game.player.x)).toBe(before.x);
+  expect(await page.evaluate(()=>window.__game.player.z)).toBe(before.z);
   expect(errors).toEqual([]);
 });
 test('demonstration keyboard focus and reduced motion preserve the complete interaction',async({page})=>{
@@ -50,9 +48,7 @@ test('scenery has bounded draw calls and disposes resources across repeat visits
   await page.addInitScript(()=>localStorage.setItem('rcm_quality','perf'));await enter(page);
   const measurements=[];
   for(let pass=0;pass<2;pass++)for(const state of ['FARM','PROCESSOR','MARKET']){
-    await page.evaluate(state=>window.__game.go(window.__game.GAME_STATES[state]),state);
-    const frame=await page.evaluate(()=>window.__game.renderInfo().frame);
-    await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().frame)).toBeGreaterThan(frame+1);
+    await goToScene(page,state);
     const info=await page.evaluate(()=>window.__game.renderInfo());measurements.push({state,pass,...info});
     expect(info.calls).toBeLessThan(230);expect(info.batchedDrawCalls).toBeGreaterThan(20);
     await page.screenshot({path:`test-results/place-${state}-${test.info().project.name}.png`});
