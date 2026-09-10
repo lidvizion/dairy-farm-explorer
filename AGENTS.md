@@ -2,14 +2,14 @@
 
 This is a static, native ES-module Three.js educational game for phones and
 desktop browsers, hosted on GitHub Pages. Read README.md, LEARNING-QA.md and
-SHOWCASE-NOTES.md for architecture, factual sources and current tradeoffs.
+IMPLEMENTATION-NOTES.md for architecture, factual sources and current tradeoffs.
 
 ## Working agreement
 
 - Preserve the user's existing changes. Do not run git commands unless the
   user explicitly authorizes them; the showcase workflow leaves review and
-  commits to Ameya.
-- Human decisions go in QUESTIONS-FOR-AMEYA.md for noninteractive runs.
+  commits to the maintainer.
+- Human decisions go in OPEN-DECISIONS.md for noninteractive runs.
   Continue on reversible defaults; do not purchase assets or introduce secrets.
 - No remote telemetry, runtime API keys, or external CDN dependency.
 - Keep the nine lessons, quiz answer identities, reward deduplication,

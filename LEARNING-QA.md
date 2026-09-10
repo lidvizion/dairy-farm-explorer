@@ -18,7 +18,7 @@ simplifications with the client's educator before public promotion.
 
 The prior review below is retained as history; its test counts describe that
 earlier pass. Current verification and remaining release checks are recorded
-in SHOWCASE-NOTES.md.
+in IMPLEMENTATION-NOTES.md.
 
 Reviewed September 8, 2026. Scope: nine activities, nine quiz questions, the
 film-to-destination flow, desktop/mobile layouts, and interruption behavior.

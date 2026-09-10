@@ -23,8 +23,8 @@ Each destination also has a **Try it in the world** demonstration: build a cow
 comfort corner, follow a batch of drinking milk, or route packages to buyers.
 These are optional, replayable and keyboard-accessible, with visible changes
 to the 3D model and explanatory feedback. They add no mandatory steps or points.
-See [SHOWCASE-NOTES.md](SHOWCASE-NOTES.md) for the latest implementation review
-and [QUESTIONS-FOR-AMEYA.md](QUESTIONS-FOR-AMEYA.md) for human decisions.
+See [IMPLEMENTATION-NOTES.md](IMPLEMENTATION-NOTES.md) for the latest implementation review
+and [OPEN-DECISIONS.md](OPEN-DECISIONS.md) for human decisions.
 
 ---
 
