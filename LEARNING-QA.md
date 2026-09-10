@@ -1,5 +1,25 @@
 # Learning experience review
 
+## September 9 showcase addition: optional world demonstrations
+
+The existing nine lessons and quiz answer identities are unchanged. The new
+demonstrations do not award points or gate badges. Their copy and state rules
+are in `js/config/world-labs.js`.
+
+| Demonstration | Educational scope | Source / limit |
+|---|---|---|
+| Cow comfort corner | Clean drinking water, shade and airflow are parts of cow comfort; other care still matters | [University of Maryland Extension: cattle heat management](https://www.extension.umd.edu/resource/are-your-cattle-cool-tips-managing-summer-heat). No universal claim about particular farm cooling equipment or production gains. |
+| Drinking-milk line | Receiving checks precede acceptance; controlled heating reduces harmful bacteria; refrigerated milk needs a cold chain | [FDA: milk safety from grass to glass](https://www.fda.gov/consumers/consumer-updates/keeping-your-milk-safe-grass-glass), [FDA: pasteurization and refrigeration](https://www.fda.gov/food/buy-store-serve-safe-food/dangers-raw-milk-unpasteurized-milk-can-pose-serious-health-risk). Explicitly a simplified model, without operating temperatures/times or a complete processing recipe. |
+| Delivery table | Household milk cartons and large foodservice cheese cases represent different intended orders; both example products stay refrigerated | Existing packaging and foodservice activities below. This is matching a specified order, not claiming restaurants are prohibited from buying small packages. |
+
+The visual tank indicators are explanatory colors, not actual milk colors or
+temperature measurements. The cow pen is a demonstration model. Review these
+simplifications with the client's educator before public promotion.
+
+The prior review below is retained as history; its test counts describe that
+earlier pass. Current verification and remaining release checks are recorded
+in SHOWCASE-NOTES.md.
+
 Reviewed September 8, 2026. Scope: nine activities, nine quiz questions, the
 film-to-destination flow, desktop/mobile layouts, and interruption behavior.
 This is an engineering/content pass, not client approval or a learner study.

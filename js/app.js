@@ -10,9 +10,13 @@ import { effectiveQuality as determineQuality, isTouchDevice } from './scenes/qu
 import { animateCow } from './scenes/animation.js';
 import { createEnvironmentBuilders } from './scenes/location-environments.js';
 import { dressEnvironment } from './scenes/environment-detail.js';
+import { batchScenery } from './scenes/batch-scenery.js';
+import { addPlaceDetails } from './scenes/place-details.js';
+import { createLabVisual, mountWorldLab } from './scenes/world-lab.js';
 import { playIntro } from './ui/intro.js';
 import { renderJourneyMap, DESTINATIONS } from './ui/journey-map.js';
 import { readPreference, writePreference } from './core/preferences.js';
+import { createTrailGuide } from './ui/trail-guide.js';
 
 /* Application orchestration: UI flow, lesson rendering, and 3D scenes. */
 
@@ -321,8 +325,8 @@ function startRenderLoop(){
   renderer.setAnimationLoop(()=>{
     const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
     try {
-      if(active.update && !modalOpen)active.update(dt,t);
-      if(active.scene && !modalOpen && webglOK)renderer.render(active.scene,camera);
+      if(active.update && !modalOpen && !document.hidden)active.update(dt,t);
+      if(active.scene && !modalOpen && !document.hidden && webglOK)renderer.render(active.scene,camera);
     } catch(error) {
       console.error('The 3D scene stopped; switching to the accessible journey',error);
       renderer.setAnimationLoop(null); enterFallback();
@@ -376,6 +380,7 @@ function applyRendererQuality(){
 function disposeScene3D(scene){
   if(scene.background?.isTexture) scene.background.dispose();
   scene.traverse(obj=>{
+    if(obj.isInstancedMesh) obj.dispose();
     if(obj.geometry) obj.geometry.dispose();
     if(obj.material){
       const mats=Array.isArray(obj.material)?obj.material:[obj.material];
@@ -537,6 +542,7 @@ function isLocationState(){ return [GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_
 ============================================================================ */
 let active={ id:null, scene:null, update:null, dispose:null };
 function setActive(id,{scene=null,update=null,dispose=null}){
+  Audio.hush();
   if(active.dispose) try{active.dispose();}catch(e){}
   if(active.scene) disposeScene3D(active.scene);
   active={id,scene,update,dispose};
@@ -666,6 +672,10 @@ function enterLocation(locId){
   if(locId==='processor') environments.buildProcessor(scene,addObst);
   if(locId==='market')    environments.buildMarket(scene,addObst);
   dressEnvironment(THREE,scene,loc);
+  addPlaceDetails(THREE,scene,loc,B);
+  scene.userData.batchedDrawCalls = batchScenery(THREE,scene);
+  const labVisual = createLabVisual(THREE,scene,locId,B,environments.makeCow);
+  let worldLab = null, trailGuide = null;
   const environmentLabels=[];
   scene.traverse(object=>{ if(object.userData.environmentLabel) environmentLabels.push(object); });
   const labelPosition=new THREE.Vector3();
@@ -719,6 +729,7 @@ function enterLocation(locId){
     $('objectiveProgress').textContent=`${lessonsDone}/${loc.lessons.length} lessons complete`;
     $('nextLesson').textContent=next ? 'Start next lesson →' : Progress.isLocationDone(locId) ? 'Continue the journey →' : 'Take the quiz →';
     $('nextLesson').onclick=()=>next ? startLesson(locId,next.id) : Progress.isLocationDone(locId) ? go(GAME_STATES.MAP) : startQuiz(locId);
+    $('objective').style.setProperty('--chapter-progress', `${lessonsDone/loc.lessons.length*100}%`);
   };
   refreshStations();
 
@@ -736,10 +747,13 @@ function enterLocation(locId){
 
   let tipT=0;
   const update=(dt,t)=>{
+    if(worldLab?.running){worldLab.update(dt);return;}
+    Audio.ambience(locId,dt);
     if(!modalOpen) updatePlayer(dt);
+    trailGuide?.update();
     environmentLabels.forEach(label=>{label.getWorldPosition(labelPosition); label.visible=Math.hypot(labelPosition.x-player.x,labelPosition.z-player.z)<10;});
     // animate beacons + drops
-    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=2.1+(reducedMotion?0:Math.sin(t*2+i)*0.08);} }
+    clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=1.65;} }
       if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6;} if(!modalOpen && Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
       // gentle head-graze bob + tail swish so cows read as alive, not static props
       if(c.userData.type==='cow'&&!reducedMotion) animateCow(c,t); });
@@ -759,31 +773,35 @@ function enterLocation(locId){
         // Pulsing scale + opacity for flashing effect
         const pulse=reducedMotion?1.3:1.3+Math.sin(t*2.5)*0.12;
         dirArrow.scale.set(pulse,pulse,1);
-        dirArrow.material.opacity=0.85+Math.sin(t*2.5)*0.15;
+        dirArrow.material.opacity=reducedMotion?1:0.85+Math.sin(t*2.5)*0.15;
         dirArrow.visible=true;
       } else {
         dirArrow.visible=false;
       }
-      updateLocHint(loc,beacons,quizG); checkAutoInteract();
+      updateLocHint(loc,beacons,quizG,trailGuide?.hint); checkAutoInteract();
     }
   };
 
   setActive(locId==='farm'?GAME_STATES.FARM:locId==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET,{
-    scene,update,dispose:()=>{ setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
+    scene,update,dispose:()=>{ worldLab?.dispose(); trailGuide?.dispose(); setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
   });
+  worldLab = mountWorldLab({id:locId,visual:labVisual,camera,resetInput,reducedMotion,onLesson:lesson=>startLesson(locId,lesson)});
+  if(locId==='farm')trailGuide=createTrailGuide(player,isTouch);
   setAfterLessonReturn(refreshStations);
   document.addEventListener('rcm:progresschange',refreshStations);
   active.clickables=clickables; active.loc=loc; active.beacons=beacons; active.quizG=quizG;
+  active.worldLab=worldLab;
 
   function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} 💧 Golden milk drop!`); } }
   active.collectDrop=collectDrop;
 
   caption('');
-  toast(`${loc.badge.emoji} ${loc.title}`);
+  $('toasts').replaceChildren();
+  Audio.arrival(loc.order-1);
   focusHeading($('objectiveTitle'));
 }
 
-function updateLocHint(loc,beacons,quizG){
+function updateLocHint(loc,beacons,quizG,guideHint=''){
   const hint=$('hint'), act=$('touchAct');
   let near=null,nd=4.2;
   for(const b of beacons){ const d=Math.hypot(b.position.x-player.x,b.position.z-player.z); if(d<nd){nd=d;near=b;} }
@@ -803,9 +821,9 @@ function updateLocHint(loc,beacons,quizG){
     }
   } else {
     hint.classList.remove('action');
-    hint.innerHTML = isTouch
+    hint.innerHTML = guideHint || (isTouch
       ? 'Left stick to move · right stick to look · or tap <b>📋 Steps</b> to jump to any lesson.'
-      : 'Walk (W A S D or arrows) to a glowing station — it starts automatically when you get close, or use <b>📋 Steps</b>.';
+      : 'Walk (W A S D or arrows) to a numbered sign — it starts automatically when you get close, or use <b>📋 Steps</b>.');
   }
   // context-aware interact button (mobile) — only touch DOM when state changes
   const rs = ready?'1':'0';
@@ -815,6 +833,7 @@ function updateLocHint(loc,beacons,quizG){
 /* interact: nearest station via E / touch button / auto-trigger when very close */
 let lastAutoInteractTime=0;
 function interactNearest(){
+  if(active.worldLab?.running)return;
   if(active.id===GAME_STATES.MAP){ return; }
   if(!isLocationState()||!active.beacons) return;
   const loc=active.loc;
@@ -844,6 +863,7 @@ function checkAutoInteract(){
   interactNearest();
 }
 function tryClick(cx,cy){
+  if(active.worldLab?.running)return;
   if(!isLocationState()||!active.clickables) return;
   const hits=ray(cx,cy,active.clickables);
   for(const h of hits){ const o=resolveTarget(h.object); if(!o)continue;
@@ -865,18 +885,20 @@ function activateStation(g){
 function makeBeacon(emoji,color,labelText){
   const g=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.5,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.85,side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=0.06; g.add(ring);
-  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.5,1.4,12,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.16,depthWrite:false,side:THREE.DoubleSide})); pillar.position.y=.7; g.add(pillar);
+  const pillar=B.box(.12,1.55,.12,B.lamb(0x856c4d),0,.8,0); g.add(pillar);
+  const board=B.box(1.6,1.25,.14,B.lamb(0x234d39),0,1.65,-.06); g.add(board);
+  g.add(B.box(1.75,.1,.24,B.lamb(0xe2be76),0,2.32,-.06));
   const canvas=document.createElement('canvas'); canvas.width=canvas.height=128;
   const ctx=canvas.getContext('2d'); ctx.beginPath();ctx.arc(64,64,54,0,Math.PI*2);ctx.fillStyle='#193e30';ctx.fill();ctx.strokeStyle='#f4e4ba';ctx.lineWidth=5;ctx.stroke();
   ctx.fillStyle='#fff9ee';ctx.font='600 52px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(/^\d/.test(labelText)?labelText[0]:'?',64,66);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true}));icon.scale.set(1.35,1.35,1);icon.position.y=2.1;g.add(icon);
-  const label=B.labelSprite(labelText,0.85); label.position.y=3.85; g.add(label);
+  const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true}));icon.scale.set(1,1,1);icon.position.set(0,1.65,.12);g.add(icon);
+  const label=B.labelSprite(labelText,0.85); label.position.y=2.75; g.add(label);
   g.userData={ring,pillar,icon,label};
   return g;
 }
-function setBeaconDone(g,done,color){ g.userData.ring.material.color.set(done?0x9e9e9e:color); g.userData.ring.material.opacity=done?0.4:0.85; g.userData.pillar.visible=!done; }
-function setBeaconLocked(g,locked){ g.userData.pillar.visible=!locked; g.userData.ring.material.color.set(locked?0x9e9e9e:0xf5b21e); g.userData.ring.material.opacity=locked?0.4:0.85; g.userData.icon.material.opacity=locked?0.5:1; g.userData.icon.material.transparent=true; }
+function setBeaconDone(g,done,color){ g.userData.ring.material.color.set(done?0xe5bb69:color); g.userData.ring.material.opacity=done?1:0.65; }
+function setBeaconLocked(g,locked){ g.userData.ring.material.color.set(locked?0x9e9e9e:0xf5b21e); g.userData.ring.material.opacity=locked?0.4:0.85; g.userData.icon.material.opacity=locked?0.5:1; g.userData.icon.material.transparent=true; }
 function makeDrop(){ const g=new THREE.Group(); const m=B.lamb(0xf5b21e,{emissive:0x7a5600,emissiveIntensity:0.4}); const ball=new THREE.Mesh(new THREE.SphereGeometry(0.32,12,10),m); const tip=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.45,12),m); tip.position.y=0.42; g.add(ball); g.add(tip); return g; }
 
 /* ---------------- COMPLETION ---------------- */
@@ -993,7 +1015,11 @@ $('btnMap').onclick=()=>{ Audio.click(); go(GAME_STATES.MAP); };
 $('btnSteps').onclick=showStepsMenu;
 $('btnHelp').onclick=showHelp;
 $('btnReset').onclick=()=>{ Audio.click(); if(isLocationState()){ resetPlayer(); toast('Position reset'); } else { toast('Nothing to reset here'); } };
-$('btnSound').onclick=()=>{ const on=Audio.toggle(); $('btnSound').innerHTML=(on?'🔊':'🔇')+' <span class="lbl">Sound</span>'; $('btnSound').setAttribute('aria-pressed',on?'true':'false'); };
+function syncSoundButton(){
+  $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
+  $('btnSound').setAttribute('aria-pressed',String(Audio.enabled));
+}
+$('btnSound').onclick=()=>{ Audio.toggle(); syncSoundButton(); };
 
 // quality segmented control
 $('qualitySeg').querySelectorAll('button').forEach(b=>{
@@ -1023,6 +1049,7 @@ function showResumeBanner(){
 }
 
 async function boot(){
+  syncSoundButton();
   validateLessonContent(LOCATIONS);
   showResumeBanner();
   if(!Progress.persistenceAvailable)showPersistenceNotice();
@@ -1032,14 +1059,12 @@ async function boot(){
   // Initialization continues even on a slow connection; the map stays usable.
   await startEngine();
   $('boot').classList.add('hidden');
-  // sound button initial label
-  $('btnSound').innerHTML=(Audio.enabled?'🔊':'🔇')+' <span class="lbl">Sound</span>';
 }
 
 // debug hooks for automated testing / QA
 window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
 window.__RCM_DEBUG = false;
-window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio(), antialias:renderer?.getContext().getContextAttributes()?.antialias, resizeCount, aspect:camera?.aspect});
+window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, triangles:renderer?.info.render.triangles||0, geometries:renderer?.info.memory.geometries||0, textures:renderer?.info.memory.textures||0, batchedDrawCalls:active.scene?.userData.batchedDrawCalls||0, labState:active.scene?.children.find(o=>o.userData.labState)?.userData.labState, labVisual:active.worldLab?.inspect(), frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio(), antialias:renderer?.getContext().getContextAttributes()?.antialias, resizeCount, aspect:camera?.aspect});
 
 configureLessonRenderer({ openModal, closeModal, fireConfetti, navigate: go });
 

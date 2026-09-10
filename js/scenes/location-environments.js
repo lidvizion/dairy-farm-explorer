@@ -267,5 +267,5 @@ function buildMarket(scene,addObst){
 function makeChef(){ const {box,cyl,ball,lamb}=B; const g=new THREE.Group(); g.add(cyl(0.4,0.5,1.4,lamb(0xffffff),0,0.9,0,10)); g.add(ball(0.35,lamb(0xe8b98f),0,1.9,0)); g.add(cyl(0.36,0.36,0.4,lamb(0xffffff),0,2.3,0,12)); g.add(ball(0.34,lamb(0xffffff),0,2.6,0,false)); return g; }
 
 
-return { buildFarm, buildProcessor, buildMarket };
+return { buildFarm, buildProcessor, buildMarket, makeCow };
 }

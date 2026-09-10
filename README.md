@@ -19,6 +19,13 @@ The journey (Farm → Processor → Grocery/Foodservice):
 Each location has **3 short lessons + a 3-question quiz + a badge**. Nine lessons
 and three badges total. Target play time ≈ 7–10 minutes.
 
+Each destination also has a **Try it in the world** demonstration: build a cow
+comfort corner, follow a batch of drinking milk, or route packages to buyers.
+These are optional, replayable and keyboard-accessible, with visible changes
+to the 3D model and explanatory feedback. They add no mandatory steps or points.
+See [SHOWCASE-NOTES.md](SHOWCASE-NOTES.md) for the latest implementation review
+and [QUESTIONS-FOR-AMEYA.md](QUESTIONS-FOR-AMEYA.md) for human decisions.
+
 ---
 
 ## Run it locally
@@ -57,6 +64,12 @@ dependencies and test artifacts are not published. `npm run vendor`
 reproduces the checked-in Three.js files from the exact dependency version
 and preserves the upstream MIT license. Review rendering tests before any
 engine upgrade. No database or application server is required.
+
+For a local package audit, run `node scripts/verify-site.mjs` after packaging.
+`node scripts/smoke-package.mjs` exercises the actual package under the
+`/dairy-farm-explorer/` project prefix using Playwright Chromium. Neither script
+publishes anything. `node scripts/verify-vendor.mjs` checks upstream byte equality
+without using git; CI still performs its checked-in vendor comparison.
 
 ---
 
@@ -101,6 +114,11 @@ rendering logic.
 | Farm, processing, and market environment builders | `js/scenes/location-environments.js` |
 | Instanced trees, paths, atmosphere | `js/scenes/environment-detail.js` |
 | Rig-aware prop animation | `js/scenes/animation.js` |
+| Demonstration copy and pure interaction state | `js/config/world-labs.js` |
+| Live 3D demonstration models, camera and accessible controls | `js/scenes/world-lab.js` |
+| Fields, planted plazas, contact shading and clouds | `js/scenes/place-details.js` |
+| Immutable scenery draw-call batching | `js/scenes/batch-scenery.js` |
+| Action-driven first-use movement guidance | `js/ui/trail-guide.js` |
 
 **Localization (future):** educational copy is separated from rendering.
 Generic control labels still need extraction to a shared locale dictionary.
