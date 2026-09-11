@@ -628,7 +628,7 @@ dependency; the engine was not upgraded.
 - [OpenAI's AGENTS.md documentation](https://developers.openai.com/codex/guides/agents-md/):
   a concise root instruction file is worthwhile here because the mobile,
   factual-content and vendor/deployment constraints are easy to accidentally
-  lose between sessions. The OpenAI Docs skill informed this handoff addition.
+  lose between sessions.
 - New dairy claims were checked against FDA and university extension sources;
   exact links and explanatory limits are in LEARNING-QA.md.
 

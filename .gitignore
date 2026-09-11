@@ -38,3 +38,6 @@ artifacts/
 
 # Licensed 3D asset - Fab EULA forbids standalone redistribution in a public repo
 assets/models/*.glb
+
+# internal working correspondence, not part of the project
+AGENT-REQUESTS.md
