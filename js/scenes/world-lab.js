@@ -1,21 +1,24 @@
+import { createSceneKit } from './scene-kit.js';
 import { WORLD_LABS, advanceLab } from '../config/world-labs.js';
 import { Audio } from '../core/audio.js';
 
 // A replaceable visual boundary: future approved models can replace these groups
 // without changing the interaction state, accessible controls, or lesson system.
 export function createLabVisual(THREE, scene, id, B, makeCow) {
+  const config=WORLD_LABS[id];
+  if(!config)return null;
+  const model=config.model;
   const root = new THREE.Group(); root.position.set(0, 0, 17);
   root.userData.dynamic = true; root.visible = false; scene.add(root);
   const { box, cyl, ball, lamb } = B;
   const cream = lamb(0xf6edda), wood = lamb(0x88664b), green = lamb(0x326c51);
   const blue = lamb(0x65bbcf), steel = lamb(0xb8cacb), gold = lamb(0xe8b657);
-  root.add(cyl(5.3, 5.6, .35, cream, 0, .225, 0, 48));
-  root.add(cyl(5.6, 5.6, .12, green, 0, .06, 0, 48));
+  root.add(createSceneKit(THREE,B).piece({kind:'platform',color:0xf6edda,...config.platform}));
   const pieces = {};
   const sign = (text, x, y, z, size = .65) => {
     const sprite = B.labelSprite(text, size); sprite.position.set(x, y, z); root.add(sprite); return sprite;
   };
-  if (id === 'farm') {
+  if (model === 'comfort') {
     root.add(box(6.7, .08, 4, lamb(0x8a9c67), 0, .45, 0));
     for (const x of [-3, 0, 3]) root.add(box(.14, 1, .14, wood, x, .9, -2));
     for (const y of [.65, 1.2]) root.add(box(6.2, .12, .12, wood, 0, y, -2));
@@ -31,9 +34,9 @@ export function createLabVisual(THREE, scene, id, B, makeCow) {
     pieces.fan = new THREE.Group(); pieces.fan.position.set(3.1, 2.3, -1);
     for (let i = 0; i < 3; i++) { const blade = box(.18, 1.15, .08, gold); blade.rotation.z = i * Math.PI / 3; pieces.fan.add(blade); }
     pieces.fan.add(ball(.13, green)); root.add(pieces.fan);
-    sign('WATER', 2.2, 1.2, 2, .5);
-  } else if (id === 'processor') {
-    const labels = ['CHECK', 'HEAT', 'COOL'];
+    sign(config.labels[0], 2.2, 1.2, 2, .5);
+  } else if (model === 'line') {
+    const labels = config.labels;
     pieces.lights = []; pieces.cartons = new THREE.Group();
     for (let i = 0; i < 3; i++) {
       const x = (i - 1) * 3;
@@ -50,8 +53,8 @@ export function createLabVisual(THREE, scene, id, B, makeCow) {
       pieces.cartons.add(box(.44, .2, .44, blue, -.8 + i * .65, 1.12, 2.15));
     }
     root.add(pieces.cartons);
-  } else {
-    for (const [x, color, label] of [[-3, green, 'GROCERY'], [3, wood, 'KITCHEN']]) {
+  } else if(model === 'delivery') {
+    for (const [x, color, label] of [[-3, green, config.labels[0]], [3, wood, config.labels[1]]]) {
       root.add(box(2.4, 2.4, 1.5, cream, x, 1.55, -1));
       root.add(box(2.7, .18, 2, color, x, 2.9, -.6));
       root.add(box(1.7, 1.35, .1, blue, x, 1.7, -.2));
@@ -66,7 +69,13 @@ export function createLabVisual(THREE, scene, id, B, makeCow) {
     pieces.case.add(box(1.35, .85, .9, gold, 0, .85, 0));
     pieces.case.add(box(.15, .86, .91, cream, 0, .85, 0));
     root.add(pieces.carton, pieces.case);
-    sign('REFRIGERATED DELIVERY', 0, .7, 3.5, .7);
+    sign(config.labels[2], 0, .7, 3.5, .7);
+  }
+  if(model === 'steps') {
+    pieces.steps=config.actions.map((action,i)=>{
+      const block=box(1,1,1,lamb(0x62736e),(i-(config.actions.length-1)/2)*1.6,.9,0);
+      root.add(block); sign(config.labels?.[i] || action,block.position.x,2.2,0,.5); return block;
+    });
   }
   let state = { mask: 0, step: 0 }, time = 0;
   const moves = [];
@@ -77,27 +86,29 @@ export function createLabVisual(THREE, scene, id, B, makeCow) {
   function sync(next, animate = false) {
     moves.length=0;
     state = next;
-    if (id === 'farm') {
+    if (model === 'comfort') {
       const hadWater=pieces.water.visible;
       pieces.water.visible = !!(state.mask & 1); pieces.shade.visible = !!(state.mask & 2);
       if(animate && !hadWater)pieces.water.position.y=.5;
       move(pieces.water,1.6,.82,1.5,animate);
     }
-    if (id === 'processor') {
+    if (model === 'line') {
       pieces.lights.forEach((lamp, i) => lamp.material.color.setHex(state.step > i ? [0x67bf82, 0xee955e, 0x67c6e2][i] : 0x62736e));
       pieces.cartons.visible = state.step === 3;
     }
-    if (id === 'market') {
+    if (model === 'delivery') {
       move(pieces.carton,state.step > 0 ? -3 : 0, 0, state.step > 0 ? .7 : 2,animate);
       pieces.case.visible = state.step > 0;
       move(pieces.case,state.step > 1 ? 3 : 0, 0, state.step > 1 ? .7 : 2,animate);
     }
+    pieces.steps?.forEach((block,i)=>block.material.color.setHex((config.rule==='toggle' ? state.mask & (1<<i) : state.step>i) ? 0x67bf82 : 0x62736e));
     root.userData.labState = { mask: state.mask, step: state.step };
   }
   sync(state);
   return { root, sync, inspect() {
-    if(id==='farm')return {waterVisible:pieces.water.visible,waterHeight:pieces.water.position.y,shadeVisible:pieces.shade.visible};
-    if(id==='processor')return {cartonsVisible:pieces.cartons.visible,indicators:pieces.lights.map(lamp=>lamp.material.color.getHex())};
+    if(model==='comfort')return {waterVisible:pieces.water.visible,waterHeight:pieces.water.position.y,shadeVisible:pieces.shade.visible};
+    if(model==='line')return {cartonsVisible:pieces.cartons.visible,indicators:pieces.lights.map(lamp=>lamp.material.color.getHex())};
+    if(pieces.steps)return {steps:pieces.steps.map(b=>b.material.color.getHex())};
     return {cartonX:pieces.carton.position.x,caseX:pieces.case.position.x};
   }, update(dt, reducedMotion) {
     if (!root.visible) return;
@@ -110,19 +121,20 @@ export function createLabVisual(THREE, scene, id, B, makeCow) {
     }
     if(reducedMotion)return;
     time += dt;
-    if (id === 'farm' && (state.mask & 4)) pieces.fan.rotation.z += dt * 4;
-    if (id === 'processor' && state.step === 3) pieces.cartons.position.x = Math.sin(time) * .18;
+    if (model === 'comfort' && (state.mask & 4)) pieces.fan.rotation.z += dt * 4;
+    if (model === 'line' && state.step === 3) pieces.cartons.position.x = Math.sin(time) * .18;
   } };
 }
 
 export function mountWorldLab({ id, visual, camera, resetInput, reducedMotion, onLesson }) {
   const config = WORLD_LABS[id];
+  if(!config)return null;
   const panel = document.createElement('section'); panel.id = 'worldLab'; panel.hidden = true;
   panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'labTitle');
   panel.innerHTML = `<div class="lab-heading"><div><p class="eyebrow">${config.kicker} · OPTIONAL</p><h2 id="labTitle">${config.title}</h2></div><button class="lab-close" aria-label="Leave demonstration">×</button></div><p id="labStatus" role="status"></p><div class="lab-actions"></div><div class="lab-footer"><span id="labProgress"></span><button id="labReset">Start again</button><button id="labLesson" hidden>Explore the lesson →</button></div>`;
   document.body.append(panel);
   const launch = document.createElement('button'); launch.id = 'tryWorld'; launch.className = 'btn world-launch';
-  launch.textContent = 'Try it in the world ↗'; document.getElementById('objective').append(launch);
+  launch.textContent = `Optional: ${config.launchLabel || config.title} ↗`; document.getElementById('objective').append(launch);
   let state, saved = null;
   let previousAspect = null;
   const status = panel.querySelector('#labStatus'), actions = panel.querySelector('.lab-actions');
@@ -138,11 +150,11 @@ export function mountWorldLab({ id, visual, camera, resetInput, reducedMotion, o
   const background = ['hud', 'objective', 'joy', 'lookJoy', 'touchAct', 'worldCanvas'];
   function render() {
     status.textContent = state.complete ? config.finish : state.note || config.intro;
-    const count = id === 'farm' ? [1, 2, 4].filter(bit => state.mask & bit).length : state.step;
+    const count = config.rule === 'toggle' ? config.actions.filter((_,i) => state.mask & (1<<i)).length : state.step;
     panel.querySelector('#labProgress').textContent = `${count} / ${config.actions.length} discoveries${state.complete ? ' · Complete' : ''}`;
     panel.querySelector('#labLesson').hidden = !state.complete;
     controls.forEach((button, i) => {
-      const done = id === 'farm' ? !!(state.mask & (1 << i)) : state.step > i;
+      const done = config.rule === 'toggle' ? !!(state.mask & (1 << i)) : state.step > i;
       button.setAttribute('aria-pressed', String(done));
       button.dataset.done = String(done);
     });

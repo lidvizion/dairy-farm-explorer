@@ -10,7 +10,7 @@ export function addPlaceDetails(THREE, scene, loc, B) {
     mesh.instanceMatrix.needsUpdate=true; mesh.computeBoundingSphere(); mesh.receiveShadow=true; scene.add(mesh); return mesh;
   }
   // A long agricultural horizon, instead of a ring of identical trees alone.
-  if (loc.id === 'farm') {
+  if (loc.environment.landscape === 'fields') {
     const rows = [], crops = [];
     for(let r=0;r<12;r++) {
       rows.push([31+r*1.3,.035,-6, .75, .08, 39]);
@@ -49,13 +49,13 @@ export function addPlaceDetails(THREE, scene, loc, B) {
     if(i%3===0)flowers.push([x,.4,z,.1,.1,.1]);
   }
   instances(new THREE.SphereGeometry(1,6,4),0x7e8f53,leaves);
-  instances(new THREE.SphereGeometry(1,5,3),loc.id==='market'?0xd8a261:0xe6cc82,flowers);
+  instances(new THREE.SphereGeometry(1,5,3),loc.environment.flowerColor || 0xe6cc82,flowers);
   const clouds=[];
   for(let i=0;i<18;i++)clouds.push([-70+Math.floor(i/3)*27+(i%3)*3,26+(i%3)*.65,-80+(Math.floor(i/3)%2)*20,5,1.5+(i%3)*.5,3]);
   instances(new THREE.SphereGeometry(1,12,8),0xf4efdf,clouds);
   // Soft contact patches ground the props even when real-time shadows are off.
-  const contacts = loc.id==='farm' ? [[-14,-2,8,5],[17,-3,4,3],[16,4,2,4],[-22,-8,2.2,2.2],...Array.from({length:4},(_,i)=>[-13+i*2.8,-10-(i%2)*2,1.6,.8])]
-    : loc.id==='processor' ? [[0,-6,13,9],[-16,6,2.4,4],[12,8,4,3]] : [[-12,-6,7,6],[12,-6,7,6],[-2,3,1.4,1.2]];
+  const contacts = loc.environment.contacts || [];
+  if(!contacts.length)return;
   const shadow = new THREE.InstancedMesh(new THREE.CircleGeometry(1,24),new THREE.MeshBasicMaterial({color:0x3e482b,transparent:true,opacity:.13,depthWrite:false}),contacts.length);
   contacts.forEach(([x,z,w,d],i)=>{dummy.position.set(x,.057,z);dummy.rotation.set(-Math.PI/2,0,0);dummy.scale.set(w,d,1);dummy.updateMatrix();shadow.setMatrixAt(i,dummy.matrix);});
   shadow.instanceMatrix.needsUpdate=true;shadow.computeBoundingSphere();scene.add(shadow);

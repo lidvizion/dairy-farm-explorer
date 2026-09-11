@@ -1,8 +1,9 @@
 import { LOCATIONS, SCORING } from '../config/content.js';
 export const lessonIds = LOCATIONS.flatMap(l => l.lessons.map(s => `${l.id}.${s.id}`));
 export const locationIds = LOCATIONS.map(l => l.id);
-export const questionIds = LOCATIONS.flatMap(l => l.quiz.map((_, i) => `${l.id}.${i}`));
-export const collectibleIds = LOCATIONS.flatMap(l => [0,1,2].map(i => `${l.id}.drop${i}`));
+export const questionIds = LOCATIONS.flatMap(l => l.quiz.map((q) => `${l.id}.${q.id ?? l.quiz.indexOf(q)}`));
+export const scoredQuestionIds = LOCATIONS.flatMap(l => l.quiz.filter(q=>q.mode !== 'fact').map(q=>`${l.id}.${q.id ?? l.quiz.indexOf(q)}`));
+export const collectibleIds = LOCATIONS.flatMap(l => (l.drops || []).map((_,i) => `${l.id}.drop${i}`));
 const flags = (source, ids) => Object.fromEntries(ids.filter(id => source?.[id] === true).map(id => [id, true]));
 const number = (value, max) => {
   const n = typeof value === 'number' || typeof value === 'string' ? Number(value) : 0;

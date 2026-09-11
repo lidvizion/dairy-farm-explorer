@@ -1,12 +1,8 @@
-import { LOCATIONS } from '../config/content.js';
+import { MODULE, LOCATIONS } from '../config/content.js';
 import { Progress } from '../core/progress.js';
 import { el } from './dom.js';
 
-export const DESTINATIONS = {
-  farm: { title: 'The dairy farm', image: 'assets/environments/dairy-farm-morning.jpg', topic: 'Meet the cows. Follow the milk.', duration: 'Animal care · Cooling · Farm resources' },
-  processor: { title: 'Processing & packaging', image: 'assets/environments/processing-facility.jpg', topic: 'Discover what milk becomes.', duration: 'Quality checks · Dairy products · Packaging' },
-  market: { title: 'The market & kitchen', image: 'assets/environments/market-kitchen.jpg', topic: 'Bring California dairy to the table.', duration: 'The seal · Cold storage · Farm to flavor' }
-};
+export const DESTINATIONS = Object.fromEntries(LOCATIONS.map(l=>[l.id,l.card]));
 
 // A responsive, keyboard-accessible chapter selector. The route is illustrative,
 // not a set of real farm addresses. No WebGL or video-frame capture dependency.
@@ -14,7 +10,7 @@ export function renderJourneyMap(root, { onEnter, onReplay, onComplete, onLeader
   root.replaceChildren();
   root.classList.remove('hidden');
   const heading = el('header', 'journey-heading');
-  heading.innerHTML = '<p class="eyebrow">THE CALIFORNIA FIELD GUIDE</p><h1>One ingredient.<br>Three extraordinary stops.</h1><p>Explore the places, people, and decisions behind dairy.<br>Three lessons and one badge at every stop.</p>';
+  heading.innerHTML = MODULE.mapHeading;
   const replay = el('button', 'journey-replay', '↺ Replay the opening film');
   replay.onclick = onReplay;
   heading.append(replay);
@@ -42,7 +38,7 @@ export function renderJourneyMap(root, { onEnter, onReplay, onComplete, onLeader
     const progress = el('span', 'journey-progress', `${Progress.locationLessonsDone(loc.id)}/${loc.lessons.length} lessons`);
     content.append(button, progress); card.append(img, content); cards.append(card);
   });
-  const footer = el('footer', 'journey-footer', `<span>Illustrative locations · ${Progress.persistenceAvailable ? 'Progress saved on this device' : 'Progress kept for this session only'}</span><span>Map imagery: Google Earth · Landsat / Copernicus · Data SIO, NOAA</span>`);
+  const footer = el('footer', 'journey-footer', `<span>Illustrative locations · ${Progress.persistenceAvailable ? 'Progress saved on this device' : 'Progress kept for this session only'}</span><span>${MODULE.mapCredit}</span>`);
   root.append(heading, cards, footer);
   return () => { root.classList.add('hidden'); root.replaceChildren(); };
 }

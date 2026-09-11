@@ -1,5 +1,64 @@
 # Open decisions
 
+## Shared leaderboard follow-up
+
+The leaderboard remains device-local after checking hosted options. Details,
+sources and the owner actions are in [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
+The recommended future route is an owner-created free Supabase project, only
+if its documented non-secret publishable key is explicitly permitted. No
+account, key, hosted board or remote score submission was created. Public
+client scores remain spoofable even with an account and database-side rules.
+The arcade presentation, blank-name cow aliases and validation improvements
+are complete locally; they do not depend on this decision.
+
+## Presentation release candidate: current priorities
+
+Freeze feature scope for tomorrow. Keep the procedural cow and content-pack
+refactor, including the subsequent route-confirmation and brand-palette work.
+Current-run evidence and the publication/device gate are recorded in
+`docs/RELEASE-CHECKLIST.md` and `IMPLEMENTATION-NOTES.md`.
+
+Highest-value human action: test the actual candidate on an iPhone/Safari and
+a mid-range Android. Record the URL/build and device results; the currently
+published build may not contain the local candidate. Emulator screenshots and
+draw-call counts do not establish phone frame rate or Safari audio behavior.
+
+Chase the missing client question attachment, film distribution rights (the
+Google Earth watermark remains intact), existing brand/photo rights and the
+module/maintenance scope before the proposal is final. If film rights cannot
+be established, use a verified film-free package or an approved replacement;
+skipping playback is not removal from the downloadable site. Do not silently
+change the current film while that decision is pending.
+
+The purchased cow is retired following the maintainer's licence decision.
+The candidate uses an original authored vertex mesh: 414 triangles per cow,
+with separate rigid head and tail sections for idle motion. The converted GLB
+is kept only under ignored `cow assets/retired/`, outside the deployed assets.
+The independent module fixture proves the reuse seam, not completed client
+content for module two.
+
+Optional infrastructure review is requested in `AGENT-REQUESTS.md`. It does not
+block local testing and does not authorize agent publishing or git operations.
+
+
+## September 10 client feedback / tomorrow's presentation
+
+The website palette is now applied; see `docs/BRAND-REFERENCE.md` for fetched
+CSS evidence and `docs/CLIENT-HANDOFF.md` for the complete response to feedback.
+Final brand/font approval remains open. The procedural cow and reusable module
+work remain local and uncommitted; the maintainer owns review and publishing.
+
+Chase the missing client question attachment before writing new questions or
+facts. The pack supports both modes already. The account lead should reconcile the $3k
+package with ~$1k per module, specify how many are additional, and define the
+$100/month maintenance scope. $3k plus twelve monthly payments is $4,200;
+four $1k modules plus those payments is $5,200, before any other charges.
+
+Defer inverted look until client greenlight. Confirm vertical-only versus
+both axes if resumed; a handedness swap is a separate preference. Keep mobile
+Auto without realtime shadows. Physical Android/iPhone checks remain open.
+No external agent dispatch is required for this feedback pass.
+
 September 9, 2026. None of these blocked the implementation. No credentials,
 paid services, git commands, publishing or external messages were used.
 
@@ -132,3 +191,15 @@ No assets, loader, placeholder URL, network request or new dependency was added.
 this patch, especially close approaches at storefront corners and sign rear faces.
 Physical Android and iPhone/Safari testing remains more valuable than more asset
 research until the cow conversion pipeline has an owner.
+
+## September 10 procedural cow follow-up
+
+The procedural rebuild is complete in `js/scenes/cow.js`, shared by the herd
+and demonstration through the existing `makeCow` interface. It uses three
+draw calls and fewer than 2,800 triangles per animal, with no textures. See
+IMPLEMENTATION-NOTES.md for matched before/after scene measurements.
+
+An authored cow remains a separate future decision. The current recommendation
+is to use the improved procedural version for this game's normal viewing range;
+evaluate an authored model only if close-up presentation or richer animation
+becomes a requirement. No download, conversion, purchase or loader was added.

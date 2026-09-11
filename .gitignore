@@ -31,3 +31,10 @@ logs/
 *.tmp
 .cache/
 test-results-throttled/
+
+# local working files, never committed
+cow assets/
+artifacts/
+
+# Licensed 3D asset - Fab EULA forbids standalone redistribution in a public repo
+assets/models/*.glb

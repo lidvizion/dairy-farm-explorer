@@ -43,11 +43,22 @@ async function solveLesson(page, lesson, { mistakes = false, screenshot = false 
       for(const step of [...g.steps].reverse()) await host.getByRole('button',{name:step.t,exact:false}).click();
       await host.getByRole('button',{name:/Start cooling/}).click();
       await expect(host.locator('.quiz-feedback')).toContainText('Not quite');
+      await expect(host.locator('.route-step.connected')).toHaveCount(0);
       await host.getByRole('button',{name:'Undo last step'}).click();
       await expect(host.locator('.activity-counter')).toContainText('3 of 4');
       await host.getByRole('button',{name:'Clear route'}).click();
     }
-    for (const step of g.steps) await host.getByRole('button', { name: step.t, exact: false }).click();
+    for (const [index, step] of g.steps.entries()) {
+      await host.getByRole('button', { name: step.t, exact: false }).click();
+      await expect(host.locator('.route-step.connected')).toHaveCount(index + 1);
+      await expect(host.locator('.quiz-feedback')).toContainText(`Step ${index + 1} connected`);
+      await expect(host.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
+      if (index === 0) {
+        await host.getByRole('button', { name: 'Undo last step' }).click();
+        await expect(host.locator('.route-step.connected')).toHaveCount(0);
+        await host.getByRole('button', { name: step.t, exact: false }).click();
+      }
+    }
     await host.getByRole('button', { name: /Start cooling/ }).click();
   } else if (g.type === 'match') {
     for (const left of g.left) {
@@ -165,7 +176,7 @@ test('first chapter renders continuously; movement, reset, quality and quiz prox
   await expect.poll(() => page.evaluate(() => window.__game.player.z)).toBeLessThan(start - 1);
   await page.keyboard.up('KeyW');
   await page.getByRole('button', { name: 'Reset position' }).click();
-  expect(await page.evaluate(() => window.__game.player.z)).toBe(8);
+  expect(await page.evaluate(() => window.__game.player.z)).toBe(LOCATIONS[0].spawn.z);
   await page.getByRole('button', { name: 'Help', exact: true }).click();
   await page.getByRole('button', { name: 'Performance', exact: true }).click();
   expect(await page.evaluate(() => window.__game.renderInfo().shadows)).toBe(false);

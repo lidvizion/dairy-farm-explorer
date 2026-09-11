@@ -19,7 +19,7 @@ The journey (Farm → Processor → Grocery/Foodservice):
 Each location has **3 short lessons + a 3-question quiz + a badge**. Nine lessons
 and three badges total. Target play time ≈ 7–10 minutes.
 
-Each destination also has a **Try it in the world** demonstration: build a cow
+Each destination also has a named **optional demonstration**: build a cow
 comfort corner, follow a batch of drinking milk, or route packages to buyers.
 These are optional, replayable and keyboard-accessible, with visible changes
 to the 3D model and explanatory feedback. They add no mandatory steps or points.
@@ -75,9 +75,14 @@ without using git; CI still performs its checked-in vendor comparison.
 
 ## Where to edit things (for non-developers)
 
-Core content lives in [js/config/content.js](js/config/content.js). Visual
-briefs, photos, and per-answer explanations live in
-[js/config/learning-experience.js](js/config/learning-experience.js):
+The selected dairy pack lives in [js/modules/dairy/](js/modules/dairy/).
+Educational copy is in `content.js`; visual briefs and answer feedback are in
+`learning.js`; `pack.js` connects branding, scenes and demonstrations.
+The exports in `js/config/` are compatibility views of the selected pack.
+See [Adding a module](docs/ADDING-A-MODULE.md) for another topic, environment
+pieces, and the one-field question/fun-fact switch.
+
+The pack uses these content fields:
 
 | You want to change… | Edit this |
 |---|---|
@@ -100,7 +105,9 @@ rendering logic.
 | Responsibility | Module |
 |---|---|
 | Page entry point and game orchestration | `js/app.js` |
-| Content, locations, scoring, links | `js/config/content.js` |
+| Selected pack and compatibility content exports | `js/config/module.js`, `js/config/content.js` |
+| Dairy copy, visuals, branding and environment choices | `js/modules/dairy/` |
+| Module authoring and fact/question schema | `docs/ADDING-A-MODULE.md` |
 | Local progress and analytics adapter | `js/core/progress.js` |
 | Synthesized game audio | `js/core/audio.js` |
 | Shared DOM helpers | `js/ui/dom.js` |
@@ -111,7 +118,10 @@ rendering logic.
 | Accessible photographic chapter selector | `js/ui/journey-map.js` |
 | Photo/task layouts and option shuffling | `js/lessons/presentation.js` |
 | Undoable route and pausable cooling demonstration | `js/lessons/milk-route.js` |
-| Farm, processing, and market environment builders | `js/scenes/location-environments.js` |
+| Environment template selection and dairy compatibility compositions | `js/scenes/location-environments.js` |
+| Generic buildings, shelters, fences, signs and props | `js/scenes/scene-kit.js` |
+| Shared authored cow factory and idle rig | `js/scenes/cow.js` |
+| Literal cow vertices and polygon faces (414 triangles per cow) | `js/scenes/cow-mesh.js` |
 | Instanced trees, paths, atmosphere | `js/scenes/environment-detail.js` |
 | Rig-aware prop animation | `js/scenes/animation.js` |
 | Demonstration copy and pure interaction state | `js/config/world-labs.js` |
@@ -141,8 +151,9 @@ appear automatically (title screen, packages, seal-spotter, certificate).
 - The seal is displayed **unaltered** — square/native aspect, never stretched,
   recolored, cropped, animated, or turned into a collectible.
 - Collectibles are original **golden milk drops**, not the seal.
-- Colors/fonts are California-forward placeholders; see the `:root` CSS block —
-  every brand value is commented `CLIENT:` for approval.
+- Interface colors follow the client's public website palette; see
+  [the palette reference](docs/BRAND-REFERENCE.md). Final brand signoff and
+  approved fonts are still outstanding; the game uses system fonts.
 
 ## How progress is stored
 
@@ -154,9 +165,14 @@ appear automatically (title screen, packages, seal-spotter, certificate).
 - The film is shown on every fresh page load; it is not skipped by a session flag.
 - If storage is denied, the game remains usable but progress lasts only for
   the current page session.
-- **No login. No accounts. No personal information is collected or transmitted.**
-  The optional name on the certificate is shown on-screen only and is never
-  saved or sent.
+- **No login, accounts or remote game telemetry.** The optional leaderboard
+  display name, score and completion time are saved on this browser/device
+  under `rcm_leaderboard_v1`; use a nickname, especially on shared devices.
+  They are not sent to a leaderboard server. The board displays five personal
+  bests and offers cow names when the name field is blank. Hosted-service
+  research and the shared-storage follow-up are in [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
+  The optional certificate name
+  is shown on-screen only and is never saved or sent.
 
 ### How to clear saved progress
 - In-game: **Help (❓) → “Reset all progress”**, or “Play Again” on the
@@ -164,6 +180,8 @@ appear automatically (title screen, packages, seal-spotter, certificate).
   your position.
 - Manually: browser DevTools → Application → Local Storage → remove
   `rcm_journey_v1` (or run `localStorage.removeItem('rcm_journey_v1')`).
+- The local leaderboard is separate from journey progress. To remove saved
+  display names and scores, also remove `rcm_leaderboard_v1` in browser storage.
 
 ## How to connect analytics later
 
@@ -244,7 +262,7 @@ Before public launch, Real California Milk should provide / approve:
 
 1. **Official logo** → replace `assets/real-california-milk-logo-official.webp`.
 2. **Current seal** → confirm usage rights and the existing WebP asset.
-3. **Approved brand colors** → update the `:root` CSS `CLIENT:` values.
+3. **Brand signoff** → confirm the website-derived `:root` palette.
 4. **Approved fonts / web-font files** → currently system fonts.
 5. **Final educational copy** → `LOCATIONS` + `LEARNING_EXPERIENCES`.
    Activities are simplified, not food-production instructions. Legacy

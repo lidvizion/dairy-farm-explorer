@@ -1,5 +1,5 @@
-import { validateProgress, lessonIds, locationIds, questionIds, collectibleIds } from './validate-progress.js';
-import { LOCATIONS, LOC_BY_ID, SCORING } from '../config/content.js';
+import { validateProgress, lessonIds, locationIds, scoredQuestionIds, collectibleIds } from './validate-progress.js';
+import { MODULE, LOCATIONS, LOC_BY_ID, SCORING } from '../config/content.js';
 
 // A deliberately local analytics adapter. A host can attach a sink later;
 // nothing is transmitted by the game itself.
@@ -15,7 +15,7 @@ export const Analytics = (() => {
   };
 })();
 
-const STORE_KEY = 'rcm_journey_v1';
+const STORE_KEY = MODULE.storageKey;
 const Storage = {
   load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch (_) { return null; } },
   save(data) { try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); return true; } catch (_) { return false; } },
@@ -58,7 +58,7 @@ export const Progress = (() => {
     },
     addQuizPoints(location, question, points, firstTry) {
       const key = `${location}.${question}`;
-      if (!questionIds.includes(key) || ![SCORING.quizFirst, SCORING.quizLater].includes(points) || data.quizAwards[key] || data.locations[location]) return false;
+      if (!scoredQuestionIds.includes(key) || ![SCORING.quizFirst, SCORING.quizLater].includes(points) || data.quizAwards[key] || data.locations[location]) return false;
       data.quizAwards[key] = true;
       data.points += points;
       if (firstTry) data.quizFirstTry++;
@@ -82,10 +82,8 @@ export const Progress = (() => {
       return true;
     },
     isUnlocked(loc) {
-      if (loc === 'farm') return true;
-      if (loc === 'processor') return this.isLocationDone('farm');
-      if (loc === 'market') return this.isLocationDone('processor');
-      return false;
+      const index = LOCATIONS.findIndex(l => l.id === loc);
+      return index >= 0 && (index === 0 || this.isLocationDone(LOCATIONS[index-1].id));
     },
     allDone() { return LOCATIONS.every(location => this.isLocationDone(location.id)); }
   };

@@ -1,5 +1,6 @@
+import { fieldCheckItems, attachedFacts } from './field-check.js';
 import { renderLeaderboard } from '../ui/leaderboard.js';
-import { BRAND_ASSETS, GAME_STATES, LOC_BY_ID, SCORING } from '../config/content.js';
+import { MODULE, BRAND_ASSETS, GAME_STATES, LOC_BY_ID, SCORING } from '../config/content.js';
 import { Analytics, Progress } from '../core/progress.js';
 import { Audio } from '../core/audio.js';
 import { $, el, toast, caption } from '../ui/dom.js';
@@ -31,7 +32,7 @@ export function startLesson(locId, lessonId){
   Analytics.track('lesson_started',{location:locId,lesson:lessonId});
   caption(lesson.intro);
   openModal(`${lesson.icon} ${lesson.title}`, loc.stage, body=>{
-    const experience=LEARNING_EXPERIENCES[lesson.id];
+    const experience=(lesson.experience || LEARNING_EXPERIENCES[lesson.id]);
     const workbench=learningLayout(body,experience,{step:`ACTIVITY ${loc.lessons.indexOf(lesson)+1} OF ${loc.lessons.length}`});
     const context=el('details','lesson-context');
     context.append(el('summary',null,'Read the field notes'),el('p',null,lesson.intro));
@@ -50,7 +51,7 @@ function lessonSolved(){
   fireConfetti();
   if (isNew) toast(`+${SCORING.lesson} ⭐ Lesson complete!`);
   const body=$('modalBody').querySelector('.learning-workbench');
-  const insight=el('div','learning-takeaway',`<span class="eyebrow">FIELD NOTE UNLOCKED</span><p>${LEARNING_EXPERIENCES[lesson.id].takeaway}</p>`);
+  const insight=el('div','learning-takeaway',`<span class="eyebrow">FIELD NOTE UNLOCKED</span><p>${(lesson.experience || LEARNING_EXPERIENCES[lesson.id]).takeaway}</p>`);
   insight.setAttribute('role','status');body.appendChild(insight);
   const done=el('div','btnrow activity-actions');
   const more=el('button','btn btn-primary','Back to '+loc.title.toLowerCase().replace(/^where /,'')+' ✔');
@@ -69,6 +70,17 @@ export function setAfterLessonReturn(callback) { afterLessonReturn = callback; }
 function renderGame(host, lesson){
   const g = lesson.game;
   host.appendChild(el('div','mg-instructions', g.prompt));
+  if (g.type==='card') {
+    if(g.video){
+      const video=document.createElement('video'), lifecycle=new AbortController();
+      video.src=g.video;video.controls=true;video.playsInline=true;host.append(video);
+      const stop=()=>{video.pause();lifecycle.abort();};
+      for(const event of ['rcm:modalclose','rcm:modalopen'])document.addEventListener(event,stop,{signal:lifecycle.signal});
+      document.addEventListener('visibilitychange',()=>{if(document.hidden)video.pause();},{signal:lifecycle.signal});
+      window.addEventListener('pagehide',()=>video.pause(),{signal:lifecycle.signal});
+    }
+    const done=el('button','btn btn-primary','Finish lesson');done.onclick=()=>{done.remove();lessonSolved();};host.append(done);return;
+  }
   if (g.type==='multiselect') return renderMultiSelect(host,g);
   if (g.type==='sequence')    return renderMilkRoute(host,g,lessonSolved);
   if (g.type==='match')       return renderMatch(host,g);
@@ -106,7 +118,7 @@ function renderMultiSelect(host,g){
       if(sel.has(i)){ if(g.options[i].ok){b.classList.add('correct');} else {b.classList.add('bad'); allOk=false;} }
     });
     if(allOk){ fb.style.color='var(--green-dk)'; fb.textContent=g.success; btns.forEach(b=>b.setAttribute('aria-disabled','true')); row.remove(); lessonSolved(); }
-    else { Audio.bad(); fb.dataset.state='retry'; fb.textContent='Not quite—rethink the highlighted choices. '+LEARNING_EXPERIENCES[currentLesson.lesson.id].takeaway+' Change your choices and check again.'; }
+    else { Audio.bad(); fb.dataset.state='retry'; fb.textContent='Not quite—rethink the highlighted choices. '+(currentLesson.lesson.experience || LEARNING_EXPERIENCES[currentLesson.lesson.id]).takeaway+' Change your choices and check again.'; }
   };
   row.appendChild(check); host.appendChild(row);
 }
@@ -162,7 +174,7 @@ function renderBranch(host,g){
     });
     Audio.pop();
     if(seen.size>=Math.min(2,g.products.length)){ done.disabled=false; }
-    if(seen.size>=2 && !solved){ solved=true; fb.style.color='var(--green-dk)'; fb.textContent='Compare the paths: cheese forms curds, butter uses churning, and ice cream is frozen with air. These are simplified overviews, not production instructions.'; }
+    if(seen.size>=2 && !solved){ solved=true; fb.style.color='var(--green-dk)'; fb.textContent=g.comparison || g.success; }
   }
   g.products.forEach((p,i)=>{ const b=el('button',null,`${p.ic} ${p.name}`); b.onclick=()=>show(i); tabs.appendChild(b); });
   host.appendChild(tabs); host.appendChild(path);
@@ -184,7 +196,7 @@ function renderSeal(host,g){
     const c=el('button','pkg');
     c.setAttribute('aria-pressed','false');
     c.innerHTML = `<div class="art">${p.ic}</div><div class="nm">${p.name}</div>
-      <div class="sealbox">${p.seal?`<img src="${BRAND_ASSETS.logo}" alt="Real California Milk seal">`:'<span class="plain-package-label">DAIRY<br>PRODUCT</span>'}</div><span class="package-check" aria-hidden="true">✓</span>`;
+      <div class="sealbox">${p.seal?`<img src="${BRAND_ASSETS.seal}" alt="${MODULE.sealAlt}">`:`<span class="plain-package-label">${g.plainLabel || 'PRODUCT'}</span>`}</div><span class="package-check" aria-hidden="true">✓</span>`;
     const toggle=()=>{ if(c.getAttribute('aria-disabled')==='true')return;
       if(sel.has(i)){sel.delete(i);c.classList.remove('sel');c.setAttribute('aria-pressed','false');}
       else{sel.add(i);c.classList.add('sel');c.setAttribute('aria-pressed','true');Audio.click();}
@@ -213,13 +225,20 @@ function renderSeal(host,g){
 export function startQuiz(locId){
   const loc=LOC_BY_ID[locId];
   if(!loc || !Progress.isUnlocked(locId) || Progress.locationLessonsDone(locId)<loc.lessons.length){ toast('Finish this destination’s lessons to unlock the quiz.'); return; }
-  const questions=loc.quiz;
+  const questions=fieldCheckItems(loc.quiz);
+  const scoredCount=questions.filter(q=>q.mode!=='fact').length;
   Audio.click(); Analytics.track('quiz_started',{location:locId});
   let idx=0, correctCount=0;
   openModal('Field check · '+loc.badge.name, loc.stage, renderQ);
 
   function renderQ(body){
-    const question=questions[idx], experience=LEARNING_EXPERIENCES[question.from];
+    if(idx>=questions.length){finish(body);return;}
+    const question=questions[idx], experience=question.experience || loc.lessons.find(l=>l.id===question.from)?.experience || LEARNING_EXPERIENCES[question.from];
+    if(question.mode==='fact'){
+      body.replaceChildren();body.append(factCard(question));
+      const next=el('button','btn btn-primary',idx<questions.length-1?'Continue':'See results');
+      next.onclick=()=>{idx++;renderQ(body);};body.append(next);next.focus();return;
+    }
     let attempts=0, answered=false;
     const workbench=learningLayout(body,experience,{quiz:true,question:question.q,step:'QUESTION '+(idx+1)+' OF '+questions.length});
     const dots=el('div','progress-dots'); dots.setAttribute('aria-hidden','true');
@@ -243,13 +262,14 @@ export function startQuiz(locId){
         }
         answered=true;
         const first=attempts===0, points=first?SCORING.quizFirst:SCORING.quizLater;
-        const awarded=Progress.addQuizPoints(locId,idx,points,first);
+        const awarded=Progress.addQuizPoints(locId,question.id ?? loc.quiz.indexOf(question),points,first);
         if(first) correctCount++;
         button.classList.add('right');button.querySelector('.answer-state').textContent='✓';
         [...options.children].forEach(option=>option.disabled=true);
         feedback.dataset.state='success';
         feedback.textContent=(awarded?'Correct! +'+points+' points. ':'Correct! Review complete. ')+experience.feedback[index];
         Audio.good();
+        attachedFacts(loc.quiz,question.id).forEach(item=>workbench.append(factCard(item)));
         if(question.source){
           const source=el('details','lesson-source');source.appendChild(el('summary',null,'Explore the source'));
           const link=el('a',null,question.source.label);link.href=question.source.url;link.target='_blank';link.rel='noopener';source.append(link);workbench.append(source);
@@ -267,10 +287,10 @@ export function startQuiz(locId){
     const isNew=Progress.completeLocation(locId);
     body.replaceChildren();Audio.fanfare();
     const summary=el('section','quiz-results');
-    summary.innerHTML='<p class="eyebrow">CHAPTER COMPLETE</p><div class="result-badge" aria-hidden="true">'+loc.badge.emoji+'</div><h2>Badge earned: '+loc.badge.name+'!</h2><p>'+correctCount+' of '+questions.length+' answers right on the first try.</p>';
+    summary.innerHTML='<p class="eyebrow">CHAPTER COMPLETE</p><div class="result-badge" aria-hidden="true">'+loc.badge.emoji+'</div><h2>Badge earned: '+loc.badge.name+'!</h2><p>'+correctCount+' of '+scoredCount+' answers right on the first try.</p>';
     const board=el('section'); summary.append(board); renderLeaderboard(board,{offerSubmission:true});
     summary.appendChild(el('h3',null,'Your field notes'));
-    const notes=el('ul','result-notes');loc.lessons.forEach(lesson=>notes.appendChild(el('li',null,LEARNING_EXPERIENCES[lesson.id].takeaway)));summary.append(notes);
+    const notes=el('ul','result-notes');loc.lessons.forEach(lesson=>notes.appendChild(el('li',null,(lesson.experience || LEARNING_EXPERIENCES[lesson.id]).takeaway)));summary.append(notes);
     summary.appendChild(el('p',null,loc.completeMsg));
     const row=el('div','btnrow activity-actions'), next=el('button','btn btn-primary','Continue to the map 🗺️');
     next.onclick=()=>{closeModal({restoreFocus:false});navigate(GAME_STATES.MAP,{justCompleted:locId});};
@@ -278,4 +298,11 @@ export function startQuiz(locId){
     next.focus({preventScroll:true});
     if(isNew) toast('+'+SCORING.location+' ⭐ Location complete!');
   }
+}
+
+function factCard(item) {
+  const card=el('section','learning-takeaway fun-fact');card.dataset.factId=item.id;
+  card.append(el('p','eyebrow','FUN FACT'),el('h3',null,item.q),el('p',null,item.fact));
+  if(item.source){const link=el('a',null,item.source.label);link.href=item.source.url;link.target='_blank';link.rel='noopener';card.append(link);}
+  return card;
 }

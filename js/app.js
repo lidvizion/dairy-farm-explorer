@@ -1,7 +1,7 @@
-import { collectSolidBounds, resolveSolids } from './core/clearance.js';
+﻿import { collectSolidBounds, resolveSolids } from './core/clearance.js';
 import { makeTrailSigns, fixedLabel } from './scenes/trail-signs.js';
 import { moveVector } from './core/movement.js';
-import { GAME_STATES, BRAND_ASSETS, EXTERNAL_LINKS, SCORING, COPY, LOCATIONS, LOC_BY_ID } from './config/content.js';
+import { MODULE, ROUTES, routeFor, LESSON_COUNT, GAME_STATES, BRAND_ASSETS, EXTERNAL_LINKS, SCORING, COPY, LOCATIONS, LOC_BY_ID } from './config/content.js';
 import { Analytics, Progress } from './core/progress.js';
 import { renderLeaderboard } from './ui/leaderboard.js';
 import { Audio } from './core/audio.js';
@@ -164,16 +164,16 @@ function confirmDialog(title, msg, onYes, yesLabel='Yes', noLabel='Cancel'){
 // help dialog
 function showHelp(){
   Audio.click();
-  openModal('❓ How to Play','Follow California dairy from farm to flavor.',body=>{
+  openModal('❓ How to Play',MODULE.help,body=>{
     body.innerHTML = `
-      <p><b>Goal:</b> Visit 3 California destinations. At each one, finish 3 short lessons and a quiz to earn a badge. You do not need to collect anything extra to finish.</p>
+      <p><b>Goal:</b> ${MODULE.helpGoal}</p>
       <ul>
         <li><b>Desktop:</b> Move with <b>W A S D</b> or arrow keys. Look with mouse drag. <b>E</b> or click to interact. Hold <b>Shift</b> to move faster. <b>Esc</b> or the Map button to leave a scene.</li>
         <li><b>Mobile — two thumb sticks:</b> the <b>left stick moves</b>, the <b>right stick looks</b> around. Tap the big <b>Interact</b> button (it turns gold and says <b>OPEN</b> when you’re next to a station).</li>
         <li><b>Next lesson</b> starts your next objective without walking. <b>📋 Steps</b> opens any lesson you want to revisit. On the map, choose a destination card.</li>
-        <li><b>Map</b> returns you to California. <b>Sound</b> toggles audio. <b>Reset</b> puts you back at the scene’s start if you get stuck.</li>
+        <li><b>Map</b> returns you to ${MODULE.mapReturn}. <b>Sound</b> toggles audio. <b>Reset</b> puts you back at the scene’s start if you get stuck.</li>
       </ul>
-      <p style="font-size:13px;color:#777;">Optional golden milk drops are worth a few extra points, but they are never required.</p>
+      <p style="font-size:13px;color:#777;">${MODULE.dropHelp}</p>
       <div class="btnrow">
         <button class="btn btn-ghost" id="helpResetAll">Reset all progress</button>
         <button class="btn btn-primary" id="helpClose">Got it</button>
@@ -423,24 +423,7 @@ function makeBuilders(){
     for(let i=0;i<count;i++){ x.fillStyle=fleck[(Math.random()*fleck.length)|0]; x.globalAlpha=0.25+Math.random()*0.4; const s=1+Math.random()*3; x.fillRect(Math.random()*size,Math.random()*size,s,s); }
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
   }
-  // Bold Holstein-style patch texture (canvas, not tiny attached spheres) so
-  // cows read clearly as cows — not sheep — at normal in-scene viewing distance.
-  function cowTexture(spotted){
-    const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
-    if(spotted){
-      x.fillStyle='#fdfdfb'; x.fillRect(0,0,256,256);
-      x.fillStyle='#20201e';
-      const blob=(cx,cy,r)=>{ x.beginPath(); const n=8; for(let i=0;i<n;i++){ const a=(i/n)*Math.PI*2; const rr=r*(0.72+Math.random()*0.5); const px=cx+Math.cos(a)*rr, py=cy+Math.sin(a)*rr*0.85; i===0?x.moveTo(px,py):x.lineTo(px,py); } x.closePath(); x.fill(); };
-      blob(70,70,58); blob(190,60,46); blob(60,190,50); blob(180,185,60); blob(128,128,34);
-    } else {
-      x.fillStyle='#c9975f'; x.fillRect(0,0,256,256);
-      x.fillStyle='#b6844e';
-      for(let i=0;i<4;i++){ x.globalAlpha=0.5; x.beginPath(); x.ellipse(40+Math.random()*180,40+Math.random()*180,34,26,Math.random()*Math.PI,0,Math.PI*2); x.fill(); }
-      x.globalAlpha=1;
-    }
-    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
-  }
-  return {lamb,basic,box,rbox,cyl,ball,emojiSprite,labelSprite,noiseTexture,cowTexture};
+  return {lamb,basic,box,rbox,cyl,ball,emojiSprite,labelSprite,noiseTexture};
 }
 let B=null, environments=null; // builders (set after THREE loads)
 
@@ -529,7 +512,7 @@ const raycaster = { r:null, ndc:null };
 function ray(cx,cy,list){ if(!raycaster.r){ raycaster.r=new THREE.Raycaster(); raycaster.ndc=new THREE.Vector2(); } const rect=renderer.domElement.getBoundingClientRect(); raycaster.ndc.x=((cx-rect.left)/rect.width)*2-1; raycaster.ndc.y=-(((cy-rect.top)/rect.height)*2-1); raycaster.r.setFromCamera(raycaster.ndc,camera); return raycaster.r.intersectObjects(list,true); }
 function resolveTarget(o){ while(o&&!(o.userData&&o.userData.type))o=o.parent; return o; }
 
-function isLocationState(){ return [GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(active.id); }
+function isLocationState(){ return Object.hasOwn(ROUTES,active.id); }
 
 /* ============================================================================
    9-10. SCENES + SCENE MANAGER
@@ -550,19 +533,19 @@ function go(stateId, opts={}){
   if(stateId!==GAME_STATES.COMPLETION) $('completionBoard')?.replaceChildren();
   // In no-WebGL mode, all map/location navigation resolves to the DOM fallback
   // hub (completion is a DOM screen and still works).
-  if(!webglOK && [GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId)){
+  if(!webglOK && Object.hasOwn(ROUTES,stateId)){
     $('complete').classList.add('hidden');
     enterFallback(); return;
   }
   // toggle chrome
-  const showHUD = [GAME_STATES.MAP,GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId);
+  const showHUD = (stateId===GAME_STATES.MAP || Object.hasOwn(ROUTES,stateId));
   $('hud').classList.toggle('hidden',!showHUD);
   const onMap = stateId===GAME_STATES.MAP;
   $('caption').classList.remove('hidden');
   $('fallback').classList.add('hidden');
   $('complete').classList.add('hidden');
   $('btnMap').classList.toggle('hidden',onMap);
-  const inLoc=[GAME_STATES.FARM,GAME_STATES.PROCESSOR,GAME_STATES.MARKET].includes(stateId);
+  const inLoc=Object.hasOwn(ROUTES,stateId);
   if(renderer)renderer.domElement.inert=!inLoc;
   // Joysticks visible on all platforms (desktop gets arrow labels; mobile uses touch).
   // This helps players discover the movement and look controls without guessing.
@@ -582,9 +565,7 @@ function go(stateId, opts={}){
   try {
   if(stateId===GAME_STATES.EARTH_INTRO) return enterEarthIntro();
   if(stateId===GAME_STATES.MAP)         return enterMap(opts);
-  if(stateId===GAME_STATES.FARM)        return enterLocation('farm');
-  if(stateId===GAME_STATES.PROCESSOR)   return enterLocation('processor');
-  if(stateId===GAME_STATES.MARKET)      return enterLocation('market');
+  if(Object.hasOwn(ROUTES,stateId)) return enterLocation(ROUTES[stateId]);
   if(stateId===GAME_STATES.COMPLETION)  return enterCompletion();
   } catch(error) {
     console.error('Destination could not be opened', error);
@@ -613,7 +594,7 @@ function enterMap(){
   setActive(GAME_STATES.MAP, {});
   const disposeMap = renderJourneyMap($('journeyMap'), {
     onEnter: onMarker,
-    onLeaderboard:()=>openModal('Leaderboard','The California field guide',body=>renderLeaderboard(body)),
+    onLeaderboard:()=>openModal('Leaderboard',COPY.title,body=>renderLeaderboard(body)),
     onReplay: () => go(GAME_STATES.EARTH_INTRO),
     onComplete: () => go(GAME_STATES.COMPLETION)
   });
@@ -639,7 +620,7 @@ async function onMarker(loc){
   $('engineStatus').textContent = '';
   if(active !== origin) return; // navigation changed while the engine loaded
   if(!ready || !webglOK){ enterFallback(); return; }
-  go(loc.id==='farm'?GAME_STATES.FARM:loc.id==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET);
+  go(routeFor(loc.id));
 }
 
 /* ---------------- LOCATION SCENES ---------------- */
@@ -655,16 +636,14 @@ function enterLocation(locId){
   scene.add(sun);
 
   // ground
-  const grass=B.noiseTexture(loc.id==='farm'?'#929575':'#a5ac9c',loc.id==='farm'?['#8c8b6a','#98977a','#a5a183']:['#a1a899','#abb0a1','#b2b5a8'],600); grass.repeat.set(24,24);
+  const grass=B.noiseTexture(loc.environment.ground || '#a5ac9c',loc.environment.flecks || ['#a1a899','#abb0a1','#b2b5a8'],600); grass.repeat.set(24,24);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(160,160),B.lamb(0xffffff,{map:grass})); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
   const clickables=[]; const obst=[];
   const addObst=(x,z,r)=>obst.push({x,z,r});
 
   // build themed environment
-  if(locId==='farm')      environments.buildFarm(scene,addObst);
-  if(locId==='processor') environments.buildProcessor(scene,addObst);
-  if(locId==='market')    environments.buildMarket(scene,addObst);
+  environments.build(scene,addObst,loc.environment);
   dressEnvironment(THREE,scene,loc);
   addPlaceDetails(THREE,scene,loc,B);
   curSolids=collectSolidBounds(THREE,scene);
@@ -696,8 +675,8 @@ function enterLocation(locId){
     Object.assign(g.userData,{type:'station',kind:'lesson',lesson,idx:i,done});
     scene.add(g); clickables.push(g); beacons.push(g); addObst(sx,sz,0.85);
   });
-  // quiz station (center-back), locked until 3 lessons done
-  const quizG=signFactory(3,0xf5b21e);
+  // Quiz station, locked until the destination lessons are done.
+  const quizG=signFactory(loc.lessons.length,0xf5b21e);
   const [quizX,quizZ]=loc.quizPos || [0,-18];
   quizG.position.set(quizX,0,quizZ);
   quizG.rotation.y=Math.atan2(-quizX,8-quizZ);
@@ -706,8 +685,7 @@ function enterLocation(locId){
 
   // collectibles (golden milk drops) — optional
   const drops=[];
-  const dropSpots=locId==='farm'?[[-10,7],[12,2],[0,4]]
-    :locId==='market'?[[-12,5],[16,5],[0,4]]:[[-12,10],[14,2],[0,4]];
+  const dropSpots=loc.drops || [];
   dropSpots.forEach(([dx,dz],i)=>{
     const id=`${locId}.drop${i}`;
     if(Progress.data.collectibles[id]) return;
@@ -716,7 +694,8 @@ function enterLocation(locId){
 
   // spawn + bounds — all stations sit at negative Z from spawn, so face yaw:0
   // (Three.js default camera forward is -Z) so "W" visually advances toward them.
-  curSpawn={x:0,z:8,yaw:0}; curBounds={minX:-24,maxX:24,minZ:-26,maxZ:22}; curOBST=obst;
+  curSpawn={x:0,z:8,yaw:0,...loc.spawn};
+  curBounds={minX:-24,maxX:24,minZ:-26,maxZ:Math.max(22,curSpawn.z+4)}; curOBST=obst;
   resetPlayer();
 
   const refreshStations=()=>{
@@ -751,7 +730,7 @@ function enterLocation(locId){
   let tipT=0;
   const update=(dt,t)=>{
     if(worldLab?.running){worldLab.update(dt);return;}
-    Audio.ambience(locId,dt);
+    Audio.ambience(loc.audio,dt);
     if(!modalOpen) updatePlayer(dt);
     trailGuide?.update();
     environmentLabels.forEach(label=>{label.getWorldPosition(labelPosition); label.visible=Math.hypot(labelPosition.x-player.x,labelPosition.z-player.z)<10;});
@@ -759,7 +738,7 @@ function enterLocation(locId){
     clickables.forEach((c,i)=>{
       if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6;} if(!modalOpen && Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
       // gentle head-graze bob + tail swish so cows read as alive, not static props
-      if(c.userData.type==='cow'&&!reducedMotion) animateCow(c,t); });
+      if(c.userData.type==='cow'&&!reducedMotion&&effectiveQuality()==='high') animateCow(c,t); });
 
     // Update direction arrow to point toward next destination + flash
     if(!modalOpen){
@@ -785,17 +764,17 @@ function enterLocation(locId){
     }
   };
 
-  setActive(locId==='farm'?GAME_STATES.FARM:locId==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET,{
+  setActive(routeFor(locId),{
     scene,update,dispose:()=>{ worldLab?.dispose(); trailGuide?.dispose(); setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
   });
   worldLab = mountWorldLab({id:locId,visual:labVisual,camera,resetInput,reducedMotion,onLesson:lesson=>startLesson(locId,lesson)});
-  if(locId==='farm')trailGuide=createTrailGuide(player,isTouch);
+  if(loc===LOCATIONS[0])trailGuide=createTrailGuide(player,isTouch);
   setAfterLessonReturn(refreshStations);
   document.addEventListener('rcm:progresschange',refreshStations);
   active.clickables=clickables; active.loc=loc; active.beacons=beacons; active.quizG=quizG;
   active.worldLab=worldLab;
 
-  function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} 💧 Golden milk drop!`); } }
+  function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} ${MODULE.dropLabel}`); } }
   active.collectDrop=collectDrop;
 
   caption('');
@@ -816,7 +795,7 @@ function updateLocHint(loc,beacons,quizG,guideHint=''){
     if(near.userData.kind==='quiz'){
       if(Progress.isLocationDone(loc.id)){ hint.innerHTML=`✅ Quiz complete — get close to start over`; ready=true; }
       else if(Progress.locationLessonsDone(loc.id)>=loc.lessons.length){ hint.innerHTML=`🧠 <b>Take the Quiz</b> — press E or tap to start`; ready=true; }
-      else hint.innerHTML=`🔒 Finish all 3 lessons to unlock the quiz (${Progress.locationLessonsDone(loc.id)}/3)`;
+      else hint.innerHTML=`🔒 Finish all ${loc.lessons.length} lessons to unlock the quiz (${Progress.locationLessonsDone(loc.id)}/${loc.lessons.length})`;
     } else {
       const dn=near.userData.done;
       hint.innerHTML=`${dn?'✅':'📘'} <b>${near.userData.lesson.title}</b> — get closer to start`;
@@ -879,7 +858,7 @@ function activateStation(g){
   const loc=active.loc;
   if(g.userData.kind==='lesson'){ startLesson(loc.id,g.userData.lesson.id); return; }
   if(g.userData.kind==='quiz'){
-    if(Progress.locationLessonsDone(loc.id)<loc.lessons.length){ toast(`🔒 Finish all 3 lessons first (${Progress.locationLessonsDone(loc.id)}/3)`); return; }
+    if(Progress.locationLessonsDone(loc.id)<loc.lessons.length){ toast(`🔒 Finish all ${loc.lessons.length} lessons first (${Progress.locationLessonsDone(loc.id)}/${loc.lessons.length})`); return; }
     startQuiz(loc.id);
   }
 }
@@ -900,8 +879,8 @@ function enterCompletion(){
   $('hud').classList.add('hidden'); $('hint').classList.add('hidden'); $('joy').classList.add('hidden'); $('touchAct').classList.add('hidden');
   Audio.fanfare();
   $('cPoints').textContent=Progress.data.points;
-  $('cLoc').textContent=`${Progress.locationsDoneCount()}/3`;
-  $('cLes').textContent=`${Progress.lessonsDoneCount()}/9`;
+  $('cLoc').textContent=`${Progress.locationsDoneCount()}/${LOCATIONS.length}`;
+  $('cLes').textContent=`${Progress.lessonsDoneCount()}/${LESSON_COUNT}`;
   $('cFirst').textContent=Progress.data.quizFirstTry;
   const br=$('cBadges'); br.innerHTML='';
   LOCATIONS.forEach(l=>{ if(Progress.data.badges[l.id]){ const c=el('div','badge-chip',`<span class="em">${l.badge.emoji}</span><span>${l.badge.name}</span>`); br.appendChild(c);} });
@@ -941,8 +920,8 @@ function renderFallback(){
   root.innerHTML='';
   const wrap=el('div','fb-wrap');
   const head=el('div','fb-head');
-  head.innerHTML=`<img src="${BRAND_ASSETS.logo}" alt="Real California Milk (logo placeholder)">
-    <h1>The Farm-to-Flavor Journey</h1>
+  head.innerHTML=`<img src="${BRAND_ASSETS.logo}" alt="${MODULE.logoAlt}">
+    <h1>${MODULE.fallbackTitle}</h1>
     <p>${COPY.title.split(':')[1]||''}</p>
     <p style="font-size:12.5px;color:#789;">Text-friendly version — the same lessons, quizzes, and certificate, without 3D.</p>`;
   wrap.appendChild(head);
@@ -959,7 +938,7 @@ function renderFallback(){
   head.append(retry,retryStatus);
   // progress bar
   const prog=el('div','chip-grid'); prog.style.justifyContent='center';
-  prog.innerHTML=`<div class="chip">⭐ ${Progress.data.points}</div><div class="chip">📍 ${Progress.locationsDoneCount()}/3</div><div class="chip">📘 ${Progress.lessonsDoneCount()}/9</div><div class="chip">🏅 ${Progress.badgeCount()}/3</div>`;
+  prog.innerHTML=`<div class="chip">⭐ ${Progress.data.points}</div><div class="chip">📍 ${Progress.locationsDoneCount()}/${LOCATIONS.length}</div><div class="chip">📘 ${Progress.lessonsDoneCount()}/${LESSON_COUNT}</div><div class="chip">🏅 ${Progress.badgeCount()}/${LOCATIONS.length}</div>`;
   wrap.appendChild(prog);
 
   LOCATIONS.forEach(loc=>{
@@ -978,12 +957,16 @@ function renderFallback(){
 
   if(Progress.allDone()){
     const c=el('div','fb-loc'); c.style.borderLeftColor='var(--sun)';
-    c.innerHTML='<h3>🏆 Journey complete!</h3><p>You followed California dairy from farm to flavor.</p>';
+    c.innerHTML=`<h3>🏆 Journey complete!</h3><p>${MODULE.completed}</p>`;
     const row=el('div','fb-lessons');
     const cert=el('button','btn btn-primary','View certificate'); cert.onclick=()=>enterCompletion();
-    const prod=el('button','btn btn-ghost','Find Products ↗'); prod.onclick=()=>{Analytics.track('external_cta_clicked',{cta:'products'});window.open(EXTERNAL_LINKS.products,'_blank','noopener');};
-    const food=el('button','btn btn-sun','Foodservice ↗'); food.onclick=()=>{Analytics.track('external_cta_clicked',{cta:'foodservice'});window.open(EXTERNAL_LINKS.foodservice,'_blank','noopener');};
-    row.append(cert,prod,food); c.appendChild(row); wrap.appendChild(c);
+    row.append(cert);
+    for(const [key,style] of [['products','btn-ghost'],['foodservice','btn-sun']]) {
+      if(!EXTERNAL_LINKS[key])continue;
+      const link=el('button','btn '+style,MODULE.fallbackCtas?.[key] || MODULE.ctas[key]);
+      link.onclick=()=>{Analytics.track('external_cta_clicked',{cta:key});window.open(EXTERNAL_LINKS[key],'_blank','noopener');};row.append(link);
+    }
+    c.appendChild(row); wrap.appendChild(c);
   }
   const reset=el('div'); reset.style.textAlign='center'; reset.style.margin='18px 0';
   const rb=el('button','btn btn-ghost','🔄 Reset progress'); rb.onclick=()=>confirmDialogFallback(); reset.appendChild(rb); wrap.appendChild(reset);
@@ -1032,11 +1015,30 @@ function showResumeBanner(){
   if(!hasProgress){ banner.classList.add('hidden'); return; }
   banner.classList.remove('hidden');
   banner.innerHTML = `Welcome back! You've saved ⭐ ${Progress.data.points} points, `
-    + `📘 ${Progress.lessonsDoneCount()}/9 lessons, and 🏅 ${Progress.badgeCount()}/3 badges ${Progress.persistenceAvailable ? 'on this device.' : 'for this session only.'}`;
-  $('beginBtn').textContent = 'CONTINUE THE CALIFORNIA JOURNEY';
+    + `📘 ${Progress.lessonsDoneCount()}/${LESSON_COUNT} lessons, and 🏅 ${Progress.badgeCount()}/${LOCATIONS.length} badges ${Progress.persistenceAvailable ? 'on this device.' : 'for this session only.'}`;
+  $('beginBtn').textContent = MODULE.resume;
 }
 
+function applyModuleShell(){
+  document.title=COPY.title;
+  for(const [key,value] of Object.entries(MODULE.theme || {}))document.documentElement.style.setProperty(key,value);
+  document.querySelector('meta[name=description]').content=MODULE.help;
+  document.querySelector('link[rel=icon]').href=BRAND_ASSETS.logo;
+  document.querySelector('#title .intro-meta').innerHTML=`${LOCATIONS.length} destinations &nbsp; / &nbsp; ${LESSON_COUNT} interactive lessons &nbsp; / &nbsp; Your pace`;
+  $('mapHeader').querySelector('h2').textContent=COPY.map.header;
+  $('mapHeader').querySelector('p').textContent=COPY.map.status;
+  $('mapDisclaimer').textContent=COPY.map.disclaimer;
+  for(const [selector,html] of Object.entries(MODULE.shell)) document.querySelector(selector).innerHTML=html;
+  for(const id of ['titleLogo','completeSeal']) { $(id).src=id==='titleLogo'?BRAND_ASSETS.logo:BRAND_ASSETS.seal; $(id).alt=id==='titleLogo'?MODULE.logoAlt:MODULE.sealAlt; }
+  const film=$('introVideo'); if(MODULE.film.src)film.src=MODULE.film.src;else film.removeAttribute('src'); film.poster=MODULE.film.poster; film.setAttribute('aria-label',MODULE.film.label);
+  $('introStatus').textContent=MODULE.film.status;
+  $('journeyMap').setAttribute('aria-label',COPY.title);
+  $('btnMap').title='Go to the map';
+  for(const [id,total] of [['hudLoc',LOCATIONS.length],['hudLes',LESSON_COUNT],['hudBadge',LOCATIONS.length]]) $(id).nextSibling.textContent='/'+total;
+  for(const [id,key] of [['cProducts','products'],['cFoodservice','foodservice']]) { $(id).textContent=MODULE.ctas[key] || ''; $(id).hidden=!EXTERNAL_LINKS[key]; }
+}
 async function boot(){
+  applyModuleShell();
   syncSoundButton();
   validateLessonContent(LOCATIONS);
   showResumeBanner();
@@ -1057,3 +1059,4 @@ window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, triangles:r
 configureLessonRenderer({ openModal, closeModal, fireConfetti, navigate: go });
 
 boot();
+

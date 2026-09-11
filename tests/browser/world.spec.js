@@ -8,6 +8,8 @@ for(const [id,state] of [['farm','FARM'],['processor','PROCESSOR'],['market','MA
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await enter(page);
   await goToScene(page,state);
+  const names = {farm:'Cow comfort demo', processor:'Milk line demo', market:'Package delivery demo'};
+  await expect(page.locator('#tryWorld')).toHaveText(`Optional: ${names[id]} ↗`);
   const before=await page.evaluate(()=>({...window.__game.player}));
   await page.locator('#tryWorld').click();
   await expect(page.locator('#worldLab')).toBeVisible();

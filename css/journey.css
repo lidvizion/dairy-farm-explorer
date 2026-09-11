@@ -14,14 +14,14 @@
 .intro-meta{font-size:11px;color:#d0d9d1;letter-spacing:.06em}
 #skipIntro{z-index:26;right:24px;bottom:24px;background:#0a191de0;border:1px solid #ffffff55;color:#fff;font-size:12px}
 #title #resumeBanner{background:#0b2019c9;color:#fff;border:1px solid #ffffff33;font-size:13px;text-align:left;margin-bottom:18px}
-#journeyMap{position:fixed;inset:0;z-index:20;overflow:auto;padding:100px clamp(20px,5vw,80px) 28px;color:#f4f0e6;background:linear-gradient(105deg,#091d19f5,#091d19d9 48%,#091d1999),url('../assets/environments/california-route.jpg') center/cover}
+#journeyMap{position:fixed;inset:0;z-index:20;overflow:auto;padding:100px clamp(20px,5vw,80px) 28px;color:#f4f0e6;background:linear-gradient(105deg,#231f20f5,#231f20d9 48%,#231f2099),url('../assets/environments/california-route.jpg') center/cover}
 .journey-heading{max-width:760px;margin-bottom:32px}
-.journey-heading .eyebrow{color:#e4bd76;margin:0 0 12px}
+.journey-heading .eyebrow{color:var(--sun);margin:0 0 12px}
 .journey-heading h1{font-family:Georgia,serif;font-size:clamp(32px,4vw,58px);font-weight:400;line-height:1.05;letter-spacing:-.035em;margin:0 0 16px}
 .journey-heading>p:not(.eyebrow){font-size:14px;line-height:1.6;color:#cedbd2}
-.journey-replay{border:0;background:none;color:#e4bd76;padding:8px 0;cursor:pointer;font-size:13px;margin-right:24px;min-height:44px}
+.journey-replay{border:0;background:none;color:var(--sun);padding:8px 0;cursor:pointer;font-size:13px;margin-right:24px;min-height:44px}
 .journey-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1400px}
-.journey-card{min-width:0;border:1px solid #ffffff30;border-radius:12px;overflow:hidden;background:#f4f0e6;color:#17251e;box-shadow:0 12px 36px #0002}
+.journey-card{min-width:0;border:1px solid #ffffff30;border-radius:12px;overflow:hidden;background:var(--cream);color:var(--ink);box-shadow:0 12px 36px #0002}
 .journey-card>img{width:100%;height:clamp(130px,15vw,220px);object-fit:cover;display:block}
 .journey-card.locked>img{filter:saturate(.4)}
 .journey-card-body{padding:20px}

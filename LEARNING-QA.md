@@ -1,4 +1,30 @@
+# Content-pack refactor review
+
+The dairy lesson copy, nine scored question answer identities, rewards and
+source links are retained. Their data now lives in `js/modules/dairy/`.
+The first cow-care question includes its existing lesson takeaway as alternate
+`fact` text and remains `mode: 'quiz'`. No new dairy claim or client question
+was introduced. Legacy unapproved `funFacts` arrays remain undisplayed.
+
+Fact-mode cards award no question points. Attached facts appear only after
+a correct answer to the linked question, avoiding early answer disclosure.
+The independent library fixture describes an imaginary setting; it is test
+content and is not packaged or exposed to learners.
+
+---
+
 # Learning experience review
+
+## Procedural cow visual reference (September 10, 2026)
+
+The cow is an illustrative low-poly animal, not a conformation scoring model.
+The Holstein's long barrel, straight back, lean neck, moderate rear hock bend
+and udder above the hocks follow the visual guidance in
+[Holstein Association USA: Linear Descriptive Traits](https://www.holsteinusa.com/pdf/print_material/linear_traits.pdf).
+The smaller fawn Jersey and its dark nose with a pale muzzle band use
+[Airfield Estate's description of its Jersey herd](https://www.airfield.ie/stories_news/the-jersey-cow/).
+These are art references; no new lesson, production claim or quiz answer was added.
+Both are depicted without horns as an artistic choice, not a breed-wide claim.
 
 ## September 9 showcase addition: optional world demonstrations
 
@@ -29,7 +55,7 @@ This is an engineering/content pass, not client approval or a learner study.
 | Activity / field check | Experience | What the learner must do | Mistake handling |
 |---|---|---|---|
 | Cow Care | Cow photo and a warm-afternoon care brief | Choose water, rest, and cooling/shade; reject plausible poor care decisions | Picks stay editable; feedback explains the comfort needs |
-| Milking & Cooling | Farm/tanker context, route slots, cooling tank animation | Assemble a shuffled route, then run cooling before dispatch | Wrong order explains the first mismatch; Undo/Clear are available; animation can pause |
+| Milking & Cooling | Farm/tanker context, route slots, cooling tank animation | Assemble a shuffled route, then run cooling before dispatch | Each correct connected step receives text and a brief animation (no animation in reduced motion); wrong order flags the first mismatch immediately; Undo/Clear reverse placement; cooling can pause |
 | Farm Resource Cycle | Solar photo and a resource-routing task | Match water, nutrients, captured gas, and solar to their uses | Wrong routes stay unpaired; successful routes show their destinations |
 | Receiving & Quality | Processing-facility context and a receiving brief | Check temperature, cleanliness, and quality rather than arrival time or supplier familiarity | Feedback explains why convenient shortcuts do not replace checks |
 | Many Products, One Start | Cheese photo and six animated product paths | Explore at least two paths; distinguish cheese, butter, and ice cream | Finish stays disabled until two paths are explored; all six paths are tested |
