@@ -1,3 +1,4 @@
+import MODULE from '../config/module.js';
 // Video owns its lifecycle; a stalled or unavailable WebGL loop must never
 // prevent playback, skipping, or reaching the learning experience.
 export function playIntro({ video, root, playButton, skipButton, beginButton, status, onFinish, reducedMotion = false }) {
@@ -20,7 +21,7 @@ export function playIntro({ video, root, playButton, skipButton, beginButton, st
       await video.play();
       if (disposed) return;
       playButton.textContent = 'Pause film';
-      status.textContent = 'A journey from farm to flavor';
+      status.textContent = MODULE.film.status;
     } catch (_) {
       showPaused('Press Play film, or enter the journey whenever you’re ready.');
     }
@@ -32,7 +33,7 @@ export function playIntro({ video, root, playButton, skipButton, beginButton, st
   listen(video, 'ended', finish);
   listen(video, 'error', () => showPaused('The film couldn’t load. You can still enter the full journey.'));
   listen(video, 'waiting', () => { status.textContent = 'Loading film… You can enter the journey at any time.'; });
-  listen(video, 'playing', () => { status.textContent = 'A journey from farm to flavor'; playButton.textContent = 'Pause film'; });
+  listen(video, 'playing', () => { status.textContent = MODULE.film.status; playButton.textContent = 'Pause film'; });
   listen(playButton, 'click', () => {
     if (video.paused) void play();
     else { video.pause(); showPaused('Film paused. Continue when you’re ready.'); }

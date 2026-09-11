@@ -45,9 +45,9 @@ export const Audio = (() => {
       if (place !== ambiencePlace) { ambiencePlace=place; ambienceTime=2; }
       ambienceTime -= dt;
       if (ambienceTime > 0) return;
-      ambienceTime = place==='farm'?7:10;
-      if (place==='farm') { tone(1800,.15,'sine',.012,2400);tone(2200,.16,'sine',.01,1700,.22); }
-      else if(place==='processor') tone(98,1.2,'triangle',.009,100);
+      ambienceTime = place==='birds'?7:10;
+      if (place==='birds') { tone(1800,.15,'sine',.012,2400);tone(2200,.16,'sine',.01,1700,.22); }
+      else if(place==='hum') tone(98,1.2,'triangle',.009,100);
       else { tone(784,.5,'sine',.01);tone(1175,.7,'sine',.008,null,.2); }
     },
     click() { tone(600, 0.06, 'square', 0.06, 820); },
