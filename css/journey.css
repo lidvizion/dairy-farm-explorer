@@ -104,7 +104,6 @@ body.touch-controls-active #caption{bottom:calc(344px + var(--safe-bottom))}
 #journeyMap #hud{position:static;margin-bottom:22px}
 .journey-heading{max-width:none;margin-bottom:20px}
 .journey-heading h1{font-size:clamp(30px,3vw,44px)}
-.journey-heading h1 br{display:none}
 .journey-heading>p:not(.eyebrow){margin:10px 0}
 .journey-card>img{height:clamp(110px,12vw,170px)}
 .journey-card-body{padding:16px}
@@ -131,7 +130,7 @@ body.touch-controls-active #caption{bottom:calc(344px + var(--safe-bottom))}
   .stick .knob{width:38px;height:38px}
   #touchAct{width:68px;height:68px;font-size:11px;right:calc(122px + var(--safe-right));bottom:calc(20px + var(--safe-bottom))}
   body.touch-controls-active #hint{bottom:calc(14px + var(--safe-bottom));width:36vw;padding:7px 10px;font-size:11px}
-  body.touch-controls-active #caption{display:block;bottom:calc(86px + var(--safe-bottom));width:36vw;font-size:11px}
+  body.touch-controls-active #caption:not(:empty){display:block;bottom:calc(86px + var(--safe-bottom));width:36vw;font-size:11px}
 }
 @media(hover:hover) and (pointer:fine){
   body.touch-controls-active #hint{bottom:calc(20px + var(--safe-bottom))}
