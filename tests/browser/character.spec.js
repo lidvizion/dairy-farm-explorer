@@ -9,7 +9,7 @@ async function enterFarm(page) {
   await page.locator('#beginBtn').click();
   await page.locator('[data-location="farm"] button').click();
   await expect(page.locator('#cowControls')).toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>window.__game.character()?.visible)).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>window.__game.character()!==null)).toBe(true);
 }
 
 test('cow actions, camera modes and all three destinations remain usable', async ({page})=>{
@@ -35,10 +35,12 @@ test('cow actions, camera modes and all three destinations remain usable', async
   await page.keyboard.down('w');
   await expect.poll(()=>page.evaluate(()=>window.__game.character().action)).toBe('idle');
   await page.keyboard.up('w');
+  // CPU-only browsers (this suite) start in first person; GPUs start following.
+  const following=await page.evaluate(()=>window.__game.character().visible);
   await page.locator('#cameraMode').click();
-  await expect.poll(()=>page.evaluate(()=>window.__game.character().visible)).toBe(false);
+  await expect.poll(()=>page.evaluate(()=>window.__game.character().visible)).toBe(!following);
   await page.locator('#cameraMode').click();
-  await expect.poll(()=>page.evaluate(()=>window.__game.character().visible)).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>window.__game.character().visible)).toBe(following);
   for(const destination of ['farm','processor','market']){
     await page.evaluate(id=>window.__game.go(window.__game.GAME_STATES[id.toUpperCase()]),destination);
     await expect.poll(()=>page.evaluate(()=>window.__game.renderInfo().calls)).toBeGreaterThan(0);

@@ -281,6 +281,10 @@ function createRenderer(){
     const gl=next.getContext(), info=gl.getExtension('WEBGL_debug_renderer_info');
     rendererName=String(gl.getParameter(info?info.UNMASKED_RENDERER_WEBGL:gl.RENDERER)||'');
   } catch { rendererName=''; }
+  // On CPU-only WebGL the follow camera frames the whole destination and
+  // roughly halves an already low frame rate, so it starts in first person
+  // there, like main's lightweight scene. The View button still switches.
+  if(!cameraChosen) setFollowCow(modelsEnabled());
   // Environment maps are GPU render targets owned by the previous context.
   daylight?.dispose(); softEnvironment?.dispose(); daylight=softEnvironment=null;
   next.setPixelRatio(Math.min(devicePixelRatio,high?2:1));
@@ -466,7 +470,7 @@ let B=null, environments=null; // builders (set after THREE loads)
 
 // ---- First-person controller (shared by location scenes) ----
 const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0,speed:0};
-let followCow=true;
+let followCow=true, cameraChosen=false;
 let curSolids=[];
 let curOBST=[], curBounds={minX:-40,maxX:40,minZ:-40,maxZ:40}, curSpawn={x:0,z:0,yaw:0};
 function resetPlayer(){ player.x=curSpawn.x; player.z=curSpawn.z; player.yaw=curSpawn.yaw; player.pitch=0; if(camera){camera.position.set(player.x,player.eye,player.z); camera.rotation.y=player.yaw; camera.rotation.x=0;} }
@@ -541,11 +545,15 @@ function triggerCowAction(action){
   if(modalOpen || !isLocationState()) return;
   if(requestCowAction(active.hero,action,reducedMotion)) $('cowActionStatus').textContent=cowStatus();
 }
-function toggleCamera(){
-  if(modalOpen) return;
-  followCow=!followCow;
+function setFollowCow(follow){
+  followCow=follow;
   $('cameraMode').textContent=followCow?'View: Follow cow':'View: First person';
   $('cameraMode').setAttribute('aria-pressed',String(followCow));
+}
+function toggleCamera(){
+  if(modalOpen) return;
+  cameraChosen=true;
+  setFollowCow(!followCow);
 }
 // Buttons hand keyboard focus back to the world so WASD keeps working.
 const worldFocus=()=>renderer?.domElement.focus({preventScroll:true});
