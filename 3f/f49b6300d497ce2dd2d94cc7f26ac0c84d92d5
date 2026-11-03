@@ -1,0 +1,79 @@
+scripts/asset-briefs.json
+  s_0cc818e591bcd7::t_de8409b1eb80a5 1-62
+js/scenes/daylight.js
+  s_0cc818e591bcd7::t_a300db4f93e550 22
+  s_0cc818e591bcd7::t_410c0eb79dc7e6 1-21,23-29
+css/journey.css
+  s_0cc818e591bcd7::t_dbbe02c5accc64 49-53
+  s_0cc818e591bcd7::t_0cb2a15caca830 48,54,76
+index.html
+  s_0cc818e591bcd7::t_dbbe02c5accc64 516-519
+js/config/model-assets.js
+  s_0cc818e591bcd7::t_e6b33cc9922c7e 1-3
+tests/realism.test.js
+  s_0cc818e591bcd7::t_ff4a85c74797a7 1-74
+js/scenes/animation.js
+  s_0cc818e591bcd7::t_00cf0fc74a28fe 1-12,15-36
+js/scenes/chase-camera.js
+  s_0cc818e591bcd7::t_dbbe02c5accc64 1-18
+js/scenes/environment-detail.js
+  s_0cc818e591bcd7::t_b2d2c8eb5a3dbe 4
+js/app.js
+  s_0cc818e591bcd7::t_dbbe02c5accc64 9-11,366-367,394-413,426-428,434-449,521,601,603-607,678,680,690,717,722,987-988
+  s_0cc818e591bcd7::t_410c0eb79dc7e6 7-8,235,240-241,243,257,267
+  s_0cc818e591bcd7::t_a80cb5f5a675e2 421
+  s_0cc818e591bcd7::t_bb17e6b9f51633 831,853
+  s_0cc818e591bcd7::t_a300db4f93e550 154-155,273-275
+  s_0cc818e591bcd7::t_b2d2c8eb5a3dbe 12,307,602,676,681-684
+  s_0cc818e591bcd7::t_ca5c5e907ebc67 217,242,272,282-289,600
+README.md
+  s_0cc818e591bcd7::t_11b5257c4333ee 189-202
+js/scenes/asset-placements.js
+  s_0cc818e591bcd7::t_b2d2c8eb5a3dbe 1-34
+REALISM-HANDOFF.md
+  s_0cc818e591bcd7::t_dc68c5c2281b40 35-37,59
+  s_0cc818e591bcd7::t_68f9986f7b1307 1-34,39-48
+  s_0cc818e591bcd7::t_282971ec199111 38,71-81
+  s_0cc818e591bcd7::t_0f23a31f186872 58,60
+  s_0cc818e591bcd7::t_a300db4f93e550 49-57,61-70
+scripts/vendor.mjs
+  s_0cc818e591bcd7::t_410c0eb79dc7e6 15
+  s_0cc818e591bcd7::t_11b5257c4333ee 9
+  s_0cc818e591bcd7::t_e6b33cc9922c7e 13-14
+.gitignore
+  s_0cc818e591bcd7::t_e6b33cc9922c7e 33
+js/scenes/quality.js
+  s_0cc818e591bcd7::t_410c0eb79dc7e6 9-15
+js/scenes/model-assets.js
+  s_0cc818e591bcd7::t_ff4a85c74797a7 19,24
+  s_0cc818e591bcd7::t_e6b33cc9922c7e 1-18,20-23,25-84
+js/scenes/location-environments.js
+  s_0cc818e591bcd7::t_b2d2c8eb5a3dbe 7,100
+  s_0cc818e591bcd7::t_00cf0fc74a28fe 79-85,95,262
+tests/browser/character.spec.js
+  s_0cc818e591bcd7::t_ff4a85c74797a7 1-2,7-18,29,31,33-57
+  s_0cc818e591bcd7::t_604f14ff982600 3-6,22-28,30,32
+  s_0cc818e591bcd7::t_0cb2a15caca830 19-21
+vendor/three/addons/loaders/GLTFLoader.js
+  s_0cc818e591bcd7::t_4f88d357f288ea 1-4663
+vendor/three/addons/objects/Sky.js
+  s_0cc818e591bcd7::t_ad9519e2141d44 1-219
+vendor/three/addons/utils/BufferGeometryUtils.js
+  s_0cc818e591bcd7::t_b81c23a02d3712 1-1375
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ff49b6300d497ce2dd2d94cc7f26ac0c84d92d5",
+  "prompts": {},
+  "sessions": {
+    "s_0cc818e591bcd7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19e5e-5593-7fa0-acb4-861811379a20",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "shawnwilborne <wilborneshawn@gmail.com>"
+    }
+  }
+}
