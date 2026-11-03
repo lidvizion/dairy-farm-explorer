@@ -36,8 +36,13 @@ test-results-throttled/
 cow assets/
 artifacts/
 
-# Licensed 3D asset - Fab EULA forbids standalone redistribution in a public repo
+# Licensed third-party 3D assets (the Fab EULA forbids standalone redistribution
+# in a public repo) stay in the ignored `cow assets/` folder. assets/models/
+# holds only the project's own Meshy-generated models; see PROVENANCE.md there.
 assets/models/*.glb
+!assets/models/*.glb
+# Raw Meshy downloads; `npm run models:optimize` turns them into assets/models/.
+.meshy/
 
 # internal working correspondence, not part of the project
 AGENT-REQUESTS.md

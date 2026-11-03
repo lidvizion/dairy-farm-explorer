@@ -513,6 +513,10 @@ body.touch-controls-active #caption{bottom:356px;}
 <div id="joy" class="stick hidden" aria-label="Movement joystick"><span class="stick-label">MOVE</span><div class="knob" id="joyKnob"></div></div>
 <div id="lookJoy" class="stick hidden" aria-label="Look joystick"><span class="stick-label">LOOK</span><div class="knob" id="lookKnob"></div></div>
 <button id="touchAct" class="hidden">TAP TO<br>INTERACT</button>
+<div id="cowControls" class="hidden" role="group" aria-label="Cow character controls">
+  <span id="cowActionStatus" role="status">Space to jump · F to dance</span>
+  <div><button id="cowJump" aria-label="Jump cow">Jump</button><button id="cowDance" aria-label="Dance cow">Dance</button><button id="cameraMode" aria-pressed="true">View: Follow cow</button></div>
+</div>
 
 <!-- MAP quick-nav (large tap targets so you never have to hit a tiny pin) -->
 <div id="mapNav" class="hidden" role="group" aria-label="Choose a destination"></div>

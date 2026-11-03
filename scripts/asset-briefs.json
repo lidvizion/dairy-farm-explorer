@@ -1,0 +1,489 @@
+{
+  "textureResolution": "4k",
+  "format": "glb",
+  "assets": [
+    {
+      "id": "holstein-cow",
+      "sizeMetres": 2.6,
+      "destinations": [
+        "farm",
+        "processor",
+        "market"
+      ],
+      "prompt": "A single anatomically realistic adult female Holstein dairy cow, full body, neutral standing pose on all four hooves, legs separated with clear gaps, head facing forward, tail hanging freely separate from hind legs. Natural black and white irregular coat patches, subtle short fur, pink moist nose, alert ears, dark brown eyes, realistic udder, cloven hooves. Correct bovine proportions, no clothes, no horns, no accessories, no pedestal or ground, clean silhouette, detailed high-poly geometry, photorealistic agricultural animal.",
+      "texturePrompt": "Photorealistic Holstein cow, clean black and warm white short hair with directional fine fur normals, pink pebbled moist nose and udder, dark glossy eyes, rough charcoal cloven hooves. Natural subtle dirt near hooves. Physically based roughness, no baked light or shadows.",
+      "acceptance": "Four separate limbs, plausible anatomy and udder, no fused feet; inspect front/side/back before local quadruped skinning. Main character with tested idle, walk, run, dance and jump.",
+      "delivery": {
+        "high": {
+          "texture": 4096,
+          "triangles": 80000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 8000
+        }
+      }
+    },
+    {
+      "id": "dairy-barn",
+      "sizeMetres": 15,
+      "destinations": [
+        "farm"
+      ],
+      "prompt": "A modern California dairy free-stall barn, single open-sided agricultural structure, long galvanized corrugated metal gable roof on slender steel posts, raised ventilated ridge, exposed roof trusses, large circular ventilation fans beneath eaves, open interior with clean concrete base and metal cattle stall rails. Realistic industrial farm architecture, detailed bolts, joints and roof corrugation. Neutral silver gray metal, no red painted walls, no animals, no people, no text, no signs, no surrounding terrain. High-poly photorealistic building.",
+      "texturePrompt": "Real galvanized steel roof and structural posts, subtle zinc spangle and weathering, concrete footing, dark rubber fan housings, fine corrugation normals and physically correct metal roughness. No painted branding, no baked shadows.",
+      "acceptance": "Open sides remain visible, correct post scale, no floating roof, replace existing barn at (-14,0,-2); leave visitor route clear.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 90000,
+          "error": 0.004
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 12000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "milk-tanker",
+      "sizeMetres": 7.5,
+      "destinations": [
+        "farm",
+        "processor"
+      ],
+      "prompt": "A complete realistic refrigerated milk tanker truck, modern white cab with windshield and mirrors, polished stainless steel horizontal cylindrical insulated tank with rounded ends, three axles, six correctly aligned rubber wheels, chassis, rear sanitary outlet valve, small ladder and top access hatch. Vehicle stands level, wheels touch ground. Unbranded, no text, no logos, no pedestal or terrain. Accurate vehicle proportions, high-poly detailed hard surface geometry, photorealistic commercial dairy transport vehicle.",
+      "texturePrompt": "Brushed and polished stainless steel tank with subtle micro scratches, white painted cab, reflective glass windshield, black treaded rubber tires, dark chassis, chrome hubs, restrained weathering. Physically based metalness and roughness, no baked lighting or branding.",
+      "acceptance": "Complete wheels and tank, scale and heading inspected; reuse at existing farm and processor tanker positions, preserve colliders.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 80000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 16000
+        }
+      }
+    },
+    {
+      "id": "milk-tank",
+      "sizeMetres": 3.8,
+      "destinations": [
+        "farm",
+        "processor"
+      ],
+      "prompt": "A single realistic vertical stainless steel dairy processing tank on four short sturdy metal legs, rounded top, sanitary inspection hatch, bottom cone outlet, polished stainless pipe elbow and butterfly valve, small temperature gauge, welded seams and clamps. Clean food processing equipment, industrial scale, finely detailed high-poly hard surface geometry, complete isolated object, no surrounding factory or floor, no text or logos, photorealistic.",
+      "texturePrompt": "Food-grade brushed stainless steel with subtle anisotropic surface grain, fine weld seams, polished sanitary clamps, dark rubber gasket details, glass gauge face. Physically based metallic surface and varied roughness, no baked reflections or text.",
+      "acceptance": "Clearly visible from visitor route: exposed processor equipment apron, not inside solid existing building. Ground legs and preserve a safe route around equipment.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 50000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 10000
+        }
+      }
+    },
+    {
+      "id": "valley-oak",
+      "sizeMetres": 10,
+      "destinations": [
+        "farm",
+        "processor",
+        "market"
+      ],
+      "prompt": "One mature California valley oak tree, complete freestanding tree with broad irregular spreading canopy, gnarled branching trunk, natural asymmetry and exposed root flare, deeply fissured gray brown bark, realistic small lobed muted olive green leaves with open gaps between branching clusters. Botanical realism, detailed high-poly trunk and branches, believable foliage density, no pot, no base, no ground patch, no surrounding objects, photorealistic natural tree.",
+      "texturePrompt": "Real oak bark fissures, weathered gray brown trunk, natural muted green leaves with varied age and color, leaf vein detail and subtle yellow edges. Physically based roughness, no baked shadows or painted highlights.",
+      "acceptance": "No opaque green blob canopy; inspect leaf coverage and trunk. Reuse limited near-field instances; keep cheap far trees for performance.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 150000,
+          "sloppy": true
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 30000,
+          "sloppy": true
+        }
+      }
+    },
+    {
+      "id": "hay-bale",
+      "sizeMetres": 1.2,
+      "destinations": [
+        "farm"
+      ],
+      "prompt": "A single small square hay bale as used on dairy farms: a solid rectangular block of tightly compressed dry hay, flat top and flat sides, crisp box shape about twice as long as it is tall, two parallel twine strings wrapped around the short way. Surface made of densely packed short dried grass with a few loose wisps at the edges. Isolated complete object, no ground, no people, no text, photorealistic high-poly geometry.",
+      "texturePrompt": "Golden tan sun-dried grass with pale straw and olive brown strands, fibrous dry roughness, fine stem normals, natural dark twine with twisted fibers. No baked lighting or deep black shadows.",
+      "acceptance": "Grounded stack near barn outside learning route, share geometry/materials across copies.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 40000,
+          "sloppy": true
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 8000,
+          "sloppy": true
+        }
+      },
+      "rerollReason": "First preview read as a loose straw bundle, not a compressed rectangular bale."
+    },
+    {
+      "id": "dairy-display",
+      "sizeMetres": 1.1,
+      "destinations": [
+        "market"
+      ],
+      "prompt": "An artisan dairy tasting display on a thick rectangular natural oak cutting board: one golden aged cheese wheel with a cut wedge revealing cheese texture, a small white soft cheese round, a clear glass milk bottle with plain cap, and a small glazed ceramic bowl of butter. Realistic edible dairy textures, detailed high-poly tabletop still life, complete objects with space between them, no table, no text, no labels, no logos, no people, no background geometry, photorealistic.",
+      "texturePrompt": "Natural golden cheese rind and creamy cut surfaces, delicate white soft cheese rind, real oak board grain and end grain, transparent glass milk bottle filled with off-white milk, glazed ivory ceramic butter bowl. Physically based materials, no painted branding, no baked shadows.",
+      "acceptance": "Recognizable separate dairy products, placed on market tasting counter at believable counter height. Never generate or alter official brand seal.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 50000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 10000
+        }
+      }
+    },
+    {
+      "id": "milk-house",
+      "sizeMetres": 6,
+      "destinations": [
+        "farm"
+      ],
+      "batch": 2,
+      "prompt": "A small modern dairy farm milk house: single-storey white insulated metal panel building with a low pitched galvanized roof, one steel service door, a wide window, stainless vent pipes and a concrete pad. Clean agricultural utility building, no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Clean white painted steel siding with subtle grime near the base, galvanized roof, grey concrete pad, brushed stainless fittings. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 40000,
+          "error": 0.006
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 8000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "solar-array",
+      "sizeMetres": 8,
+      "destinations": [
+        "farm"
+      ],
+      "batch": 2,
+      "prompt": "A ground-mounted farm solar array: one row of three large dark blue photovoltaic panels tilted toward the sky on galvanized steel racking posts, visible cell grid and aluminium frames, cables along the rails. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Deep blue monocrystalline cells with fine silver grid lines, anodized aluminium frames, galvanized steel posts, subtle dust. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 30000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 6000
+        }
+      }
+    },
+    {
+      "id": "biogas-digester",
+      "sizeMetres": 4.5,
+      "destinations": [
+        "farm"
+      ],
+      "batch": 2,
+      "prompt": "A covered dairy farm anaerobic biogas digester: low circular concrete tank wall topped with a dark green flexible membrane dome roof, steel gas pipe with valve and small flare stack beside it. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Weathered concrete tank wall, matte dark green rubber membrane dome, painted yellow gas pipe, steel valve. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 30000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 6000
+        }
+      }
+    },
+    {
+      "id": "feed-bunk",
+      "sizeMetres": 6,
+      "destinations": [
+        "farm"
+      ],
+      "batch": 2,
+      "prompt": "A dairy cattle feed lane: long low concrete feed bunk filled with fresh chopped green-gold silage and hay mix, behind a galvanized steel headlock rail fence. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Rough grey concrete, fresh moist silage in green and golden tones, galvanized steel rails with mild wear. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 40000,
+          "error": 0.006
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 8000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "water-trough",
+      "sizeMetres": 3.5,
+      "destinations": [
+        "farm"
+      ],
+      "batch": 2,
+      "prompt": "A galvanized steel livestock water trough, long rounded rectangular tank on short legs, filled with clear water, float valve box at one end. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Galvanized zinc steel with spangle pattern and water stains, clear reflective water surface. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 20000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 4000
+        }
+      }
+    },
+    {
+      "id": "processing-plant",
+      "sizeMetres": 24,
+      "destinations": [
+        "processor"
+      ],
+      "batch": 2,
+      "prompt": "A modern dairy processing plant building exterior: long single-storey clean white industrial facility with flat roof, ribbon of tinted windows, glass double entrance doors under a green canopy, stainless steel pipe runs along the wall, rooftop ventilation units. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Clean white insulated metal panels, tinted blue glass, green painted canopy, brushed stainless pipes, grey rooftop units. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 80000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 12000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "cheese-line",
+      "sizeMetres": 5,
+      "destinations": [
+        "processor"
+      ],
+      "batch": 2,
+      "prompt": "A food-grade stainless steel cheese shredding and packaging machine line: hopper with a cheese block, enclosed shredder, short conveyor belt and a bag-sealing packaging unit with control panel. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Brushed stainless steel, white food-grade conveyor belt, pale yellow cheese, grey control panel with buttons. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 50000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 10000
+        }
+      }
+    },
+    {
+      "id": "pallet-boxes",
+      "sizeMetres": 1.6,
+      "destinations": [
+        "processor",
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A wooden shipping pallet stacked with plain brown corrugated cardboard boxes, neatly stacked in layers and wrapped with clear stretch film. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Brown kraft corrugated cardboard, pale pine pallet wood, translucent glossy stretch wrap. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 30000,
+          "sloppy": true
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 6000,
+          "sloppy": true
+        }
+      }
+    },
+    {
+      "id": "grocery-storefront",
+      "sizeMetres": 12,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A small neighbourhood grocery store building front: single-storey cream stucco building with large shop windows, glass double door, green striped fabric awning, potted plants by the entrance. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Warm cream stucco, glossy glass windows, green and white canvas awning, dark metal window frames, terracotta pots. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 60000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 12000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "restaurant-storefront",
+      "sizeMetres": 12,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A small restaurant building front: single-storey whitewashed brick building with large steamy windows, wooden front door, terracotta orange fabric awning, stainless kitchen exhaust stack on the roof. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Whitewashed brick, warm wood door, terracotta canvas awning, clear glass, brushed stainless exhaust. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 60000,
+          "error": 0.006
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 12000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "bistro-set",
+      "sizeMetres": 2.6,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "An outdoor cafe bistro set: small round metal table with two matching chairs and a tall market umbrella with a warm yellow canopy. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Black powder-coated steel, cream table top, warm yellow canvas umbrella. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 30000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 6000
+        }
+      }
+    },
+    {
+      "id": "produce-crate",
+      "sizeMetres": 1.2,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A rustic wooden produce crate on short legs overflowing with fresh tomatoes, lettuce heads, peppers and lemons. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "Weathered pine wood, glossy red tomatoes, crisp green lettuce, yellow lemons. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 30000,
+          "error": 0.006
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 6000
+        }
+      }
+    },
+    {
+      "id": "chef",
+      "sizeMetres": 1.8,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A full-body realistic professional chef standing upright in a neutral pose, white double-breasted chef jacket, black trousers, white apron, short white chef hat, friendly expression, arms relaxed at sides. No props, no logos, no text, isolated complete figure, photorealistic high-poly geometry.",
+      "texturePrompt": "Crisp white cotton chef uniform with fabric folds, black trousers, natural skin tones and hair. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 40000
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 8000
+        }
+      }
+    },
+    {
+      "id": "walk-in-cooler",
+      "sizeMetres": 6,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A commercial walk-in refrigerated cold storage room exterior: white insulated panel box with a heavy stainless steel cold room door, strip curtain, refrigeration condenser unit on top. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "White insulated panels, brushed stainless door hardware, grey condenser unit with fan grille. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 30000,
+          "error": 0.006
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 6000,
+          "error": 0.008
+        }
+      }
+    },
+    {
+      "id": "dairy-case",
+      "sizeMetres": 3,
+      "destinations": [
+        "market"
+      ],
+      "batch": 2,
+      "prompt": "A grocery store refrigerated dairy display case with three shelves of plain unlabeled milk jugs, yogurt cups and cheese blocks, glass doors, white metal cabinet. no text, no logos, no signage, no people, no surrounding terrain, isolated complete object, photorealistic high-poly geometry.",
+      "texturePrompt": "White painted metal cabinet, clear glass doors, white milk jugs, pastel yogurt cups, yellow cheese. Physically based roughness and metalness, no baked lighting or shadows, no text or branding.",
+      "acceptance": "Replaces the matching primitive placeholder at its existing position without blocking the visitor route or lesson stations.",
+      "delivery": {
+        "high": {
+          "texture": 2048,
+          "triangles": 40000,
+          "error": 0.006
+        },
+        "lite": {
+          "texture": 1024,
+          "triangles": 8000
+        }
+      }
+    }
+  ]
+}

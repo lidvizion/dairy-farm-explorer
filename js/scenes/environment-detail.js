@@ -1,7 +1,7 @@
 // Shared, instanced environmental dressing. Repeated trees cost three draw
 // calls, not a separate draw call for every leaf crown and trunk.
 export function dressEnvironment(THREE, scene, loc) {
-  const mat = color => new THREE.MeshStandardMaterial({ color, roughness: .95 });
+  const mat = color => new THREE.MeshStandardMaterial({ color, roughness: .95, envMapIntensity: .3 });
   const sky = document.createElement('canvas'); sky.width = 2; sky.height = 256;
   const ctx = sky.getContext('2d'), gradient = ctx.createLinearGradient(0, 0, 0, 256);
   gradient.addColorStop(0, '#7caabf'); gradient.addColorStop(.55, '#c1d4d5'); gradient.addColorStop(1, '#eee2c8');
