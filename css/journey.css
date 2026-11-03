@@ -45,6 +45,13 @@
 #graphicsSettings:not(.hidden){display:block}
 body:has(#modal:not(.hidden)) #objective,body:has(#modal:not(.hidden)) #hint,body:has(#modal:not(.hidden)) #caption{visibility:hidden}
 #worldCanvas{position:fixed;inset:0;touch-action:none}
+#cowControls{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:29;text-align:center;color:#f4f0e6;max-width:90vw}
+#cowControls>span{display:block;font-size:11px;margin-bottom:8px;text-shadow:0 1px 4px #000}
+#cowControls>div{display:flex;gap:6px;justify-content:center}
+#cowControls button{min-height:44px;border:1px solid #ffffff55;background:#10281fe8;border-radius:7px;color:#fff;padding:10px 14px;cursor:pointer;white-space:nowrap}
+#cowControls button:disabled{opacity:.5;cursor:default}
+body:has(#modal:not(.hidden)) #cowControls{visibility:hidden}
+@media(max-width:760px){#cowControls{bottom:156px}#cowControls button{padding:8px;font-size:11px}#cowControls>span{display:none}#cowControls>div{flex-wrap:wrap;max-width:160px}#cameraMode{flex-basis:100%}}
 #hint{pointer-events:none;font-size:12px;max-width:600px}
 .hbtn{min-height:44px}
 @media(max-width:760px){
@@ -66,7 +73,7 @@ body:has(#modal:not(.hidden)) #objective,body:has(#modal:not(.hidden)) #hint,bod
   #hud .group{gap:5px}
   .chip{font-size:11px;padding:6px 9px}
   #hint{font-size:11px;width:85vw}
-  body.touch-controls-active #hint{bottom:245px}
+  body.touch-controls-active #hint{bottom:270px}
   body.touch-controls-active #caption{display:none}
 }
 @media(max-height:650px) and (min-width:761px){

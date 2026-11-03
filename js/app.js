@@ -4,8 +4,12 @@ import { Audio } from './core/audio.js';
 import { $, el, toast, caption } from './ui/dom.js';
 import { validateLessonContent } from './lessons/validate-content.js';
 import { configureLessonRenderer, setAfterLessonReturn, startLesson, startQuiz } from './lessons/renderer.js';
-import { effectiveQuality as determineQuality, isTouchDevice } from './scenes/quality.js';
-import { animateCow } from './scenes/animation.js';
+import { effectiveQuality as determineQuality, isTouchDevice, renderPixelRatio } from './scenes/quality.js';
+import { createDaylight } from './scenes/daylight.js';
+import { animateCow, requestCowAction } from './scenes/animation.js';
+import { chaseDistance } from './scenes/chase-camera.js';
+import { createModelSession } from './scenes/model-assets.js';
+import { placeDestinationAssets } from './scenes/asset-placements.js';
 import { createEnvironmentBuilders } from './scenes/location-environments.js';
 import { dressEnvironment } from './scenes/environment-detail.js';
 import { playIntro } from './ui/intro.js';
@@ -147,8 +151,8 @@ function showHelp(){
     body.innerHTML = `
       <p><b>Goal:</b> Visit 3 California destinations. At each one, finish 3 short lessons and a quiz to earn a badge. You do not need to collect anything extra to finish.</p>
       <ul>
-        <li><b>Desktop:</b> Move with <b>W A S D</b> or arrow keys. Look with mouse drag. <b>E</b> or click to interact. Hold <b>Shift</b> to move faster. <b>Esc</b> or the Map button to leave a scene.</li>
-        <li><b>Mobile — two thumb sticks:</b> the <b>left stick moves</b>, the <b>right stick looks</b> around. Tap the big <b>Interact</b> button (it turns gold and says <b>OPEN</b> when you’re next to a station).</li>
+        <li><b>Desktop:</b> Move your cow with <b>W A S D</b> or arrow keys. Look with mouse drag. <b>Space</b> jumps, <b>F</b> dances, and <b>V</b> switches between following the cow and first person. <b>E</b> or click to interact. Hold <b>Shift</b> to move faster. <b>Esc</b> or the Map button to leave a scene.</li>
+        <li><b>Mobile — two thumb sticks:</b> the <b>left stick moves</b>, the <b>right stick looks</b> around. Use <b>Jump</b> and <b>Dance</b> for your cow, and <b>View</b> to switch cameras. Tap the big <b>Interact</b> button when you’re next to a station. Jump and dance are disabled when reduced motion is enabled.</li>
         <li><b>Next lesson</b> starts your next objective without walking. <b>📋 Steps</b> opens any lesson you want to revisit. On the map, choose a destination card.</li>
         <li><b>Map</b> returns you to California. <b>Sound</b> toggles audio. <b>Reset</b> puts you back at the scene’s start if you get stuck.</li>
       </ul>
@@ -210,7 +214,7 @@ function showStepsMenu(){
 /* ============================================================================
    7. THREE.js setup, quality, disposal
 ============================================================================ */
-let THREE=null, RoundedBoxGeometry=null, renderer=null, camera=null, webglOK=true;
+let THREE=null, RoundedBoxGeometry=null, Sky=null, renderer=null, camera=null, daylight=null, webglOK=true;
 let quality = readPreference('rcm_quality', 'auto');
 const isTouch = isTouchDevice();
 
@@ -228,13 +232,15 @@ async function initThree(){
   catch(e){ RoundedBoxGeometry=null; }
   try{
     renderer = new THREE.WebGLRenderer({ antialias: true });
-    const maxPR = effectiveQuality()==='high' ? 2 : 1.5;
-    renderer.setPixelRatio(Math.min(devicePixelRatio, maxPR));
+    renderer.setPixelRatio(renderPixelRatio(effectiveQuality(),innerWidth,innerHeight,devicePixelRatio));
     renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = effectiveQuality()==='high';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = .9;
+    try{
+      ({Sky}=await import('three/addons/objects/Sky.js'));
+    }catch(error){ console.warn('Daylight reflections unavailable',error.message); }
     document.body.insertBefore(renderer.domElement, document.body.firstChild);
     renderer.domElement.id = 'worldCanvas';
     renderer.domElement.setAttribute('aria-label', 'Interactive 3D destination. Use WASD to move, drag to look, or use Next lesson.');
@@ -248,6 +254,7 @@ async function initThree(){
     addEventListener('resize', ()=>{
       if(!renderer) return;
       camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+      renderer.setPixelRatio(renderPixelRatio(effectiveQuality(),innerWidth,innerHeight,devicePixelRatio));
       renderer.setSize(innerWidth,innerHeight);
     });
     return true;
@@ -257,15 +264,27 @@ async function initThree(){
 function applyRendererQuality(){
   if(!renderer) return;
   const high=effectiveQuality()==='high';
-  renderer.setPixelRatio(Math.min(devicePixelRatio,high?2:1.5));
+  renderer.setPixelRatio(renderPixelRatio(effectiveQuality(),innerWidth,innerHeight,devicePixelRatio));
   renderer.shadowMap.enabled=high;
   renderer.shadowMap.needsUpdate=true;
   renderer.setSize(innerWidth,innerHeight);
   if(active?.scene){
+    if(high) addDaylight(active.scene);
+    const dome=active.scene.getObjectByName('daylight-sky');
+    if(dome) dome.visible=high;
+    active.scene.environment=high?(daylight?.texture || null):null;
     active.scene.traverse(object=>{
       if(object.isDirectionalLight||object.isSpotLight) object.castShadow=high;
     });
   }
+}
+
+function addDaylight(scene){
+  if(!Sky || scene.userData.hasDaylight) return;
+  try{
+    daylight ||= createDaylight(THREE,Sky,renderer);
+    daylight.addTo(scene); scene.userData.hasDaylight=true;
+  }catch(error){ console.warn('Daylight reflections unavailable',error.message); }
 }
 
 // Deep-dispose a scene's geometry, materials, textures.
@@ -285,7 +304,7 @@ function disposeScene3D(scene){
    8. BUILD HELPERS + first-person controller
 ============================================================================ */
 function makeBuilders(){
-  const lamb=(color,extra={})=>new THREE.MeshLambertMaterial({color,...extra});
+  const lamb=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.82,envMapIntensity:.3,...extra});
   const basic=(color,extra={})=>new THREE.MeshBasicMaterial({color,...extra});
   function box(w,h,d,mat,x=0,y=0,z=0,shadow=true){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y,z); if(shadow){m.castShadow=m.receiveShadow=true;} return m; }
   // Rounded-corner box (three/addons RoundedBoxGeometry) for a softer, more
@@ -344,7 +363,8 @@ function makeBuilders(){
 let B=null, environments=null; // builders (set after THREE loads)
 
 // ---- First-person controller (shared by location scenes) ----
-const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0};
+const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0,speed:0};
+let followCow=true;
 let curOBST=[], curBounds={minX:-40,maxX:40,minZ:-40,maxZ:40}, curSpawn={x:0,z:0,yaw:0};
 function resetPlayer(){ player.x=curSpawn.x; player.z=curSpawn.z; player.yaw=curSpawn.yaw; player.pitch=0; if(camera){camera.position.set(player.x,player.eye,player.z); camera.rotation.y=player.yaw; camera.rotation.x=0;} }
 
@@ -371,8 +391,26 @@ function updatePlayer(dt){
   player.z=Math.max(curBounds.minZ,Math.min(curBounds.maxZ,player.z));
   const moving=m>0.1; player.bob+=dt*(moving?speed*1.4:0);
   const bobY=moving&&!reducedMotion?Math.sin(player.bob)*0.05:0;
-  camera.position.set(player.x,player.eye+bobY,player.z);
-  camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
+  player.speed=moving?Math.min(m,1)*speed:0;
+  if(active.hero){
+    active.hero.position.x=player.x; active.hero.position.z=player.z;
+    active.hero.userData.speed=player.speed;
+    if(moving){
+      const heading=Math.atan2(-vz,vx);
+      const delta=Math.atan2(Math.sin(heading-active.hero.rotation.y),Math.cos(heading-active.hero.rotation.y));
+      active.hero.rotation.y+=delta*(1-Math.exp(-dt*12));
+    }
+    active.hero.visible=followCow;
+  }
+  if(followCow && active.hero){
+    const distance=chaseDistance(player.x,player.z,player.yaw,curOBST);
+    const pitch=Math.max(-.35,Math.min(.8,player.pitch));
+    camera.position.set(player.x+sin*distance,2.7+Math.sin(pitch)*distance,player.z+cos*distance);
+    camera.lookAt(player.x,1.1,player.z);
+  }else{
+    camera.position.set(player.x,player.eye+bobY,player.z);
+    camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
+  }
 }
 
 /* ---- global input ---- */
@@ -380,14 +418,34 @@ const keys=new Set();
 addEventListener('keydown',e=>{
   if(modalOpen){ if(e.code==='Escape')closeModal(); return; }
   if(e.target.closest('input,textarea,select')) return;
+  if(e.target.closest('button') && ['Space','Enter'].includes(e.code)) return;
   if(e.code==='Escape'){ if(isLocationState()) go(GAME_STATES.MAP); return; }
   if(!isLocationState()) return;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
+  if(!e.repeat && e.code==='Space') triggerCowAction('jump');
+  if(!e.repeat && e.code==='KeyF') triggerCowAction('dance');
+  if(!e.repeat && e.code==='KeyV') toggleCamera();
   if(e.code==='KeyE') interactNearest();
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{ keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0; lookId=null; });
+
+function triggerCowAction(action){
+  if(modalOpen || !isLocationState()) return;
+  if(requestCowAction(active.hero,action,reducedMotion)){
+    $('cowActionStatus').textContent=active.hero.userData.action==='dance'?'Dancing · move to walk':action==='jump'?'Jump!':'Ready to explore';
+  }
+}
+function toggleCamera(){
+  if(modalOpen) return;
+  followCow=!followCow;
+  $('cameraMode').textContent=followCow?'View: Follow cow':'View: First person';
+  $('cameraMode').setAttribute('aria-pressed',String(followCow));
+}
+$('cowJump').onclick=()=>triggerCowAction('jump');
+$('cowDance').onclick=()=>triggerCowAction('dance');
+$('cameraMode').onclick=toggleCamera;
 
 const joyVec={x:0,y:0}, lookVec={x:0,y:0};
 let downX=0,downY=0,downT=0,lastX=0,lastY=0,movedFar=false;
@@ -460,6 +518,7 @@ function go(stateId, opts={}){
   $('btnReset').classList.toggle('hidden',!inLoc);
   $('hint').classList.toggle('hidden',!inLoc);
   $('objective').classList.toggle('hidden',!inLoc);
+  $('cowControls').classList.toggle('hidden',!inLoc);
   document.body.dataset.screen=stateId;
   keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0;
   caption('');
@@ -538,6 +597,14 @@ function enterLocation(locId){
   if(locId==='processor') environments.buildProcessor(scene,addObst);
   if(locId==='market')    environments.buildMarket(scene,addObst);
   dressEnvironment(THREE,scene,loc);
+  if(effectiveQuality()==='high') addDaylight(scene);
+  const models=createModelSession(THREE,scene,{anisotropy:Math.min(8,renderer.capabilities.getMaxAnisotropy())});
+  placeDestinationAssets(models,scene,locId,addObst);
+  const hero=environments.makeCow(.7,true);
+  hero.name='hero-cow'; hero.userData.hero=true; hero.userData.action='idle'; hero.rotation.y=Math.PI/2;
+  scene.add(hero);
+  $('cowJump').disabled=$('cowDance').disabled=reducedMotion;
+  $('cowActionStatus').textContent=reducedMotion?'Reduced motion enabled':'Space to jump · F to dance';
   const environmentLabels=[];
   scene.traverse(object=>{ if(object.userData.environmentLabel) environmentLabels.push(object); });
   const labelPosition=new THREE.Vector3();
@@ -606,15 +673,21 @@ function enterLocation(locId){
   const dirArrow=makeArrowSprite();
   scene.add(dirArrow);
 
-  let tipT=0;
+  let tipT=0, animationTime=0, lastCowAction='idle';
   const update=(dt,t)=>{
+    animationTime+=dt;
     if(!modalOpen) updatePlayer(dt);
+    animateCow(hero,animationTime,dt,reducedMotion);
+    if(hero.userData.action!==lastCowAction){
+      lastCowAction=hero.userData.action;
+      $('cowActionStatus').textContent=reducedMotion?'Reduced motion enabled':lastCowAction==='dance'?'Dancing · move to walk':lastCowAction==='jump'?'Jump!':'Space to jump · F to dance';
+    }
     environmentLabels.forEach(label=>{label.getWorldPosition(labelPosition); label.visible=Math.hypot(labelPosition.x-player.x,labelPosition.z-player.z)<10;});
     // animate beacons + drops
     clickables.forEach((c,i)=>{ if(c.userData.type==='station'){ if(c.userData.icon){c.userData.icon.position.y=2.1+(reducedMotion?0:Math.sin(t*2+i)*0.08);} }
       if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6;} if(!modalOpen && Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
       // gentle head-graze bob + tail swish so cows read as alive, not static props
-      if(c.userData.type==='cow'&&!reducedMotion) animateCow(c,t); });
+      if(c.userData.type==='cow'&&!reducedMotion) animateCow(c,animationTime,dt); });
 
     // Update direction arrow to point toward next destination + flash
     if(!modalOpen){
@@ -641,11 +714,12 @@ function enterLocation(locId){
   };
 
   setActive(locId==='farm'?GAME_STATES.FARM:locId==='processor'?GAME_STATES.PROCESSOR:GAME_STATES.MARKET,{
-    scene,update,dispose:()=>{ setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
+    scene,update,dispose:()=>{ models.dispose(); setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
   });
   setAfterLessonReturn(refreshStations);
   document.addEventListener('rcm:progresschange',refreshStations);
   active.clickables=clickables; active.loc=loc; active.beacons=beacons; active.quizG=quizG;
+  active.hero=hero; active.models=models;
 
   function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} 💧 Golden milk drop!`); } }
   active.collectDrop=collectDrop;
@@ -754,6 +828,7 @@ function makeDrop(){ const g=new THREE.Group(); const m=B.lamb(0xf5b21e,{emissiv
 function enterCompletion(){
   Analytics.track('game_completed',{points:Progress.data.points});
   setActive(GAME_STATES.COMPLETION,{});
+  $('cowControls').classList.add('hidden');
   $('hud').classList.add('hidden'); $('hint').classList.add('hidden'); $('joy').classList.add('hidden'); $('touchAct').classList.add('hidden');
   Audio.fanfare();
   $('cPoints').textContent=Progress.data.points;
@@ -775,7 +850,7 @@ $('cFoodservice').onclick=()=>{ Analytics.track('external_cta_clicked',{cta:'foo
 function enterFallback(){
   webglOK=false;
   setActive('FALLBACK',{});
-  for(const id of ['hud','hint','caption','joy','lookJoy','touchAct','objective','complete']) $(id).classList.add('hidden');
+  for(const id of ['hud','hint','caption','joy','lookJoy','touchAct','cowControls','objective','complete']) $(id).classList.add('hidden');
   document.body.classList.remove('touch-controls-active');
   document.body.dataset.screen='FALLBACK';
   Analytics.track('fallback_shown');
@@ -909,6 +984,8 @@ async function boot(){
 window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
 window.__RCM_DEBUG = false;
 window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio()});
+window.__game.character=()=>active.hero ? {action:active.hero.userData.action,y:active.hero.position.y,speed:active.hero.userData.speed,visible:active.hero.visible} : null;
+window.__game.modelStatus=()=>active.models?.status || {};
 
 configureLessonRenderer({ openModal, closeModal, fireConfetti, navigate: go });
 

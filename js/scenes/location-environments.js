@@ -4,7 +4,7 @@ export function createEnvironmentBuilders(THREE, B) {
 function buildFarm(scene,addObst){
   const {box,cyl,ball,lamb,labelSprite}=B;
   // modern free-stall barn (open sides, light roof) — not a red barn
-  const barn=new THREE.Group();
+  const barn=new THREE.Group(); barn.name='placeholder:dairy-barn';
   const post=lamb(0xcfd3d6);
   for(const px of [-6,-2,2,6]) for(const pz of [-4,4]) barn.add(cyl(0.18,0.2,4.4,post,px,2.2,pz,8));
   const roof=box(15,0.3,10,lamb(0xe2e6e9),0,4.5,0); roof.rotation.x=0.04; barn.add(roof);
@@ -76,7 +76,13 @@ function makeCow(scale=1,spotted=true){
   for(const s of [1,-1]) head.add(cyl(0.02,0.05,0.16,horn,0.05,0.42,s*0.22,6,false));
   g.add(head);
 
-  for(const [lx,lz] of [[0.72,0.32],[0.72,-0.32],[-0.72,0.32],[-0.72,-0.32]]) g.add(cyl(0.11,0.13,0.95,dark,lx,0.48,lz,8));
+  const legs=[];
+  for(const [lx,lz] of [[0.72,0.32],[0.72,-0.32],[-0.72,0.32],[-0.72,-0.32]]) {
+    const leg=new THREE.Group(); leg.position.set(lx,.95,lz);
+    leg.add(cyl(.11,.13,.85,hideMat,0,-.4,0,12));
+    leg.add(rbox(.24,.16,.25,dark,0,-.86,0,.04));
+    g.add(leg); legs.push(leg);
+  }
   g.add(ball(0.34,pink,-0.55,0.78,0,false));
 
   // tail — animated in updateCows for a gentle swish
@@ -86,11 +92,12 @@ function makeCow(scale=1,spotted=true){
   g.add(tail);
 
   g.scale.setScalar(scale*1.12);
-  g.userData={type:'cow',head,tail,phase:Math.random()*9};
+  g.userData={type:'cow',head,tail,legs,phase:Math.random()*9};
   return g;
 }
 function makeTanker(){
   const {box,cyl,ball,lamb}=B; const g=new THREE.Group(); const steel=lamb(0xe3eaee), dark=lamb(0x2b2b2b);
+  g.name='placeholder:milk-tanker';
   g.add(box(1.8,1.7,2,lamb(0x1f6fb2),0,1.3,2.8));
   const tk=cyl(1.1,1.1,4.6,steel,0,1.8,-0.6,18); tk.rotation.x=Math.PI/2; g.add(tk);
   g.add(ball(1.1,steel,0,1.8,1.7)); g.add(ball(1.1,steel,0,1.8,-2.9));
@@ -252,5 +259,5 @@ function buildMarket(scene,addObst){
 function makeChef(){ const {box,cyl,ball,lamb}=B; const g=new THREE.Group(); g.add(cyl(0.4,0.5,1.4,lamb(0xffffff),0,0.9,0,10)); g.add(ball(0.35,lamb(0xe8b98f),0,1.9,0)); g.add(cyl(0.36,0.36,0.4,lamb(0xffffff),0,2.3,0,12)); g.add(ball(0.34,lamb(0xffffff),0,2.6,0,false)); return g; }
 
 
-return { buildFarm, buildProcessor, buildMarket };
+return { buildFarm, buildProcessor, buildMarket, makeCow };
 }

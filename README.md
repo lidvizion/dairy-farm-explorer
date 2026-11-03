@@ -186,7 +186,20 @@ By default events go nowhere (optionally `console.debug` when
 ## Controls
 
 **Desktop:** `W A S D` / arrows to move · mouse-drag to look · `E` or click to
-interact · `Shift` to move faster · `Esc` or the Map button to leave a scene.
+interact · `Shift` to move faster · `Space` to jump · `F` to dance · `V` to switch
+between following the cow and first person · `Esc` or the Map button to leave a scene.
+
+The cow is now a controllable **placeholder** in every destination. Jump, Dance,
+and View buttons also support touch. Moving cancels a dance; reduced motion
+disables jump/dance. The Meshy asset upgrade is pending account authorization;
+see [REALISM-HANDOFF.md](REALISM-HANDOFF.md) for asset briefs, status, and exact
+resume steps. No generated 4K models have been delivered yet.
+
+High quality adds an atmospheric sky and environment reflections and supports
+a framebuffer up to 3840×2160. This is a rendering limit, not a claim that the
+placeholder textures are 4K. Performance quality uses the simpler sky and a
+1920×1080 pixel budget. Models are loaded only when listed in
+`js/config/model-assets.js`; each destination owns and releases its downloads.
 
 **Mobile — dual on-screen thumb sticks (Roblox-style):** the **left stick
 moves**, the **right stick looks** around. The big **Interact** button turns gold
