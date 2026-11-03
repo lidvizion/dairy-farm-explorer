@@ -9,7 +9,7 @@ import { $, el, toast, caption } from './ui/dom.js';
 import { validateLessonContent } from './lessons/validate-content.js';
 import { configureLessonRenderer, setAfterLessonReturn, startLesson, startQuiz } from './lessons/renderer.js';
 import { effectiveQuality as determineQuality, isTouchDevice, isSoftwareRenderer } from './scenes/quality.js';
-import { createDaylight, createSoftEnvironment } from './scenes/daylight.js';
+import { createSoftEnvironment } from './scenes/daylight.js';
 import { animateCow, requestCowAction } from './scenes/animation.js';
 import { chaseDistance } from './scenes/chase-camera.js';
 import { createModelSession } from './scenes/model-assets.js';
@@ -236,7 +236,7 @@ function showStepsMenu(){
 /* ============================================================================
    7. THREE.js setup, quality, disposal
 ============================================================================ */
-let THREE=null, RoundedBoxGeometry=null, Sky=null, renderer=null, camera=null, daylight=null, softEnvironment=null, webglOK=true;
+let THREE=null, RoundedBoxGeometry=null, renderer=null, camera=null, softEnvironment=null, webglOK=true;
 let rendererName='';
 let quality = readPreference('rcm_quality', 'auto');
 const isTouch = isTouchDevice();
@@ -252,9 +252,6 @@ async function initThree(){
     THREE = await import('three');
     try { ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
     catch { RoundedBoxGeometry=null; }
-    // Sky only feeds the reflection environment of the Meshy PBR models.
-    try { ({Sky} = await import('three/addons/objects/Sky.js')); }
-    catch(error) { Sky=null; console.warn('Daylight reflections unavailable',error.message); }
     if(!camera){
       camera=new THREE.PerspectiveCamera(70,1,0.1,180);
       camera.rotation.order='YXZ';
@@ -286,7 +283,7 @@ function createRenderer(){
   // there, like main's lightweight scene. The View button still switches.
   if(!cameraChosen) setFollowCow(modelsEnabled());
   // Environment maps are GPU render targets owned by the previous context.
-  daylight?.dispose(); softEnvironment?.dispose(); daylight=softEnvironment=null;
+  softEnvironment?.dispose(); softEnvironment=null;
   next.setPixelRatio(Math.min(devicePixelRatio,high?2:1));
   next.shadowMap.enabled=high;
   next.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -405,15 +402,13 @@ function modelsEnabled(){
   return !isSoftwareRenderer(rendererName)||new URLSearchParams(location.search).get('models')==='1';
 }
 
-// PBR models need image-based light: an atmospheric sky in High, a cheap
-// gradient in Performance. The authored Lambert scenery ignores both.
+// PBR models need image-based light; the authored Lambert scenery ignores it.
+// One calibrated gradient serves every tier: the physical Sky shader's HDR
+// sun flooded the reflection map and washed the textured models out to white.
 function applySceneEnvironment(scene){
-  const high=effectiveQuality()==='high';
   let texture=null;
   if(modelsEnabled()) try {
-    // Only the reflections: the painted sky stays the visible background.
-    if(high && Sky) texture=(daylight ||= createDaylight(THREE,Sky,renderer)).texture;
-    else texture=(softEnvironment ||= createSoftEnvironment(THREE,renderer)).texture;
+    texture=(softEnvironment ||= createSoftEnvironment(THREE,renderer)).texture;
   } catch(error) { console.warn('Model lighting environment unavailable',error.message); }
   scene.environment=texture;
 }

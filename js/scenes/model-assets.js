@@ -56,7 +56,7 @@ export function createModelSession(THREE, scene, { anisotropy = 4, loaderFactory
           object.castShadow = object.receiveShadow = true;
           for (const material of [].concat(object.material)) {
             for (const value of Object.values(material)) if (value?.isTexture) value.anisotropy = anisotropy;
-            material.envMapIntensity = .8;
+            material.envMapIntensity = .55; // fill light only; textures carry the colour
             // Performance mode skips the reflection environment; fully metallic
             // steel would then render black, so let it read as satin metal.
             if (!scene.environment && material.metalness > .35) material.metalness = .35;

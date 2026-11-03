@@ -12,8 +12,8 @@ export const MODEL_ASSETS = {
   // primitive's cab-forward +Z.
   'milk-tanker': model('milk-tanker', 7.5, { orientation: Math.PI / 2 }),
   'dairy-display': model('dairy-display', .95),
-  // Galvanized roof reads as ice under the sky reflection at full metalness.
-  'dairy-barn': model('dairy-barn', 15, { metalness: .55 }),
+  // Galvanized roof reads as ice under reflections at full metalness.
+  'dairy-barn': model('dairy-barn', 15, { metalness: .4 }),
   // Foliage cards are single planes, so leaves need both faces.
   'valley-oak': model('valley-oak', 10, { doubleSided: true }),
   'hay-bale': model('hay-bale', 1.2),
