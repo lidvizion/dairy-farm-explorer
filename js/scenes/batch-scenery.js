@@ -5,7 +5,8 @@ export function batchScenery(THREE, scene) {
   const buckets = new Map();
   scene.traverse(mesh => {
     if (!mesh.isMesh || mesh.isInstancedMesh || Array.isArray(mesh.material)) return;
-    for (let node = mesh; node; node = node.parent) if (node.userData.type || node.userData.dynamic) return;
+    // Swappable placeholders stay whole so a loaded model can hide them.
+    for (let node = mesh; node; node = node.parent) if (node.userData.type || node.userData.dynamic || node.userData.swappable) return;
     const m = mesh.material, g = mesh.geometry;
     // RoundedBoxGeometry inherits type='BoxGeometry' but stores deformed vertices
     // and unit-box parameters. Replacing it with a scaled cube destroys its shape.

@@ -222,7 +222,27 @@ By default events go nowhere (optionally `console.debug` when
 ## Controls
 
 **Desktop:** `W A S D` / arrows to move · mouse-drag to look · `E` or click to
-interact · `Shift` to move faster · `Esc` or the Map button to leave a scene.
+interact · `Shift` to move faster · `Space` to jump · `F` to dance · `V` to switch
+between following the cow and first person · `Esc` or the Map button to leave a scene.
+
+You play as a Holstein in every destination. Jump, Dance, and View buttons also
+support touch. Moving cancels a dance; reduced motion disables jump and dance.
+
+### Realistic models
+
+The farm, processor and market load Meshy-generated PBR models (barn, milk
+house, tanker, solar array, digester, processing plant, storefronts, props and
+a rigged Holstein) from `assets/models/`. Each ships in two tiers: High uses
+4096px maps for the cow and 2048px for everything else; Performance and mobile
+use the `-lite` files (1024px maps, fewer triangles). The authored scenery
+stays on screen until a model arrives, so a slow or failed download never
+blocks a lesson. Browsers without GPU acceleration (SwiftShader, llvmpipe)
+keep the authored scene; add `?models=1` to force the models for QA.
+
+`scripts/asset-briefs.json` holds every prompt and delivery budget,
+`npm run models:optimize` rebuilds the GLBs from raw downloads in the ignored
+`.meshy/raw/`, and `assets/models/PROVENANCE.md` records each Meshy task.
+See [REALISM-HANDOFF.md](REALISM-HANDOFF.md) for the full pipeline.
 
 **Mobile — dual on-screen thumb sticks (Roblox-style):** the **left stick
 moves**, the **right stick looks** around. The big **Interact** button turns gold

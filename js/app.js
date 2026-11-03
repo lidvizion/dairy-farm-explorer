@@ -8,8 +8,13 @@ import { Audio } from './core/audio.js';
 import { $, el, toast, caption } from './ui/dom.js';
 import { validateLessonContent } from './lessons/validate-content.js';
 import { configureLessonRenderer, setAfterLessonReturn, startLesson, startQuiz } from './lessons/renderer.js';
-import { effectiveQuality as determineQuality, isTouchDevice } from './scenes/quality.js';
-import { animateCow } from './scenes/animation.js';
+import { effectiveQuality as determineQuality, isTouchDevice, isSoftwareRenderer } from './scenes/quality.js';
+import { createDaylight, createSoftEnvironment } from './scenes/daylight.js';
+import { animateCow, requestCowAction } from './scenes/animation.js';
+import { chaseDistance } from './scenes/chase-camera.js';
+import { createModelSession } from './scenes/model-assets.js';
+import { upgradeCow } from './scenes/cow-rig.js';
+import { placeDestinationAssets } from './scenes/asset-placements.js';
 import { createEnvironmentBuilders } from './scenes/location-environments.js';
 import { dressEnvironment } from './scenes/environment-detail.js';
 import { batchScenery } from './scenes/batch-scenery.js';
@@ -61,7 +66,7 @@ function openModal(title, sub, bodyBuilder){
   const settings=$('graphicsSettings');
   settings.classList.add('hidden'); document.body.appendChild(settings);
   if(!modalOpen) modalReturnFocus=document.activeElement;
-  for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct']) $(id).inert=true;
+  for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct','cowControls']) $(id).inert=true;
   modalOpen=true; resetInput();
   if(renderer)renderer.domElement.inert=true;
   $('modalTitle').innerHTML = title;
@@ -81,7 +86,7 @@ function closeModal({restoreFocus=true}={}){
   resetInput();
   stopConfetti();
   document.dispatchEvent(new Event('rcm:modalclose'));
-  for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct']) $(id).inert=false;
+  for(const id of ['hud','title','journeyMap','objective','complete','fallback','joy','lookJoy','touchAct','cowControls']) $(id).inert=false;
   $('graphicsSettings').classList.add('hidden');
   document.body.appendChild($('graphicsSettings'));
   $('modal').classList.add('hidden'); modalOpen=false;
@@ -231,7 +236,8 @@ function showStepsMenu(){
 /* ============================================================================
    7. THREE.js setup, quality, disposal
 ============================================================================ */
-let THREE=null, RoundedBoxGeometry=null, renderer=null, camera=null, webglOK=true;
+let THREE=null, RoundedBoxGeometry=null, Sky=null, renderer=null, camera=null, daylight=null, softEnvironment=null, webglOK=true;
+let rendererName='';
 let quality = readPreference('rcm_quality', 'auto');
 const isTouch = isTouchDevice();
 
@@ -246,6 +252,9 @@ async function initThree(){
     THREE = await import('three');
     try { ({RoundedBoxGeometry} = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
     catch { RoundedBoxGeometry=null; }
+    // Sky only feeds the reflection environment of the Meshy PBR models.
+    try { ({Sky} = await import('three/addons/objects/Sky.js')); }
+    catch(error) { Sky=null; console.warn('Daylight reflections unavailable',error.message); }
     if(!camera){
       camera=new THREE.PerspectiveCamera(70,1,0.1,180);
       camera.rotation.order='YXZ';
@@ -268,6 +277,16 @@ function createRenderer(){
   const next=new THREE.WebGLRenderer({antialias:high});
   const previous=renderer;
   renderer=next;
+  try {
+    const gl=next.getContext(), info=gl.getExtension('WEBGL_debug_renderer_info');
+    rendererName=String(gl.getParameter(info?info.UNMASKED_RENDERER_WEBGL:gl.RENDERER)||'');
+  } catch { rendererName=''; }
+  // On CPU-only WebGL the follow camera frames the whole destination and
+  // roughly halves an already low frame rate, so it starts in first person
+  // there, like main's lightweight scene. The View button still switches.
+  if(!cameraChosen) setFollowCow(modelsEnabled());
+  // Environment maps are GPU render targets owned by the previous context.
+  daylight?.dispose(); softEnvironment?.dispose(); daylight=softEnvironment=null;
   next.setPixelRatio(Math.min(devicePixelRatio,high?2:1));
   next.shadowMap.enabled=high;
   next.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -368,6 +387,7 @@ function applyRendererQuality(){
     renderer.shadowMap.enabled=high;
     renderer.shadowMap.needsUpdate=true;
     resizeWorld();
+    if(active.scene)applySceneEnvironment(active.scene);
     active.scene?.traverse(object=>{
       if(object.isDirectionalLight||object.isSpotLight){
         object.castShadow=high;
@@ -378,6 +398,26 @@ function applyRendererQuality(){
   } catch { if(modalOpen)closeModal({restoreFocus:false});enterFallback(); }
 }
 
+// CPU-only WebGL (no GPU acceleration) drops below 2 fps with the Meshy
+// models, so it keeps the lightweight authored scene and skips the reflection
+// environment they need. ?models=1 forces them on for QA.
+function modelsEnabled(){
+  return !isSoftwareRenderer(rendererName)||new URLSearchParams(location.search).get('models')==='1';
+}
+
+// PBR models need image-based light: an atmospheric sky in High, a cheap
+// gradient in Performance. The authored Lambert scenery ignores both.
+function applySceneEnvironment(scene){
+  const high=effectiveQuality()==='high';
+  let texture=null;
+  if(modelsEnabled()) try {
+    // Only the reflections: the painted sky stays the visible background.
+    if(high && Sky) texture=(daylight ||= createDaylight(THREE,Sky,renderer)).texture;
+    else texture=(softEnvironment ||= createSoftEnvironment(THREE,renderer)).texture;
+  } catch(error) { console.warn('Model lighting environment unavailable',error.message); }
+  scene.environment=texture;
+}
+
 // Deep-dispose a scene's geometry, materials, textures.
 function disposeScene3D(scene){
   if(scene.background?.isTexture) scene.background.dispose();
@@ -386,7 +426,8 @@ function disposeScene3D(scene){
     if(obj.geometry) obj.geometry.dispose();
     if(obj.material){
       const mats=Array.isArray(obj.material)?obj.material:[obj.material];
-      mats.forEach(m=>{ for(const k in m){ const v=m[k]; if(v&&v.isTexture)v.dispose(); } m.dispose(); });
+      // Shared environment maps outlive the destination.
+      mats.forEach(m=>{ for(const k in m){ const v=m[k]; if(v&&v.isTexture&&k!=='envMap')v.dispose(); } m.dispose(); });
     }
   });
   while(scene.children.length) scene.remove(scene.children[0]);
@@ -428,7 +469,8 @@ function makeBuilders(){
 let B=null, environments=null; // builders (set after THREE loads)
 
 // ---- First-person controller (shared by location scenes) ----
-const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0};
+const player={x:0,z:0,yaw:0,pitch:0,eye:1.7,bob:0,speed:0};
+let followCow=true, cameraChosen=false;
 let curSolids=[];
 let curOBST=[], curBounds={minX:-40,maxX:40,minZ:-40,maxZ:40}, curSpawn={x:0,z:0,yaw:0};
 function resetPlayer(){ player.x=curSpawn.x; player.z=curSpawn.z; player.yaw=curSpawn.yaw; player.pitch=0; if(camera){camera.position.set(player.x,player.eye,player.z); camera.rotation.y=player.yaw; camera.rotation.x=0;} }
@@ -457,8 +499,28 @@ function updatePlayer(dt){
   player.z=Math.max(curBounds.minZ,Math.min(curBounds.maxZ,player.z));
   const moving=m>0.1; player.bob+=dt*(moving?speed*1.4:0);
   const bobY=moving&&!reducedMotion?Math.sin(player.bob)*0.05:0;
-  camera.position.set(player.x,player.eye+bobY,player.z);
-  camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
+  player.speed=moving?Math.min(m,1)*speed:0;
+  const hero=active.hero;
+  if(hero){
+    hero.position.x=player.x; hero.position.z=player.z;
+    hero.userData.speed=player.speed;
+    if(moving){
+      const heading=Math.atan2(-vz,vx);
+      const delta=Math.atan2(Math.sin(heading-hero.rotation.y),Math.cos(heading-hero.rotation.y));
+      hero.rotation.y+=delta*(1-Math.exp(-dt*12));
+    }
+    hero.visible=followCow;
+  }
+  if(followCow && hero){
+    const sin=Math.sin(player.yaw), cos=Math.cos(player.yaw);
+    const distance=chaseDistance(player.x,player.z,player.yaw,curOBST);
+    const pitch=Math.max(-.35,Math.min(.8,player.pitch));
+    camera.position.set(player.x+sin*distance,2.7+Math.sin(pitch)*distance,player.z+cos*distance);
+    camera.lookAt(player.x,1.1,player.z);
+  } else {
+    camera.position.set(player.x,player.eye+bobY,player.z);
+    camera.rotation.y=player.yaw; camera.rotation.x=player.pitch;
+  }
 }
 
 /* ---- global input ---- */
@@ -470,8 +532,34 @@ addEventListener('keydown',e=>{
   if(!isLocationState()) return;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
+  if(!e.repeat && e.code==='Space') triggerCowAction('jump');
+  if(!e.repeat && e.code==='KeyF') triggerCowAction('dance');
+  if(!e.repeat && e.code==='KeyV') toggleCamera();
   if(e.code==='KeyE') interactNearest();
 });
+
+function cowStatus(action=active.hero?.userData.action){
+  return reducedMotion?'Reduced motion enabled':action==='dance'?'Dancing · move to walk':action==='jump'?'Jump!':'Space to jump · F to dance';
+}
+function triggerCowAction(action){
+  if(modalOpen || !isLocationState()) return;
+  if(requestCowAction(active.hero,action,reducedMotion)) $('cowActionStatus').textContent=cowStatus();
+}
+function setFollowCow(follow){
+  followCow=follow;
+  $('cameraMode').textContent=followCow?'View: Follow cow':'View: First person';
+  $('cameraMode').setAttribute('aria-pressed',String(followCow));
+}
+function toggleCamera(){
+  if(modalOpen) return;
+  cameraChosen=true;
+  setFollowCow(!followCow);
+}
+// Buttons hand keyboard focus back to the world so WASD keeps working.
+const worldFocus=()=>renderer?.domElement.focus({preventScroll:true});
+$('cowJump').onclick=()=>{ triggerCowAction('jump'); worldFocus(); };
+$('cowDance').onclick=()=>{ triggerCowAction('dance'); worldFocus(); };
+$('cameraMode').onclick=()=>{ toggleCamera(); worldFocus(); };
 addEventListener('keyup',e=>keys.delete(e.code));
 const stickResets=[];
 function resetInput(){ keys.clear(); lookId=null; stickResets.forEach(reset=>reset()); }
@@ -557,6 +645,7 @@ function go(stateId, opts={}){
   $('btnReset').classList.toggle('hidden',!inLoc);
   $('hint').classList.toggle('hidden',!inLoc);
   $('objective').classList.toggle('hidden',!inLoc);
+  $('cowControls').classList.toggle('hidden',!inLoc);
   document.body.dataset.screen=stateId;
   keys.clear(); joyVec.x=joyVec.y=lookVec.x=lookVec.y=0;
   caption('');
@@ -646,8 +735,20 @@ function enterLocation(locId){
   environments.build(scene,addObst,loc.environment);
   dressEnvironment(THREE,scene,loc);
   addPlaceDetails(THREE,scene,loc,B);
+  const realistic=modelsEnabled();
+  applySceneEnvironment(scene);
+  // Placeholders the Meshy models replace must stay whole groups so they can
+  // be hidden on arrival; static batching would scatter them into instances.
+  if(realistic) scene.traverse(o=>{ if(o.name.startsWith('placeholder:'))o.userData.swappable=true; });
   curSolids=collectSolidBounds(THREE,scene);
   scene.userData.batchedDrawCalls = batchScenery(THREE,scene);
+  const models=createModelSession(THREE,scene,{anisotropy:Math.min(8,renderer.capabilities.getMaxAnisotropy()),lite:effectiveQuality()!=='high',enabled:realistic});
+  placeDestinationAssets(models,scene,locId,addObst);
+  const hero=environments.makeCow(.7,true);
+  hero.name='hero-cow'; Object.assign(hero.userData,{hero:true,action:'idle'}); hero.rotation.y=Math.PI/2;
+  scene.add(hero);
+  $('cowJump').disabled=$('cowDance').disabled=reducedMotion;
+  $('cowActionStatus').textContent=cowStatus('idle');
   const labVisual = createLabVisual(THREE,scene,locId,B,environments.makeCow);
   let worldLab = null, trailGuide = null;
   const environmentLabels=[];
@@ -658,6 +759,13 @@ function enterLocation(locId){
     c.userData.type='cow'; clickables.push(c);
     const b=new THREE.Box3().setFromObject(c);
     curSolids.push({minX:b.min.x-.15,maxX:b.max.x+.15,minZ:b.min.z-.15,maxZ:b.max.z+.15});
+  });
+  // The authored cows stay on screen until the Meshy Holstein arrives, then
+  // the same groups are re-skinned in place so controls and lessons never wait.
+  models.load('holstein-cow').then(template=>{
+    if(!template) return;
+    upgradeCow(THREE,hero,template,{length:2.4});
+    sceneCows.forEach(c=>upgradeCow(THREE,c,template,{length:2.5}));
   });
 
   // lesson stations (beacons) arranged in an arc in front of spawn
@@ -727,18 +835,21 @@ function enterLocation(locId){
   const dirArrow=makeArrowSprite();
   scene.add(dirArrow);
 
-  let tipT=0;
+  let tipT=0, animationTime=0, lastCowAction='idle';
   const update=(dt,t)=>{
     if(worldLab?.running){worldLab.update(dt);return;}
     Audio.ambience(loc.audio,dt);
+    animationTime+=dt;
     if(!modalOpen) updatePlayer(dt);
     trailGuide?.update();
+    animateCow(hero,animationTime,dt,reducedMotion);
+    if(hero.userData.action!==lastCowAction){ lastCowAction=hero.userData.action; $('cowActionStatus').textContent=cowStatus(); }
     environmentLabels.forEach(label=>{label.getWorldPosition(labelPosition); label.visible=Math.hypot(labelPosition.x-player.x,labelPosition.z-player.z)<10;});
     // animate beacons + drops
     clickables.forEach((c,i)=>{
       if(c.userData.type==='drop'){ if(!reducedMotion){c.position.y=0.8+Math.sin(t*2.5+i)*0.14; c.rotation.y+=dt*1.6;} if(!modalOpen && Math.hypot(c.position.x-player.x,c.position.z-player.z)<1.3) collectDrop(c); }
       // gentle head-graze bob + tail swish so cows read as alive, not static props
-      if(c.userData.type==='cow'&&!reducedMotion&&effectiveQuality()==='high') animateCow(c,t); });
+      if(c.userData.type==='cow'&&!reducedMotion&&effectiveQuality()==='high') animateCow(c,animationTime,dt); });
 
     // Update direction arrow to point toward next destination + flash
     if(!modalOpen){
@@ -765,14 +876,14 @@ function enterLocation(locId){
   };
 
   setActive(routeFor(locId),{
-    scene,update,dispose:()=>{ worldLab?.dispose(); trailGuide?.dispose(); setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
+    scene,update,dispose:()=>{ models.dispose(); worldLab?.dispose(); trailGuide?.dispose(); setAfterLessonReturn(()=>{}); document.removeEventListener('rcm:progresschange',refreshStations); }
   });
   worldLab = mountWorldLab({id:locId,visual:labVisual,camera,resetInput,reducedMotion,onLesson:lesson=>startLesson(locId,lesson)});
   if(loc===LOCATIONS[0])trailGuide=createTrailGuide(player,isTouch);
   setAfterLessonReturn(refreshStations);
   document.addEventListener('rcm:progresschange',refreshStations);
   active.clickables=clickables; active.loc=loc; active.beacons=beacons; active.quizG=quizG;
-  active.worldLab=worldLab;
+  active.worldLab=worldLab; active.hero=hero; active.models=models;
 
   function collectDrop(d){ if(d.userData.got)return; d.userData.got=true; d.visible=false; if(Progress.collect(d.userData.id)){ Audio.pop(); toast(`+${SCORING.collectible} ${MODULE.dropLabel}`); } }
   active.collectDrop=collectDrop;
@@ -876,7 +987,7 @@ function enterCompletion(){
   if(renderer)renderer.domElement.inert=true;
   Analytics.track('game_completed',{points:Progress.data.points});
   setActive(GAME_STATES.COMPLETION,{});
-  $('hud').classList.add('hidden'); $('hint').classList.add('hidden'); $('joy').classList.add('hidden'); $('touchAct').classList.add('hidden');
+  $('hud').classList.add('hidden'); $('hint').classList.add('hidden'); $('joy').classList.add('hidden'); $('touchAct').classList.add('hidden'); $('cowControls').classList.add('hidden');
   Audio.fanfare();
   $('cPoints').textContent=Progress.data.points;
   $('cLoc').textContent=`${Progress.locationsDoneCount()}/${LOCATIONS.length}`;
@@ -906,7 +1017,7 @@ function enterFallback(){
   renderer?.setAnimationLoop(null);
   resetInput();
   setActive('FALLBACK',{});
-  for(const id of ['hud','hint','caption','joy','lookJoy','touchAct','objective','complete']) $(id).classList.add('hidden');
+  for(const id of ['hud','hint','caption','joy','lookJoy','touchAct','cowControls','objective','complete']) $(id).classList.add('hidden');
   document.body.classList.remove('touch-controls-active');
   document.body.dataset.screen='FALLBACK';
   Analytics.track('fallback_shown');
@@ -1054,6 +1165,8 @@ async function boot(){
 // debug hooks for automated testing / QA
 window.__game = { GAME_STATES, LOCATIONS, Progress, go:(s,o)=>go(s,o), startLesson, startQuiz, enterCompletion, enterFallback, Audio, state:()=>active.id, player, beacons:()=>active.beacons, quizG:()=>active.quizG, scene:()=>active.scene, clearance:()=>({near:camera.near,far:camera.far,solids:curSolids}), setPlayerPos:(x,z)=>{player.x=x;player.z=z;}, obst:()=>curOBST };
 window.__RCM_DEBUG = false;
+window.__game.character=()=>active.hero ? {realistic:!!active.hero.userData.realistic,action:active.hero.userData.action,y:active.hero.position.y,speed:active.hero.userData.speed,visible:active.hero.visible} : null;
+window.__game.modelStatus=()=>active.models?.status || {};
 window.__game.renderInfo=()=>({calls:renderer?.info.render.calls||0, triangles:renderer?.info.render.triangles||0, geometries:renderer?.info.memory.geometries||0, textures:renderer?.info.memory.textures||0, batchedDrawCalls:active.scene?.userData.batchedDrawCalls||0, labState:active.scene?.children.find(o=>o.userData.labState)?.userData.labState, labVisual:active.worldLab?.inspect(), frame:renderer?.info.render.frame||0, shadows:renderer?.shadowMap.enabled, pixelRatio:renderer?.getPixelRatio(), antialias:renderer?.getContext().getContextAttributes()?.antialias, resizeCount, aspect:camera?.aspect});
 
 configureLessonRenderer({ openModal, closeModal, fireConfetti, navigate: go });
